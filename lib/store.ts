@@ -9,6 +9,7 @@ export interface Product {
   category: string
   description: string
   image: string
+  images?: string[]  // Multiple images per product
   sizes: Size[]
   color: string
 }
