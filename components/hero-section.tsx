@@ -1,30 +1,72 @@
 "use client"
 
 import { CartIndicator } from "./cart-indicator"
-import { ArrowDown } from "lucide-react"
+import { ChevronDown, Sparkles } from "lucide-react"
+import { Button } from "@/components/ui/button"
 
 export function HeroSection() {
+  const scrollToProducts = () => {
+    document.getElementById("products")?.scrollIntoView({ behavior: "smooth" })
+  }
+
   return (
-    <section className="relative flex min-h-[60vh] flex-col items-center justify-center px-4 py-16 text-center">
-      <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-muted via-background to-background" />
+    <section className="relative min-h-[85vh] overflow-hidden bg-primary">
+      {/* Decorative elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -left-40 -top-40 h-96 w-96 rounded-full bg-accent/20 blur-3xl" />
+        <div className="absolute -bottom-20 -right-20 h-80 w-80 rounded-full bg-accent/10 blur-3xl" />
+        <div className="absolute left-1/2 top-1/4 h-64 w-64 -translate-x-1/2 rounded-full bg-white/5 blur-2xl" />
+      </div>
 
-      <span className="mb-4 inline-flex items-center gap-2 rounded-full bg-accent/10 px-4 py-1.5 text-sm font-medium text-accent">
-        Kollektion 2025
-      </span>
+      {/* Grid pattern overlay */}
+      <div
+        className="absolute inset-0 opacity-[0.03]"
+        style={{
+          backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
+          backgroundSize: "60px 60px",
+        }}
+      />
 
-      <h1 className="mb-6 max-w-4xl font-serif text-4xl font-bold leading-tight tracking-tight text-foreground sm:text-5xl md:text-6xl lg:text-7xl text-balance">
-        Deine Mitarbeiter&shy;kollektion
-      </h1>
+      <div className="relative z-10 flex min-h-[85vh] flex-col items-center justify-center px-4 py-20 text-center">
+        {/* Badge */}
+        <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 py-2 backdrop-blur-sm">
+          <Sparkles className="h-4 w-4 text-accent" />
+          <span className="text-sm font-medium text-white/90">Kollektion 2025</span>
+        </div>
 
-      <p className="mb-8 max-w-2xl text-lg text-muted-foreground sm:text-xl leading-relaxed">
-        Wähle <strong className="text-foreground">4 Teile</strong> aus unserer exklusiven Kollektion. Kostenlos für alle
-        RealCore Mitarbeiter.
-      </p>
+        {/* Main heading */}
+        <h1 className="mb-6 max-w-4xl text-5xl font-bold leading-[1.1] tracking-tight text-white sm:text-6xl md:text-7xl lg:text-8xl text-balance">
+          Deine{" "}
+          <span className="relative">
+            <span className="relative z-10 bg-gradient-to-r from-accent to-emerald-400 bg-clip-text text-transparent">
+              Mitarbeiter
+            </span>
+          </span>
+          <br />
+          kollektion
+        </h1>
 
-      <CartIndicator />
+        {/* Subheading */}
+        <p className="mb-10 max-w-xl text-lg text-white/60 sm:text-xl leading-relaxed">
+          Wähle <span className="font-semibold text-white">4 Teile</span> aus unserer exklusiven Kollektion.
+          <br className="hidden sm:block" />
+          Kostenlos für alle RealCore Mitarbeiter.
+        </p>
 
-      <div className="mt-12 animate-bounce">
-        <ArrowDown className="h-6 w-6 text-muted-foreground" />
+        {/* Cart indicator */}
+        <div className="mb-12">
+          <CartIndicator />
+        </div>
+
+        {/* CTA Button */}
+        <Button
+          onClick={scrollToProducts}
+          size="lg"
+          className="group gap-2 rounded-full bg-white px-8 py-6 text-base font-semibold text-primary hover:bg-white/90"
+        >
+          Kollektion entdecken
+          <ChevronDown className="h-4 w-4 transition-transform group-hover:translate-y-0.5" />
+        </Button>
       </div>
     </section>
   )

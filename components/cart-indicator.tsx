@@ -3,6 +3,7 @@
 import { useShopStore } from "@/lib/store"
 import { cn } from "@/lib/utils"
 import { useState, useEffect } from "react"
+import { Check } from "lucide-react"
 
 export function CartIndicator() {
   const [mounted, setMounted] = useState(false)
@@ -15,17 +16,32 @@ export function CartIndicator() {
   const cartLength = mounted ? cart.length : 0
 
   return (
-    <div className="flex items-center gap-2">
-      {[1, 2, 3, 4].map((slot) => (
-        <div
-          key={slot}
-          className={cn(
-            "h-3 w-3 rounded-full border-2 transition-all duration-300",
-            slot <= cartLength ? "border-accent bg-accent" : "border-muted-foreground/30 bg-transparent",
-          )}
-        />
-      ))}
-      <span className="ml-2 text-sm font-medium text-muted-foreground">{cartLength}/4 ausgewählt</span>
+    <div className="flex flex-col items-center gap-4">
+      <div className="flex items-center gap-3">
+        {[1, 2, 3, 4].map((slot) => (
+          <div
+            key={slot}
+            className={cn(
+              "flex h-12 w-12 items-center justify-center rounded-full border-2 transition-all duration-500",
+              slot <= cartLength
+                ? "border-accent bg-accent shadow-lg shadow-accent/30"
+                : "border-white/20 bg-white/5 backdrop-blur-sm",
+            )}
+          >
+            {slot <= cartLength ? (
+              <Check className="h-5 w-5 text-white" />
+            ) : (
+              <span className="text-sm font-medium text-white/40">{slot}</span>
+            )}
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-medium text-white/80">{cartLength} von 4 ausgewählt</span>
+        {cartLength === 4 && (
+          <span className="rounded-full bg-accent/20 px-2 py-0.5 text-xs font-medium text-accent">Komplett</span>
+        )}
+      </div>
     </div>
   )
 }

@@ -2,58 +2,94 @@
 
 import Link from "next/link"
 import Image from "next/image"
-import { ShoppingBag, Menu, Settings } from "lucide-react"
+import { ShoppingBag, Menu, Settings, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useShopStore } from "@/lib/store"
 import { useState, useEffect } from "react"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet"
+import { cn } from "@/lib/utils"
 
 export function Header() {
   const [mounted, setMounted] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
   const cart = useShopStore((state) => state.cart)
 
   useEffect(() => {
     setMounted(true)
+
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 50)
+    }
+
+    window.addEventListener("scroll", handleScroll)
+    return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container mx-auto flex h-16 items-center justify-between px-4">
+    <header
+      className={cn(
+        "fixed top-0 z-50 w-full transition-all duration-300",
+        scrolled ? "border-b border-border bg-background/95 py-3 backdrop-blur-lg" : "bg-transparent py-5",
+      )}
+    >
+      <div className="container mx-auto flex items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-3">
           <Image
             src="https://realcore.info/bilder/RealCore_Logo.png"
             alt="RealCore Logo"
-            width={140}
-            height={40}
-            className="h-10 w-auto"
+            width={160}
+            height={45}
+            className={cn("h-10 w-auto transition-all duration-300", !scrolled && "brightness-0 invert")}
           />
         </Link>
 
-        <nav className="hidden items-center gap-8 md:flex">
-          <Link href="/" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+        <nav className="hidden items-center gap-1 md:flex">
+          <Link
+            href="/"
+            className={cn(
+              "rounded-full px-4 py-2 text-sm font-medium transition-colors",
+              scrolled
+                ? "text-muted-foreground hover:bg-muted hover:text-foreground"
+                : "text-white/70 hover:bg-white/10 hover:text-white",
+            )}
+          >
             Kollektion
           </Link>
           <Link
             href="/checkout"
-            className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            className={cn(
+              "rounded-full px-4 py-2 text-sm font-medium transition-colors",
+              scrolled
+                ? "text-muted-foreground hover:bg-muted hover:text-foreground"
+                : "text-white/70 hover:bg-white/10 hover:text-white",
+            )}
           >
             Bestellung
           </Link>
           <Link
             href="/admin"
-            className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            className={cn(
+              "rounded-full px-4 py-2 text-sm font-medium transition-colors",
+              scrolled
+                ? "text-muted-foreground hover:bg-muted hover:text-foreground"
+                : "text-white/70 hover:bg-white/10 hover:text-white",
+            )}
           >
             <Settings className="h-4 w-4" />
           </Link>
         </nav>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
           <Link href="/checkout">
-            <Button variant="ghost" size="icon" className="relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn("relative rounded-full", scrolled ? "hover:bg-muted" : "text-white hover:bg-white/10")}
+            >
               <ShoppingBag className="h-5 w-5" />
               {mounted && cart.length > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-xs font-medium text-accent-foreground">
+                <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-xs font-bold text-accent-foreground shadow-lg">
                   {cart.length}
                 </span>
               )}
@@ -63,23 +99,49 @@ export function Header() {
 
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild className="md:hidden">
-              <Button variant="ghost" size="icon">
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn("rounded-full", scrolled ? "hover:bg-muted" : "text-white hover:bg-white/10")}
+              >
                 <Menu className="h-5 w-5" />
                 <span className="sr-only">Menü öffnen</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-72">
-              <nav className="flex flex-col gap-4 pt-8">
-                <Link href="/" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium">
-                  Kollektion
-                </Link>
-                <Link href="/checkout" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium">
-                  Bestellung
-                </Link>
-                <Link href="/admin" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium">
-                  Admin Dashboard
-                </Link>
-              </nav>
+            <SheetContent side="right" className="w-80 bg-background p-0">
+              <div className="flex h-full flex-col">
+                <div className="flex items-center justify-between border-b border-border p-4">
+                  <span className="text-lg font-semibold">Menü</span>
+                  <SheetClose asChild>
+                    <Button variant="ghost" size="icon" className="rounded-full">
+                      <X className="h-5 w-5" />
+                    </Button>
+                  </SheetClose>
+                </div>
+                <nav className="flex flex-col gap-1 p-4">
+                  <Link
+                    href="/"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="rounded-lg px-4 py-3 text-lg font-medium hover:bg-muted"
+                  >
+                    Kollektion
+                  </Link>
+                  <Link
+                    href="/checkout"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="rounded-lg px-4 py-3 text-lg font-medium hover:bg-muted"
+                  >
+                    Bestellung
+                  </Link>
+                  <Link
+                    href="/admin"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="rounded-lg px-4 py-3 text-lg font-medium hover:bg-muted"
+                  >
+                    Admin Dashboard
+                  </Link>
+                </nav>
+              </div>
             </SheetContent>
           </Sheet>
         </div>
