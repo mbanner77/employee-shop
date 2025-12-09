@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: realcore-employee-shop
+    runtime: node
+    region: frankfurt
+    plan: free
+    numInstances: 1
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: 20
+    healthCheckPath: /
+    autoDeploy: true
