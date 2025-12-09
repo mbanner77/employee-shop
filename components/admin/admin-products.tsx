@@ -456,7 +456,7 @@ function ProductForm({ product, onSuccess, onCancel }: { product?: Product; onSu
         </div>
         
         <p className="text-xs text-muted-foreground">
-          Das erste Bild wird als Hauptbild verwendet. Max. 5MB pro Bild (JPEG, PNG, WebP, GIF).
+          Das erste Bild wird als Hauptbild verwendet. Max. 2MB pro Bild (JPEG, PNG, WebP, GIF). Bilder werden sicher in der Datenbank gespeichert.
         </p>
       </div>
       
