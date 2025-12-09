@@ -17,7 +17,7 @@ export function AdminProducts() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  const [newDialogOpen, setNewDialogOpen] = useState(false)
 
   const fetchProducts = async () => {
     try {
@@ -36,6 +36,11 @@ export function AdminProducts() {
   useEffect(() => {
     fetchProducts()
   }, [])
+
+  const handleProductSaved = () => {
+    setNewDialogOpen(false)
+    fetchProducts()
+  }
 
   const filteredProducts = products.filter(
     (product) =>
@@ -58,7 +63,7 @@ export function AdminProducts() {
           <h1 className="text-2xl font-bold text-foreground">Produkte</h1>
           <p className="text-muted-foreground">Verwalte die Mitarbeiterkollektion</p>
         </div>
-        <Dialog>
+        <Dialog open={newDialogOpen} onOpenChange={setNewDialogOpen}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 h-4 w-4" />
@@ -69,7 +74,10 @@ export function AdminProducts() {
             <DialogHeader>
               <DialogTitle>Neues Produkt hinzufügen</DialogTitle>
             </DialogHeader>
-            <ProductForm />
+            <ProductForm 
+              onSuccess={handleProductSaved} 
+              onCancel={() => setNewDialogOpen(false)} 
+            />
           </DialogContent>
         </Dialog>
       </div>
@@ -89,7 +97,7 @@ export function AdminProducts() {
           <ProductCard 
             key={product.id} 
             product={product} 
-            onEdit={setSelectedProduct} 
+            onRefresh={fetchProducts}
           />
         ))}
       </div>
@@ -98,8 +106,14 @@ export function AdminProducts() {
 }
 
 // Single Product Card with Image Carousel
-function ProductCard({ product, onEdit }: { product: Product; onEdit: (product: Product) => void }) {
+function ProductCard({ product, onRefresh }: { product: Product; onRefresh: () => void }) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+
+  const handleSaved = () => {
+    setEditDialogOpen(false)
+    onRefresh()
+  }
   
   const allImages = product.images && product.images.length > 0 
     ? [product.image, ...product.images] 
@@ -178,9 +192,9 @@ function ProductCard({ product, onEdit }: { product: Product; onEdit: (product: 
             </Badge>
             <CardTitle className="text-base">{product.name}</CardTitle>
           </div>
-          <Dialog>
+          <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
             <DialogTrigger asChild>
-              <Button variant="ghost" size="icon" onClick={() => onEdit(product)}>
+              <Button variant="ghost" size="icon">
                 <Edit className="h-4 w-4" />
               </Button>
             </DialogTrigger>
@@ -188,7 +202,11 @@ function ProductCard({ product, onEdit }: { product: Product; onEdit: (product: 
               <DialogHeader>
                 <DialogTitle>Produkt bearbeiten</DialogTitle>
               </DialogHeader>
-              <ProductForm product={product} />
+              <ProductForm 
+                product={product} 
+                onSuccess={handleSaved}
+                onCancel={() => setEditDialogOpen(false)}
+              />
             </DialogContent>
           </Dialog>
         </div>
@@ -207,36 +225,130 @@ function ProductCard({ product, onEdit }: { product: Product; onEdit: (product: 
   )
 }
 
-function ProductForm({ product }: { product?: Product }) {
-  const allImages = product?.images && product.images.length > 0 
-    ? [product.image, ...product.images] 
-    : product?.image ? [product.image] : []
+function ProductForm({ product, onSuccess, onCancel }: { product?: Product; onSuccess?: () => void; onCancel?: () => void }) {
+  const [saving, setSaving] = useState(false)
+  const [formData, setFormData] = useState({
+    name: product?.name || "",
+    category: product?.category || "",
+    description: product?.description || "",
+    color: product?.color || "",
+    image: product?.image || "",
+    sizes: product?.sizes?.join(", ") || "XS, S, M, L, XL, XXL",
+    additionalImages: product?.images?.join(", ") || "",
+  })
+
+  const allImages = formData.image 
+    ? formData.additionalImages 
+      ? [formData.image, ...formData.additionalImages.split(",").map(s => s.trim()).filter(Boolean)]
+      : [formData.image]
+    : []
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSaving(true)
+
+    const payload = {
+      name: formData.name,
+      category: formData.category,
+      description: formData.description,
+      color: formData.color,
+      image: formData.image,
+      sizes: formData.sizes.split(",").map(s => s.trim()).filter(Boolean),
+      images: formData.additionalImages.split(",").map(s => s.trim()).filter(Boolean),
+    }
+
+    try {
+      const url = product ? `/api/products/${product.id}` : "/api/products"
+      const method = product ? "PUT" : "POST"
+      
+      const response = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+
+      if (response.ok) {
+        onSuccess?.()
+      } else {
+        console.error("Failed to save product")
+      }
+    } catch (error) {
+      console.error("Error saving product:", error)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
+  }
 
   return (
-    <form className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="name">Produktname</Label>
-          <Input id="name" defaultValue={product?.name} placeholder="z.B. RealCore Premium Hoodie" />
+          <Input 
+            id="name" 
+            value={formData.name} 
+            onChange={(e) => handleChange("name", e.target.value)}
+            placeholder="z.B. RealCore Premium Hoodie" 
+            required
+          />
         </div>
         <div className="space-y-2">
           <Label htmlFor="category">Kategorie</Label>
-          <Input id="category" defaultValue={product?.category} placeholder="z.B. Hoodies" />
+          <Input 
+            id="category" 
+            value={formData.category}
+            onChange={(e) => handleChange("category", e.target.value)}
+            placeholder="z.B. Hoodies" 
+            required
+          />
         </div>
       </div>
       <div className="space-y-2">
         <Label htmlFor="description">Beschreibung</Label>
-        <Textarea id="description" defaultValue={product?.description} placeholder="Produktbeschreibung..." rows={3} />
+        <Textarea 
+          id="description" 
+          value={formData.description}
+          onChange={(e) => handleChange("description", e.target.value)}
+          placeholder="Produktbeschreibung..." 
+          rows={3} 
+          required
+        />
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="color">Farbe</Label>
-          <Input id="color" defaultValue={product?.color} placeholder="z.B. Navy" />
+          <Input 
+            id="color" 
+            value={formData.color}
+            onChange={(e) => handleChange("color", e.target.value)}
+            placeholder="z.B. Navy" 
+            required
+          />
         </div>
         <div className="space-y-2">
           <Label htmlFor="image">Hauptbild-URL</Label>
-          <Input id="image" defaultValue={product?.image} placeholder="/image.jpg" />
+          <Input 
+            id="image" 
+            value={formData.image}
+            onChange={(e) => handleChange("image", e.target.value)}
+            placeholder="/image.jpg" 
+            required
+          />
         </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="sizes">Größen (kommagetrennt)</Label>
+        <Input 
+          id="sizes" 
+          value={formData.sizes}
+          onChange={(e) => handleChange("sizes", e.target.value)}
+          placeholder="XS, S, M, L, XL, XXL" 
+        />
       </div>
       
       {/* Multiple images preview */}
@@ -267,7 +379,8 @@ function ProductForm({ product }: { product?: Product }) {
         <Label htmlFor="additionalImages">Weitere Bilder (URLs, kommagetrennt)</Label>
         <Textarea 
           id="additionalImages" 
-          defaultValue={product?.images?.join(", ")} 
+          value={formData.additionalImages}
+          onChange={(e) => handleChange("additionalImages", e.target.value)}
           placeholder="/bild2.jpg, /bild3.jpg, /bild4.jpg" 
           rows={2} 
         />
@@ -275,10 +388,19 @@ function ProductForm({ product }: { product?: Product }) {
       </div>
       
       <div className="flex justify-end gap-2 pt-4">
-        <Button type="button" variant="outline">
+        <Button type="button" variant="outline" onClick={onCancel}>
           Abbrechen
         </Button>
-        <Button type="submit">{product ? "Speichern" : "Erstellen"}</Button>
+        <Button type="submit" disabled={saving}>
+          {saving ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Speichern...
+            </>
+          ) : (
+            product ? "Speichern" : "Erstellen"
+          )}
+        </Button>
       </div>
     </form>
   )
