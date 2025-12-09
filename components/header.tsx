@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import Image from "next/image"
+import { usePathname } from "next/navigation"
 import { ShoppingBag, Menu, Settings, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useShopStore } from "@/lib/store"
@@ -14,6 +15,8 @@ export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const cart = useShopStore((state) => state.cart)
+  const pathname = usePathname()
+  const isAdminPage = pathname?.startsWith("/admin")
 
   useEffect(() => {
     setMounted(true)
@@ -26,11 +29,18 @@ export function Header() {
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
+  // On admin pages, always use dark header style
+  const useDarkHeader = isAdminPage || scrolled
+
   return (
     <header
       className={cn(
         "fixed top-0 z-50 w-full transition-all duration-300",
-        scrolled ? "border-b border-border bg-background/95 py-3 backdrop-blur-lg" : "bg-transparent py-5",
+        isAdminPage 
+          ? "border-b border-slate-700 bg-slate-900 py-3" 
+          : scrolled 
+            ? "border-b border-border bg-background/95 py-3 backdrop-blur-lg" 
+            : "bg-transparent py-5",
       )}
     >
       <div className="container mx-auto flex items-center justify-between px-4">
@@ -40,7 +50,7 @@ export function Header() {
             alt="RealCore Logo"
             width={160}
             height={45}
-            className={cn("h-10 w-auto transition-all duration-300", !scrolled && "brightness-0 invert")}
+            className={cn("h-10 w-auto transition-all duration-300", (!scrolled || isAdminPage) && "brightness-0 invert")}
           />
         </Link>
 
@@ -49,7 +59,7 @@ export function Header() {
             href="/"
             className={cn(
               "rounded-full px-4 py-2 text-sm font-medium transition-colors",
-              scrolled
+              useDarkHeader && !isAdminPage
                 ? "text-muted-foreground hover:bg-muted hover:text-foreground"
                 : "text-white/70 hover:bg-white/10 hover:text-white",
             )}
@@ -60,7 +70,7 @@ export function Header() {
             href="/checkout"
             className={cn(
               "rounded-full px-4 py-2 text-sm font-medium transition-colors",
-              scrolled
+              useDarkHeader && !isAdminPage
                 ? "text-muted-foreground hover:bg-muted hover:text-foreground"
                 : "text-white/70 hover:bg-white/10 hover:text-white",
             )}
@@ -71,7 +81,7 @@ export function Header() {
             href="/admin"
             className={cn(
               "rounded-full px-4 py-2 text-sm font-medium transition-colors",
-              scrolled
+              useDarkHeader && !isAdminPage
                 ? "text-muted-foreground hover:bg-muted hover:text-foreground"
                 : "text-white/70 hover:bg-white/10 hover:text-white",
             )}
@@ -85,7 +95,7 @@ export function Header() {
             <Button
               variant="ghost"
               size="icon"
-              className={cn("relative rounded-full", scrolled ? "hover:bg-muted" : "text-white hover:bg-white/10")}
+              className={cn("relative rounded-full", useDarkHeader && !isAdminPage ? "hover:bg-muted" : "text-white hover:bg-white/10")}
             >
               <ShoppingBag className="h-5 w-5" />
               {mounted && cart.length > 0 && (
@@ -102,7 +112,7 @@ export function Header() {
               <Button
                 variant="ghost"
                 size="icon"
-                className={cn("rounded-full", scrolled ? "hover:bg-muted" : "text-white hover:bg-white/10")}
+                className={cn("rounded-full", useDarkHeader && !isAdminPage ? "hover:bg-muted" : "text-white hover:bg-white/10")}
               >
                 <Menu className="h-5 w-5" />
                 <span className="sr-only">Menü öffnen</span>
