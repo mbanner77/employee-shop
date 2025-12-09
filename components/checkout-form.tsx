@@ -49,13 +49,20 @@ export function CheckoutForm() {
 
     setIsSubmitting(true)
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500))
+    try {
+      const order = await submitOrder(formData)
 
-    const order = submitOrder(formData)
-
-    toast.success("Bestellung erfolgreich aufgegeben!")
-    router.push(`/order-confirmation?id=${order.id}`)
+      if (order) {
+        toast.success("Bestellung erfolgreich aufgegeben!")
+        router.push(`/order-confirmation?id=${order.id}`)
+      } else {
+        toast.error("Bestellung konnte nicht aufgegeben werden. Bitte versuche es erneut.")
+        setIsSubmitting(false)
+      }
+    } catch {
+      toast.error("Ein Fehler ist aufgetreten. Bitte versuche es erneut.")
+      setIsSubmitting(false)
+    }
   }
 
   const handleChange = (field: string, value: string) => {

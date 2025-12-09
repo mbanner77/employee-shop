@@ -1,65 +1,67 @@
 "use client"
 
-import { useShopStore, products } from "@/lib/store"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Package, ShoppingCart, Users, TrendingUp } from "lucide-react"
+import { Package, ShoppingCart, Users, TrendingUp, Loader2 } from "lucide-react"
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts"
 
 const COLORS = ["oklch(0.45 0.15 260)", "oklch(0.65 0.18 145)", "oklch(0.55 0.22 27)", "oklch(0.70 0.15 60)"]
 
+interface Stats {
+  totalOrders: number
+  totalProducts: number
+  pendingOrders: number
+  totalItems: number
+  ordersByDepartment: { department: string; count: number }[]
+  ordersByCategory: { category: string; count: number }[]
+}
+
 export function AdminStats() {
-  const orders = useShopStore((state) => state.orders)
+  const [stats, setStats] = useState<Stats | null>(null)
+  const [loading, setLoading] = useState(true)
 
-  // Calculate statistics
-  const totalOrders = orders.length
-  const totalItems = orders.reduce((sum, order) => sum + order.items.length, 0)
-  const pendingOrders = orders.filter((o) => o.status === "pending").length
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await fetch("/api/admin/stats")
+        if (response.ok) {
+          const data = await response.json()
+          setStats(data)
+        }
+      } catch (error) {
+        console.error("Failed to fetch stats:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchStats()
+  }, [])
 
-  // Items per category
-  const categoryStats = orders
-    .flatMap((o) => o.items)
-    .reduce(
-      (acc, item) => {
-        acc[item.product.category] = (acc[item.product.category] || 0) + 1
-        return acc
-      },
-      {} as Record<string, number>,
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
     )
+  }
 
-  const categoryData = Object.entries(categoryStats).map(([name, value]) => ({
-    name,
-    value,
-  }))
+  const totalOrders = stats?.totalOrders || 0
+  const totalItems = stats?.totalItems || 0
+  const pendingOrders = stats?.pendingOrders || 0
+  const totalProducts = stats?.totalProducts || 0
 
-  // Department stats
-  const departmentStats = orders.reduce(
-    (acc, order) => {
-      acc[order.department] = (acc[order.department] || 0) + 1
-      return acc
-    },
-    {} as Record<string, number>,
-  )
+  const categoryData = stats?.ordersByCategory.map((item) => ({
+    name: item.category,
+    value: item.count,
+  })) || []
 
-  const departmentData = Object.entries(departmentStats).map(([name, orders]) => ({
-    name,
-    orders,
-  }))
+  const departmentData = stats?.ordersByDepartment.map((item) => ({
+    name: item.department,
+    orders: item.count,
+  })) || []
 
-  // Size distribution
-  const sizeStats = orders
-    .flatMap((o) => o.items)
-    .reduce(
-      (acc, item) => {
-        acc[item.size] = (acc[item.size] || 0) + 1
-        return acc
-      },
-      {} as Record<string, number>,
-    )
-
-  const sizeData = Object.entries(sizeStats).map(([name, count]) => ({
-    name,
-    count,
-  }))
+  // Size data would need separate API endpoint - using placeholder for now
+  const sizeData: { name: string; count: number }[] = []
 
   return (
     <div className="space-y-6">
@@ -105,7 +107,7 @@ export function AdminStats() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{products.length}</div>
+            <div className="text-2xl font-bold">{totalProducts}</div>
           </CardContent>
         </Card>
       </div>

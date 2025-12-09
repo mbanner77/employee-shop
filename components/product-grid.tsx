@@ -1,17 +1,33 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { ProductCard } from "./product-card"
-import { products } from "@/lib/store"
+import { useShopStore } from "@/lib/store"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { Loader2 } from "lucide-react"
 
 const categories = ["Alle", "Hoodies", "T-Shirts", "Polos", "Jacken", "Pullover", "Hosen", "Accessoires"]
 
 export function ProductGrid() {
   const [activeCategory, setActiveCategory] = useState("Alle")
+  const { products, productsLoading, fetchProducts } = useShopStore()
+
+  useEffect(() => {
+    fetchProducts()
+  }, [fetchProducts])
 
   const filteredProducts = activeCategory === "Alle" ? products : products.filter((p) => p.category === activeCategory)
+
+  if (productsLoading) {
+    return (
+      <section id="products" className="px-4 py-20 md:py-28">
+        <div className="container mx-auto flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </section>
+    )
+  }
 
   return (
     <section id="products" className="px-4 py-20 md:py-28">

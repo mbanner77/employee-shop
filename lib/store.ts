@@ -9,8 +9,8 @@ export interface Product {
   category: string
   description: string
   image: string
-  images?: string[]  // Multiple images per product
-  sizes: Size[]
+  images?: string[]
+  sizes: string[]
   color: string
 }
 
@@ -19,9 +19,16 @@ export interface CartItem {
   size: Size
 }
 
+export interface OrderItem {
+  id: string
+  productId: string
+  size: string
+  product: Product
+}
+
 export interface Order {
   id: string
-  items: CartItem[]
+  items: OrderItem[]
   customerName: string
   email: string
   street: string
@@ -29,117 +36,26 @@ export interface Order {
   zip: string
   department: string
   createdAt: string
-  status: "pending" | "processing" | "shipped" | "delivered"
+  status: "PENDING" | "PROCESSING" | "SHIPPED" | "DELIVERED"
 }
 
 interface ShopState {
   cart: CartItem[]
-  orders: Order[]
+  products: Product[]
+  productsLoading: boolean
   addToCart: (product: Product, size: Size) => boolean
   removeFromCart: (productId: string) => void
   clearCart: () => void
-  submitOrder: (customerInfo: Omit<Order, "id" | "items" | "createdAt" | "status">) => Order
-  updateOrderStatus: (orderId: string, status: Order["status"]) => void
+  submitOrder: (customerInfo: Omit<Order, "id" | "items" | "createdAt" | "status">) => Promise<Order | null>
+  fetchProducts: () => Promise<void>
 }
-
-export const products: Product[] = [
-  {
-    id: "1",
-    name: "RealCore Premium Hoodie",
-    category: "Hoodies",
-    description: "Bequemer Hoodie aus Bio-Baumwolle mit gesticktem RealCore Logo",
-    image: "/navy-blue-premium-hoodie-with-company-logo.jpg",
-    sizes: ["XS", "S", "M", "L", "XL", "XXL"],
-    color: "Navy",
-  },
-  {
-    id: "2",
-    name: "RealCore Classic T-Shirt",
-    category: "T-Shirts",
-    description: "Klassisches T-Shirt mit RealCore Branding",
-    image: "/white-classic-tshirt-with-minimalist-company-logo.jpg",
-    sizes: ["XS", "S", "M", "L", "XL", "XXL"],
-    color: "Weiß",
-  },
-  {
-    id: "3",
-    name: "RealCore Tech Polo",
-    category: "Polos",
-    description: "Elegantes Poloshirt für Business und Freizeit",
-    image: "/dark-blue-polo-shirt-professional-style.jpg",
-    sizes: ["XS", "S", "M", "L", "XL", "XXL"],
-    color: "Dunkelblau",
-  },
-  {
-    id: "4",
-    name: "RealCore Softshell Jacke",
-    category: "Jacken",
-    description: "Wasserabweisende Softshell-Jacke für outdoor Aktivitäten",
-    image: "/black-softshell-jacket-modern-style.jpg",
-    sizes: ["XS", "S", "M", "L", "XL", "XXL"],
-    color: "Schwarz",
-  },
-  {
-    id: "5",
-    name: "RealCore Cap",
-    category: "Accessoires",
-    description: "Stylische Cap mit gesticktem Logo",
-    image: "/navy-baseball-cap-with-embroidered-logo.jpg",
-    sizes: ["S", "M", "L"],
-    color: "Navy",
-  },
-  {
-    id: "6",
-    name: "RealCore Fleece Pullover",
-    category: "Pullover",
-    description: "Kuscheliger Fleece-Pullover für kalte Tage",
-    image: "/gray-fleece-pullover-cozy-warm.jpg",
-    sizes: ["XS", "S", "M", "L", "XL", "XXL"],
-    color: "Grau",
-  },
-  {
-    id: "7",
-    name: "RealCore Sport Shorts",
-    category: "Hosen",
-    description: "Atmungsaktive Sport-Shorts für Training und Freizeit",
-    image: "/black-athletic-shorts-sporty.jpg",
-    sizes: ["XS", "S", "M", "L", "XL", "XXL"],
-    color: "Schwarz",
-  },
-  {
-    id: "8",
-    name: "RealCore Beanie",
-    category: "Accessoires",
-    description: "Warme Strickmütze mit Logo-Patch",
-    image: "/charcoal-gray-beanie-hat-knitted.jpg",
-    sizes: ["S", "M", "L"],
-    color: "Anthrazit",
-  },
-  {
-    id: "9",
-    name: "RealCore Zip Hoodie",
-    category: "Hoodies",
-    description: "Zip-Hoodie mit durchgehendem Reißverschluss",
-    image: "/heather-gray-zip-up-hoodie-modern.jpg",
-    sizes: ["XS", "S", "M", "L", "XL", "XXL"],
-    color: "Grau Meliert",
-  },
-  {
-    id: "10",
-    name: "RealCore Longsleeve",
-    category: "T-Shirts",
-    description: "Langarm-Shirt aus weicher Baumwolle",
-    image: "/black-long-sleeve-shirt-minimalist.jpg",
-    sizes: ["XS", "S", "M", "L", "XL", "XXL"],
-    color: "Schwarz",
-  },
-]
 
 export const useShopStore = create<ShopState>()(
   persist(
     (set, get) => ({
       cart: [],
-      orders: [],
+      products: [],
+      productsLoading: true,
       addToCart: (product, size) => {
         const currentCart = get().cart
         if (currentCart.length >= 4) {
@@ -155,26 +71,46 @@ export const useShopStore = create<ShopState>()(
         set({ cart: get().cart.filter((item) => item.product.id !== productId) })
       },
       clearCart: () => set({ cart: [] }),
-      submitOrder: (customerInfo) => {
-        const order: Order = {
-          id: `ORD-${Date.now()}`,
-          items: get().cart,
-          ...customerInfo,
-          createdAt: new Date().toISOString(),
-          status: "pending",
+      submitOrder: async (customerInfo) => {
+        const cart = get().cart
+        try {
+          const response = await fetch("/api/orders", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              ...customerInfo,
+              items: cart.map((item) => ({
+                productId: item.product.id,
+                size: item.size,
+              })),
+            }),
+          })
+          if (!response.ok) throw new Error("Failed to create order")
+          const order = await response.json()
+          set({ cart: [] })
+          return order
+        } catch (error) {
+          console.error("Failed to submit order:", error)
+          return null
         }
-        set({ orders: [...get().orders, order], cart: [] })
-        return order
       },
-      updateOrderStatus: (orderId, status) => {
-        set({
-          orders: get().orders.map((order) => (order.id === orderId ? { ...order, status } : order)),
-        })
+      fetchProducts: async () => {
+        try {
+          set({ productsLoading: true })
+          const response = await fetch("/api/products")
+          if (!response.ok) throw new Error("Failed to fetch products")
+          const products = await response.json()
+          set({ products, productsLoading: false })
+        } catch (error) {
+          console.error("Failed to fetch products:", error)
+          set({ productsLoading: false })
+        }
       },
     }),
     {
       name: "realcore-shop",
       skipHydration: true,
+      partialize: (state) => ({ cart: state.cart }),
     },
   ),
 )

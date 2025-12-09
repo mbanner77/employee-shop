@@ -1,33 +1,69 @@
 "use client"
 
-import { useState } from "react"
-import { useShopStore, type Order } from "@/lib/store"
+import { useState, useEffect } from "react"
+import { type Order } from "@/lib/store"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
-import { ChevronDown, ChevronUp, Search } from "lucide-react"
+import { ChevronDown, ChevronUp, Search, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const statusLabels: Record<Order["status"], string> = {
-  pending: "Ausstehend",
-  processing: "In Bearbeitung",
-  shipped: "Versendet",
-  delivered: "Zugestellt",
+  PENDING: "Ausstehend",
+  PROCESSING: "In Bearbeitung",
+  SHIPPED: "Versendet",
+  DELIVERED: "Zugestellt",
 }
 
 const statusColors: Record<Order["status"], string> = {
-  pending: "bg-yellow-100 text-yellow-800",
-  processing: "bg-blue-100 text-blue-800",
-  shipped: "bg-purple-100 text-purple-800",
-  delivered: "bg-green-100 text-green-800",
+  PENDING: "bg-yellow-100 text-yellow-800",
+  PROCESSING: "bg-blue-100 text-blue-800",
+  SHIPPED: "bg-purple-100 text-purple-800",
+  DELIVERED: "bg-green-100 text-green-800",
 }
 
 export function AdminOrders() {
-  const { orders, updateOrderStatus } = useShopStore()
+  const [orders, setOrders] = useState<Order[]>([])
+  const [loading, setLoading] = useState(true)
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [filterStatus, setFilterStatus] = useState<string>("all")
+
+  const fetchOrders = async () => {
+    try {
+      const response = await fetch("/api/orders")
+      if (response.ok) {
+        const data = await response.json()
+        setOrders(data)
+      }
+    } catch (error) {
+      console.error("Failed to fetch orders:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchOrders()
+  }, [])
+
+  const updateOrderStatus = async (orderId: string, status: Order["status"]) => {
+    try {
+      const response = await fetch(`/api/orders/${orderId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      })
+      if (response.ok) {
+        setOrders(orders.map((order) => 
+          order.id === orderId ? { ...order, status } : order
+        ))
+      }
+    } catch (error) {
+      console.error("Failed to update order:", error)
+    }
+  }
 
   const filteredOrders = orders.filter((order) => {
     const matchesSearch =
@@ -43,6 +79,14 @@ export function AdminOrders() {
   const sortedOrders = [...filteredOrders].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   )
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -67,10 +111,10 @@ export function AdminOrders() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Alle Status</SelectItem>
-            <SelectItem value="pending">Ausstehend</SelectItem>
-            <SelectItem value="processing">In Bearbeitung</SelectItem>
-            <SelectItem value="shipped">Versendet</SelectItem>
-            <SelectItem value="delivered">Zugestellt</SelectItem>
+            <SelectItem value="PENDING">Ausstehend</SelectItem>
+            <SelectItem value="PROCESSING">In Bearbeitung</SelectItem>
+            <SelectItem value="SHIPPED">Versendet</SelectItem>
+            <SelectItem value="DELIVERED">Zugestellt</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -150,10 +194,10 @@ export function AdminOrders() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="pending">Ausstehend</SelectItem>
-                          <SelectItem value="processing">In Bearbeitung</SelectItem>
-                          <SelectItem value="shipped">Versendet</SelectItem>
-                          <SelectItem value="delivered">Zugestellt</SelectItem>
+                          <SelectItem value="PENDING">Ausstehend</SelectItem>
+                          <SelectItem value="PROCESSING">In Bearbeitung</SelectItem>
+                          <SelectItem value="SHIPPED">Versendet</SelectItem>
+                          <SelectItem value="DELIVERED">Zugestellt</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>

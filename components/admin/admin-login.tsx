@@ -12,12 +12,6 @@ interface AdminLoginProps {
   onLogin: (success: boolean) => void
 }
 
-// Simple credentials for demo - in production, use proper auth
-const ADMIN_CREDENTIALS = {
-  username: "admin",
-  password: "realcore2025"
-}
-
 export function AdminLogin({ onLogin }: AdminLoginProps) {
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
@@ -30,13 +24,22 @@ export function AdminLogin({ onLogin }: AdminLoginProps) {
     setError("")
     setIsLoading(true)
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500))
+    try {
+      const response = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      })
 
-    if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
-      onLogin(true)
-    } else {
-      setError("Ungültige Anmeldedaten. Bitte versuchen Sie es erneut.")
+      if (response.ok) {
+        onLogin(true)
+      } else {
+        const data = await response.json()
+        setError(data.error || "Ungültige Anmeldedaten. Bitte versuchen Sie es erneut.")
+      }
+    } catch {
+      setError("Verbindungsfehler. Bitte versuchen Sie es erneut.")
+    } finally {
       setIsLoading(false)
     }
   }
