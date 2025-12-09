@@ -94,6 +94,47 @@ const defaultProducts = [
   },
 ]
 
+// GET method - allows seeding empty database without secret (for initial setup)
+export async function GET() {
+  try {
+    const existingProducts = await prisma.product.count()
+    const existingAdmin = await prisma.adminUser.count()
+
+    // Only allow GET seeding if database is completely empty
+    if (existingProducts > 0 || existingAdmin > 0) {
+      return NextResponse.json({
+        success: false,
+        message: "Database already has data. Use POST with secret to reseed.",
+        existingProducts,
+        existingAdmin,
+      })
+    }
+
+    // Seed products
+    await prisma.product.createMany({
+      data: defaultProducts,
+    })
+
+    // Create default admin user
+    await prisma.adminUser.create({
+      data: {
+        username: "admin",
+        password: process.env.ADMIN_PASSWORD || "realcore2025",
+      },
+    })
+
+    return NextResponse.json({
+      success: true,
+      message: "Database seeded successfully",
+      productsCreated: defaultProducts.length,
+      adminCreated: true,
+    })
+  } catch (error) {
+    console.error("Seeding failed:", error)
+    return NextResponse.json({ error: "Seeding failed" }, { status: 500 })
+  }
+}
+
 export async function POST(request: Request) {
   // Check for secret key to prevent unauthorized seeding
   const { searchParams } = new URL(request.url)
