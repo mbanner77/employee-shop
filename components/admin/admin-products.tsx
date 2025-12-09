@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Edit, Plus, Search, ChevronLeft, ChevronRight, ImageIcon, Loader2 } from "lucide-react"
+import { Edit, Plus, Search, ChevronLeft, ChevronRight, ImageIcon, Loader2, Upload, X, Trash2 } from "lucide-react"
 
 export function AdminProducts() {
   const [products, setProducts] = useState<Product[]>([])
@@ -227,6 +227,7 @@ function ProductCard({ product, onRefresh }: { product: Product; onRefresh: () =
 
 function ProductForm({ product, onSuccess, onCancel }: { product?: Product; onSuccess?: () => void; onCancel?: () => void }) {
   const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [formData, setFormData] = useState({
     name: product?.name || "",
     category: product?.category || "",
@@ -234,14 +235,76 @@ function ProductForm({ product, onSuccess, onCancel }: { product?: Product; onSu
     color: product?.color || "",
     image: product?.image || "",
     sizes: product?.sizes?.join(", ") || "XS, S, M, L, XL, XXL",
-    additionalImages: product?.images?.join(", ") || "",
+    additionalImages: product?.images || [] as string[],
   })
 
   const allImages = formData.image 
-    ? formData.additionalImages 
-      ? [formData.image, ...formData.additionalImages.split(",").map(s => s.trim()).filter(Boolean)]
-      : [formData.image]
-    : []
+    ? [formData.image, ...formData.additionalImages]
+    : formData.additionalImages
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, isMain: boolean) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+
+    setUploading(true)
+    
+    try {
+      for (const file of Array.from(files)) {
+        const formDataUpload = new FormData()
+        formDataUpload.append("file", file)
+
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          body: formDataUpload,
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          if (isMain && !formData.image) {
+            setFormData(prev => ({ ...prev, image: data.url }))
+          } else if (isMain) {
+            setFormData(prev => ({ ...prev, image: data.url }))
+          } else {
+            setFormData(prev => ({ 
+              ...prev, 
+              additionalImages: [...prev.additionalImages, data.url] 
+            }))
+          }
+        } else {
+          const error = await response.json()
+          alert(error.error || "Upload fehlgeschlagen")
+        }
+      }
+    } catch (error) {
+      console.error("Upload error:", error)
+      alert("Upload fehlgeschlagen")
+    } finally {
+      setUploading(false)
+      e.target.value = ""
+    }
+  }
+
+  const removeImage = (index: number) => {
+    if (index === 0 && formData.image) {
+      // Remove main image, promote first additional if exists
+      if (formData.additionalImages.length > 0) {
+        setFormData(prev => ({
+          ...prev,
+          image: prev.additionalImages[0],
+          additionalImages: prev.additionalImages.slice(1)
+        }))
+      } else {
+        setFormData(prev => ({ ...prev, image: "" }))
+      }
+    } else {
+      // Remove from additional images
+      const additionalIndex = formData.image ? index - 1 : index
+      setFormData(prev => ({
+        ...prev,
+        additionalImages: prev.additionalImages.filter((_, i) => i !== additionalIndex)
+      }))
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -253,8 +316,8 @@ function ProductForm({ product, onSuccess, onCancel }: { product?: Product; onSu
       description: formData.description,
       color: formData.color,
       image: formData.image,
-      sizes: formData.sizes.split(",").map(s => s.trim()).filter(Boolean),
-      images: formData.additionalImages.split(",").map(s => s.trim()).filter(Boolean),
+      sizes: formData.sizes.split(",").map((s: string) => s.trim()).filter(Boolean),
+      images: formData.additionalImages,
     }
 
     try {
@@ -330,61 +393,71 @@ function ProductForm({ product, onSuccess, onCancel }: { product?: Product; onSu
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="image">Hauptbild-URL</Label>
+          <Label htmlFor="sizes">Größen (kommagetrennt)</Label>
           <Input 
-            id="image" 
-            value={formData.image}
-            onChange={(e) => handleChange("image", e.target.value)}
-            placeholder="/image.jpg" 
-            required
+            id="sizes" 
+            value={formData.sizes}
+            onChange={(e) => handleChange("sizes", e.target.value)}
+            placeholder="XS, S, M, L, XL, XXL" 
           />
         </div>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="sizes">Größen (kommagetrennt)</Label>
-        <Input 
-          id="sizes" 
-          value={formData.sizes}
-          onChange={(e) => handleChange("sizes", e.target.value)}
-          placeholder="XS, S, M, L, XL, XXL" 
-        />
-      </div>
-      
-      {/* Multiple images preview */}
-      {allImages.length > 0 && (
-        <div className="space-y-2">
-          <Label>Produktbilder ({allImages.length})</Label>
-          <div className="flex gap-2 flex-wrap">
-            {allImages.map((img, index) => (
-              <div key={index} className="relative h-16 w-16 rounded-lg overflow-hidden border">
+      {/* Image Upload Section */}
+      <div className="space-y-3">
+        <Label>Produktbilder</Label>
+        
+        {/* Image preview grid */}
+        <div className="flex gap-2 flex-wrap">
+          {allImages.map((img, index) => (
+            <div key={index} className="relative group">
+              <div className="relative h-20 w-20 rounded-lg overflow-hidden border">
                 <Image 
                   src={img || "/placeholder.svg"} 
                   alt={`Bild ${index + 1}`} 
                   fill 
                   className="object-cover" 
                 />
-                {index === 0 && (
-                  <Badge className="absolute bottom-0 left-0 right-0 rounded-none text-[10px] justify-center">
-                    Haupt
-                  </Badge>
-                )}
               </div>
-            ))}
-          </div>
+              {index === 0 && (
+                <Badge className="absolute -top-2 left-1/2 -translate-x-1/2 text-[10px]">
+                  Haupt
+                </Badge>
+              )}
+              <button
+                type="button"
+                onClick={() => removeImage(index)}
+                className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          ))}
+          
+          {/* Upload button */}
+          <label className="h-20 w-20 rounded-lg border-2 border-dashed border-muted-foreground/25 hover:border-muted-foreground/50 flex flex-col items-center justify-center cursor-pointer transition-colors">
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={(e) => handleImageUpload(e, allImages.length === 0)}
+              className="hidden"
+              disabled={uploading}
+            />
+            {uploading ? (
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            ) : (
+              <>
+                <Upload className="h-5 w-5 text-muted-foreground" />
+                <span className="text-[10px] text-muted-foreground mt-1">Hochladen</span>
+              </>
+            )}
+          </label>
         </div>
-      )}
-      
-      <div className="space-y-2">
-        <Label htmlFor="additionalImages">Weitere Bilder (URLs, kommagetrennt)</Label>
-        <Textarea 
-          id="additionalImages" 
-          value={formData.additionalImages}
-          onChange={(e) => handleChange("additionalImages", e.target.value)}
-          placeholder="/bild2.jpg, /bild3.jpg, /bild4.jpg" 
-          rows={2} 
-        />
-        <p className="text-xs text-muted-foreground">Mehrere Bild-URLs mit Komma trennen</p>
+        
+        <p className="text-xs text-muted-foreground">
+          Das erste Bild wird als Hauptbild verwendet. Max. 5MB pro Bild (JPEG, PNG, WebP, GIF).
+        </p>
       </div>
       
       <div className="flex justify-end gap-2 pt-4">
