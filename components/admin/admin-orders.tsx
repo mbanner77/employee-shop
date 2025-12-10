@@ -6,8 +6,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
-import { ChevronDown, ChevronUp, Search, Loader2 } from "lucide-react"
+import { ChevronDown, ChevronUp, Search, Loader2, User } from "lucide-react"
 import { cn } from "@/lib/utils"
+
+interface OrderWithEmployee extends Order {
+  employee?: {
+    id: string
+    firstName: string
+    lastName: string
+    employeeId: string
+  } | null
+}
 
 const statusLabels: Record<Order["status"], string> = {
   PENDING: "Ausstehend",
@@ -24,7 +33,7 @@ const statusColors: Record<Order["status"], string> = {
 }
 
 export function AdminOrders() {
-  const [orders, setOrders] = useState<Order[]>([])
+  const [orders, setOrders] = useState<OrderWithEmployee[]>([])
   const [loading, setLoading] = useState(true)
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
@@ -157,6 +166,12 @@ export function AdminOrders() {
                   <span>{order.customerName}</span>
                   <span>{order.email}</span>
                   <span>{order.department}</span>
+                  {order.employee && (
+                    <span className="flex items-center gap-1 text-primary">
+                      <User className="h-3 w-3" />
+                      {order.employee.firstName} {order.employee.lastName} ({order.employee.employeeId})
+                    </span>
+                  )}
                 </div>
               </CardHeader>
 

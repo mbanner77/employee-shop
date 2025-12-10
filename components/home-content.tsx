@@ -1,11 +1,12 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import Link from "next/link"
 import { Header } from "@/components/header"
 import { HeroSection } from "@/components/hero-section"
 import { ProductGrid } from "@/components/product-grid"
 import { EmployeeLogin } from "@/components/employee-login"
-import { Package, Truck, Award, LogOut } from "lucide-react"
+import { Package, Truck, Award, LogOut, ClipboardList } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 interface Employee {
@@ -76,15 +77,27 @@ export function HomeContent() {
             <span className="text-sm">
               Willkommen, <strong>{employee.firstName} {employee.lastName}</strong> ({employee.department})
             </span>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={handleLogout}
-              className="text-primary-foreground hover:text-primary-foreground/80 hover:bg-primary-foreground/10"
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              Abmelden
-            </Button>
+            <div className="flex items-center gap-2">
+              <Link href="/my-orders">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-primary-foreground hover:text-primary-foreground/80 hover:bg-primary-foreground/10"
+                >
+                  <ClipboardList className="h-4 w-4 mr-2" />
+                  Meine Bestellungen
+                </Button>
+              </Link>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={handleLogout}
+                className="text-primary-foreground hover:text-primary-foreground/80 hover:bg-primary-foreground/10"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Abmelden
+              </Button>
+            </div>
           </div>
         </div>
 

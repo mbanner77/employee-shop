@@ -10,6 +10,14 @@ export async function GET() {
             product: true,
           },
         },
+        employee: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            employeeId: true,
+          },
+        },
       },
       orderBy: { createdAt: "desc" },
     })
@@ -32,6 +40,7 @@ export async function POST(request: Request) {
         city: body.city,
         zip: body.zip,
         department: body.department,
+        employeeId: body.employeeId || null,
         items: {
           create: body.items.map((item: { productId: string; size: string }) => ({
             productId: item.productId,
