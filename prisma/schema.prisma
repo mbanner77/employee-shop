@@ -24,6 +24,20 @@ model Product {
   orderItems  OrderItem[]
 }
 
+model Employee {
+  id           String   @id @default(cuid())
+  employeeId   String   @unique // Personalnummer
+  email        String   @unique
+  firstName    String
+  lastName     String
+  department   String
+  password     String
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  orders       Order[]
+}
+
 model Order {
   id           String      @id @default(cuid())
   customerName String
@@ -36,6 +50,8 @@ model Order {
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
   items        OrderItem[]
+  employeeId   String?
+  employee     Employee?   @relation(fields: [employeeId], references: [id])
 }
 
 model OrderItem {
@@ -52,6 +68,30 @@ model AdminUser {
   username  String   @unique
   password  String
   createdAt DateTime @default(now())
+}
+
+model Settings {
+  id        String   @id @default("settings")
+  
+  // Email Settings
+  smtpHost     String   @default("")
+  smtpPort     Int      @default(587)
+  smtpUser     String   @default("")
+  smtpPassword String   @default("")
+  smtpSecure   Boolean  @default(true)
+  emailFrom    String   @default("")
+  emailFromName String  @default("RealCore Shop")
+  
+  // Notification Settings
+  notifyOnOrder     Boolean @default(true)
+  notifyOnShipment  Boolean @default(true)
+  adminEmail        String  @default("")
+  
+  // Shop Settings
+  shopName          String  @default("RealCore Mitarbeiter-Shop")
+  maxItemsPerOrder  Int     @default(4)
+  
+  updatedAt DateTime @updatedAt
 }
 
 enum OrderStatus {

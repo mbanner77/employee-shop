@@ -1,18 +1,20 @@
 "use client"
 
-import { BarChart3, Package, ShoppingCart } from "lucide-react"
+import { BarChart3, Package, ShoppingCart, Users, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 interface AdminSidebarProps {
   activeView: string
-  onViewChange: (view: "stats" | "orders" | "products") => void
+  onViewChange: (view: "stats" | "orders" | "products" | "employees" | "settings") => void
 }
 
 const menuItems = [
   { id: "stats", label: "Übersicht", icon: BarChart3 },
   { id: "orders", label: "Bestellungen", icon: ShoppingCart },
   { id: "products", label: "Produkte", icon: Package },
+  { id: "employees", label: "Mitarbeiter", icon: Users },
+  { id: "settings", label: "Einstellungen", icon: Settings },
 ] as const
 
 export function AdminSidebar({ activeView, onViewChange }: AdminSidebarProps) {
