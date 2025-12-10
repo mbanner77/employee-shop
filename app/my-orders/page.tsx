@@ -57,26 +57,14 @@ export default function MyOrdersPage() {
 
   const fetchOrders = async () => {
     try {
-      const meResponse = await fetch("/api/employees/me")
-      const meData = await meResponse.json()
+      const response = await fetch("/api/employees/me/orders")
+      const data = await response.json()
       
-      if (meData.employee) {
-        const response = await fetch(`/api/employees/${meData.employee.id}`)
-        const data = await response.json()
-        
-        if (data.orders) {
-          setOrders(data.orders)
-          
-          // Calculate yearly count
-          const currentYear = new Date().getFullYear()
-          const thisYearOrders = data.orders.filter((order: Order) => 
-            new Date(order.createdAt).getFullYear() === currentYear
-          )
-          const itemCount = thisYearOrders.reduce((sum: number, order: Order) => 
-            sum + order.items.length, 0
-          )
-          setYearlyCount(itemCount)
-        }
+      if (data.orders) {
+        setOrders(data.orders)
+      }
+      if (data.stats) {
+        setYearlyCount(data.stats.yearlyItemCount)
       }
     } catch (error) {
       console.error("Failed to fetch orders:", error)

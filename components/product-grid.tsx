@@ -1,23 +1,46 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { ProductCard } from "./product-card"
 import { useShopStore } from "@/lib/store"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
-import { Loader2 } from "lucide-react"
+import { Loader2, Search, X } from "lucide-react"
 
 const categories = ["Alle", "Hoodies", "T-Shirts", "Polos", "Jacken", "Pullover", "Hosen", "Accessoires"]
 
 export function ProductGrid() {
   const [activeCategory, setActiveCategory] = useState("Alle")
+  const [searchQuery, setSearchQuery] = useState("")
   const { products, productsLoading, fetchProducts } = useShopStore()
 
   useEffect(() => {
     fetchProducts()
   }, [fetchProducts])
 
-  const filteredProducts = activeCategory === "Alle" ? products : products.filter((p) => p.category === activeCategory)
+  // Filter by category and search query
+  const filteredProducts = useMemo(() => {
+    let result = products
+    
+    // Filter by category
+    if (activeCategory !== "Alle") {
+      result = result.filter((p) => p.category === activeCategory)
+    }
+    
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      result = result.filter((p) => 
+        p.name.toLowerCase().includes(query) ||
+        p.description.toLowerCase().includes(query) ||
+        p.category.toLowerCase().includes(query) ||
+        p.color.toLowerCase().includes(query)
+      )
+    }
+    
+    return result
+  }, [products, activeCategory, searchQuery])
 
   if (productsLoading) {
     return (
@@ -46,6 +69,28 @@ export function ProductGrid() {
           </p>
         </div>
 
+        {/* Search bar */}
+        <div className="mb-8 flex justify-center">
+          <div className="relative w-full max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Produkte suchen..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 pr-10"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        </div>
+
         {/* Category filter */}
         <div className="mb-10 flex flex-wrap items-center justify-center gap-2">
           {categories.map((category) => (
@@ -70,15 +115,47 @@ export function ProductGrid() {
         <div className="mb-6 flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
             {filteredProducts.length} {filteredProducts.length === 1 ? "Artikel" : "Artikel"} gefunden
+            {searchQuery && ` für "${searchQuery}"`}
           </p>
+          {(searchQuery || activeCategory !== "Alle") && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setSearchQuery("")
+                setActiveCategory("Alle")
+              }}
+            >
+              Filter zurücksetzen
+            </Button>
+          )}
         </div>
 
-        {/* Product grid */}
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filteredProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
+        {/* Product grid or empty state */}
+        {filteredProducts.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <Search className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Keine Produkte gefunden</h3>
+            <p className="text-muted-foreground mb-4">
+              Versuche einen anderen Suchbegriff oder wähle eine andere Kategorie.
+            </p>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSearchQuery("")
+                setActiveCategory("Alle")
+              }}
+            >
+              Alle Produkte anzeigen
+            </Button>
+          </div>
+        ) : (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {filteredProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        )}
       </div>
     </section>
   )

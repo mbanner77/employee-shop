@@ -56,18 +56,11 @@ export function CheckoutForm() {
           email: data.employee.email,
           department: data.employee.department,
         }))
-        // Fetch yearly order count
-        const ordersResponse = await fetch(`/api/employees/${data.employee.id}`)
+        // Fetch yearly order count using dedicated endpoint
+        const ordersResponse = await fetch("/api/employees/me/orders")
         const ordersData = await ordersResponse.json()
-        if (ordersData.orders) {
-          const currentYear = new Date().getFullYear()
-          const thisYearOrders = ordersData.orders.filter((order: { createdAt: string }) => 
-            new Date(order.createdAt).getFullYear() === currentYear
-          )
-          const itemCount = thisYearOrders.reduce((sum: number, order: { items: unknown[] }) => 
-            sum + order.items.length, 0
-          )
-          setYearlyOrderCount(itemCount)
+        if (ordersData.stats) {
+          setYearlyOrderCount(ordersData.stats.yearlyItemCount)
         }
       }
     } catch (error) {
