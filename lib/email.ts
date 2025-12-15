@@ -49,6 +49,17 @@ export async function sendEmail(payload: MailPayload) {
   })
 }
 
+const statusLabels: Record<string, string> = {
+  PENDING: "Ausstehend",
+  PROCESSING: "In Bearbeitung",
+  SHIPPED: "Versendet",
+  DELIVERED: "Zugestellt",
+}
+
+function getStatusLabel(status: string) {
+  return statusLabels[status] || status
+}
+
 export async function sendOrderStatusChangedEmail(args: {
   employeeId: string
   orderId: string
@@ -58,18 +69,23 @@ export async function sendOrderStatusChangedEmail(args: {
   const employee = await prisma.employee.findUnique({ where: { id: args.employeeId } })
   if (!employee) return
 
+  const oldLabel = getStatusLabel(args.oldStatus)
+  const newLabel = getStatusLabel(args.newStatus)
+
   await sendEmail({
     to: employee.email,
-    subject: `Bestellung ${args.orderId}: Status aktualisiert`,
+    subject: `Bestellung: Status geändert auf "${newLabel}"`,
     text: [
       `Hallo ${employee.firstName} ${employee.lastName},`,
       "",
-      `der Status deiner Bestellung (${args.orderId}) hat sich geändert:`,
-      `von: ${args.oldStatus}`,
-      `zu:  ${args.newStatus}`,
+      `der Status deiner Bestellung hat sich geändert:`,
+      "",
+      `Bestellnummer: ${args.orderId}`,
+      `Alter Status: ${oldLabel}`,
+      `Neuer Status: ${newLabel}`,
       "",
       "Viele Grüße",
-      "RealCore Mitarbeiter-Shop",
+      "Dein RealCore Mitarbeiter-Shop Team",
     ].join("\n"),
   })
 }
