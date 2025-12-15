@@ -13,7 +13,10 @@ import { useShopStore } from "@/lib/store"
 import { toast } from "sonner"
 import { Loader2, Send, AlertTriangle, CheckCircle } from "lucide-react"
 
-const departments = ["Engineering", "Design", "Marketing", "Sales", "HR", "Finance", "Operations", "Management"]
+interface CompanyArea {
+  id: string
+  name: string
+}
 
 interface Employee {
   id: string
@@ -30,6 +33,7 @@ export function CheckoutForm() {
   const [employee, setEmployee] = useState<Employee | null>(null)
   const [yearlyOrderCount, setYearlyOrderCount] = useState<number>(0)
   const [maxItems, setMaxItems] = useState<number>(4)
+  const [companyAreas, setCompanyAreas] = useState<CompanyArea[]>([])
   const [formData, setFormData] = useState({
     customerName: "",
     email: "",
@@ -42,6 +46,7 @@ export function CheckoutForm() {
   useEffect(() => {
     fetchEmployeeData()
     fetchSettings()
+    fetchCompanyAreas()
   }, [])
 
   const fetchEmployeeData = async () => {
@@ -77,6 +82,18 @@ export function CheckoutForm() {
       }
     } catch (error) {
       console.error("Failed to fetch settings:", error)
+    }
+  }
+
+  const fetchCompanyAreas = async () => {
+    try {
+      const response = await fetch("/api/company-areas")
+      const data = await response.json()
+      if (Array.isArray(data)) {
+        setCompanyAreas(data)
+      }
+    } catch (error) {
+      console.error("Failed to fetch company areas:", error)
     }
   }
 
@@ -167,6 +184,8 @@ export function CheckoutForm() {
             placeholder="Max Mustermann"
             value={formData.customerName}
             onChange={(e) => handleChange("customerName", e.target.value)}
+            disabled={!!employee}
+            className={employee ? "bg-muted" : ""}
           />
         </div>
         <div className="space-y-2">
@@ -177,24 +196,35 @@ export function CheckoutForm() {
             placeholder="max.mustermann@realcore.de"
             value={formData.email}
             onChange={(e) => handleChange("email", e.target.value)}
+            disabled={!!employee}
+            className={employee ? "bg-muted" : ""}
           />
         </div>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="department">Abteilung</Label>
-        <Select value={formData.department} onValueChange={(value) => handleChange("department", value)}>
-          <SelectTrigger>
-            <SelectValue placeholder="Abteilung wählen" />
-          </SelectTrigger>
-          <SelectContent>
-            {departments.map((dept) => (
-              <SelectItem key={dept} value={dept}>
-                {dept}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Label htmlFor="department">Firmenbereich</Label>
+        {employee ? (
+          <Input
+            id="department"
+            value={formData.department}
+            disabled
+            className="bg-muted"
+          />
+        ) : (
+          <Select value={formData.department} onValueChange={(value) => handleChange("department", value)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Firmenbereich wählen" />
+            </SelectTrigger>
+            <SelectContent>
+              {companyAreas.map((area) => (
+                <SelectItem key={area.id} value={area.name}>
+                  {area.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       <div className="space-y-2">
