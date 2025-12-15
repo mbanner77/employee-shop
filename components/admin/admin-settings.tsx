@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Loader2, Save, Mail, Settings, Store } from "lucide-react"
+import { AdminCompanyAreas } from "./admin-company-areas"
 
 interface Settings {
   smtpHost: string
@@ -104,6 +105,9 @@ export function AdminSettings() {
       )}
 
       <div className="grid gap-6">
+        {/* Firmenbereiche */}
+        <AdminCompanyAreas />
+
         {/* Shop Settings */}
         <Card>
           <CardHeader>

@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
-import { Lock, Mail, User, Eye, EyeOff, UserPlus, LogIn, Building, Hash } from "lucide-react"
+import { Lock, Mail, User, Eye, EyeOff, UserPlus, LogIn, Building } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -23,12 +23,16 @@ interface Employee {
   department: string
 }
 
-const departments = ["Engineering", "Design", "Marketing", "Sales", "HR", "Finance", "Operations", "Management"]
+interface CompanyArea {
+  id: string
+  name: string
+}
 
 export function EmployeeLogin({ onLogin }: EmployeeLoginProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [companyAreas, setCompanyAreas] = useState<CompanyArea[]>([])
   
   // Login form
   const [loginEmail, setLoginEmail] = useState("")
@@ -36,14 +40,25 @@ export function EmployeeLogin({ onLogin }: EmployeeLoginProps) {
   
   // Register form
   const [registerData, setRegisterData] = useState({
-    employeeId: "",
     email: "",
     firstName: "",
     lastName: "",
-    department: "",
+    companyArea: "",
     password: "",
     confirmPassword: "",
   })
+
+  // Firmenbereiche laden
+  useEffect(() => {
+    fetch("/api/company-areas")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setCompanyAreas(data)
+        }
+      })
+      .catch(console.error)
+  }, [])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -92,11 +107,10 @@ export function EmployeeLogin({ onLogin }: EmployeeLoginProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          employeeId: registerData.employeeId,
           email: registerData.email,
           firstName: registerData.firstName,
           lastName: registerData.lastName,
-          department: registerData.department,
+          companyArea: registerData.companyArea,
           password: registerData.password,
         }),
       })
@@ -230,21 +244,6 @@ export function EmployeeLogin({ onLogin }: EmployeeLoginProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="employeeId">Personalnummer</Label>
-                  <div className="relative">
-                    <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="employeeId"
-                      placeholder="MA-12345"
-                      value={registerData.employeeId}
-                      onChange={(e) => setRegisterData({ ...registerData, employeeId: e.target.value })}
-                      className="pl-10"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
                   <Label htmlFor="reg-email">E-Mail</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -261,19 +260,19 @@ export function EmployeeLogin({ onLogin }: EmployeeLoginProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="department">Abteilung</Label>
+                  <Label htmlFor="companyArea">Firmenbereich</Label>
                   <div className="relative">
                     <Building className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
                     <Select 
-                      value={registerData.department} 
-                      onValueChange={(value) => setRegisterData({ ...registerData, department: value })}
+                      value={registerData.companyArea} 
+                      onValueChange={(value) => setRegisterData({ ...registerData, companyArea: value })}
                     >
                       <SelectTrigger className="pl-10">
-                        <SelectValue placeholder="Abteilung wählen" />
+                        <SelectValue placeholder="Firmenbereich wählen" />
                       </SelectTrigger>
                       <SelectContent>
-                        {departments.map((dept) => (
-                          <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                        {companyAreas.map((area) => (
+                          <SelectItem key={area.id} value={area.name}>{area.name}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
