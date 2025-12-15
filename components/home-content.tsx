@@ -135,6 +135,15 @@ export function HomeContent() {
           <div className="flex flex-col items-center gap-4 text-center">
             <p className="text-sm text-muted-foreground">© 2025 RealCore GmbH. Alle Rechte vorbehalten.</p>
             <p className="text-xs text-muted-foreground/60">Bei Fragen wende dich an deine HR-Abteilung.</p>
+            <div className="flex items-center gap-4 text-xs text-muted-foreground/40">
+              <Link href="/admin" className="hover:text-muted-foreground transition-colors">
+                Adminbereich
+              </Link>
+              <span>•</span>
+              <Link href="/supplier" className="hover:text-muted-foreground transition-colors">
+                Lieferantenportal
+              </Link>
+            </div>
           </div>
         </div>
       </footer>
