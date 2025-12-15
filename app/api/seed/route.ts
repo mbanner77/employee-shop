@@ -99,14 +99,16 @@ export async function GET() {
   try {
     const existingProducts = await prisma.product.count()
     const existingAdmin = await prisma.adminUser.count()
+    const existingSupplier = await prisma.supplierUser.count()
 
     // Only allow GET seeding if database is completely empty
-    if (existingProducts > 0 || existingAdmin > 0) {
+    if (existingProducts > 0 || existingAdmin > 0 || existingSupplier > 0) {
       return NextResponse.json({
         success: false,
         message: "Database already has data. Use POST with secret to reseed.",
         existingProducts,
         existingAdmin,
+        existingSupplier,
       })
     }
 
@@ -123,11 +125,20 @@ export async function GET() {
       },
     })
 
+    // Create default supplier user
+    await prisma.supplierUser.create({
+      data: {
+        username: "supplier",
+        password: process.env.SUPPLIER_PASSWORD || "supplier2025",
+      },
+    })
+
     return NextResponse.json({
       success: true,
       message: "Database seeded successfully",
       productsCreated: defaultProducts.length,
       adminCreated: true,
+      supplierCreated: true,
     })
   } catch (error) {
     console.error("Seeding failed:", error)
@@ -148,6 +159,7 @@ export async function POST(request: Request) {
     // Check if already seeded
     const existingProducts = await prisma.product.count()
     const existingAdmin = await prisma.adminUser.count()
+    const existingSupplier = await prisma.supplierUser.count()
 
     if (existingProducts === 0) {
       // Seed products
@@ -166,11 +178,22 @@ export async function POST(request: Request) {
       })
     }
 
+    if (existingSupplier === 0) {
+      // Create default supplier user
+      await prisma.supplierUser.create({
+        data: {
+          username: "supplier",
+          password: process.env.SUPPLIER_PASSWORD || "supplier2025",
+        },
+      })
+    }
+
     return NextResponse.json({
       success: true,
       message: "Database seeded successfully",
       productsCreated: existingProducts === 0 ? defaultProducts.length : 0,
       adminCreated: existingAdmin === 0,
+      supplierCreated: existingSupplier === 0,
     })
   } catch (error) {
     console.error("Seeding failed:", error)

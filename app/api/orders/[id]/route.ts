@@ -1,12 +1,35 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { sendOrderStatusChangedEmail } from "@/lib/email"
+import { cookies } from "next/headers"
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const cookieStore = await cookies()
+    const adminSession = cookieStore.get("admin-session")
+    const supplierSession = cookieStore.get("supplier-session")
+
+    if (!adminSession && !supplierSession) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
+    }
+
+    if (adminSession) {
+      const admin = await prisma.adminUser.findUnique({ where: { id: adminSession.value } })
+      if (!admin) {
+        return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
+      }
+    }
+
+    if (supplierSession) {
+      const supplier = await prisma.supplierUser.findUnique({ where: { id: supplierSession.value } })
+      if (!supplier) {
+        return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
+      }
+    }
+
     const { id } = await params
     const order = await prisma.order.findUnique({
       where: { id },
@@ -33,6 +56,28 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const cookieStore = await cookies()
+    const adminSession = cookieStore.get("admin-session")
+    const supplierSession = cookieStore.get("supplier-session")
+
+    if (!adminSession && !supplierSession) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
+    }
+
+    if (adminSession) {
+      const admin = await prisma.adminUser.findUnique({ where: { id: adminSession.value } })
+      if (!admin) {
+        return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
+      }
+    }
+
+    if (supplierSession) {
+      const supplier = await prisma.supplierUser.findUnique({ where: { id: supplierSession.value } })
+      if (!supplier) {
+        return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
+      }
+    }
+
     const { id } = await params
     const body = await request.json()
 
@@ -86,6 +131,18 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const cookieStore = await cookies()
+    const adminSession = cookieStore.get("admin-session")
+
+    if (!adminSession) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
+    }
+
+    const admin = await prisma.adminUser.findUnique({ where: { id: adminSession.value } })
+    if (!admin) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
+    }
+
     const { id } = await params
     await prisma.order.delete({
       where: { id },

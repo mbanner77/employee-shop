@@ -70,6 +70,13 @@ model AdminUser {
   createdAt DateTime @default(now())
 }
 
+model SupplierUser {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String
+  createdAt DateTime @default(now())
+}
+
 model CompanyArea {
   id        String   @id @default(cuid())
   name      String   @unique

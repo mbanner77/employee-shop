@@ -1,9 +1,32 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { sendOrderCreatedEmail } from "@/lib/email"
+import { cookies } from "next/headers"
 
 export async function GET() {
   try {
+    const cookieStore = await cookies()
+    const adminSession = cookieStore.get("admin-session")
+    const supplierSession = cookieStore.get("supplier-session")
+
+    if (!adminSession && !supplierSession) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
+    }
+
+    if (adminSession) {
+      const admin = await prisma.adminUser.findUnique({ where: { id: adminSession.value } })
+      if (!admin) {
+        return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
+      }
+    }
+
+    if (supplierSession) {
+      const supplier = await prisma.supplierUser.findUnique({ where: { id: supplierSession.value } })
+      if (!supplier) {
+        return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
+      }
+    }
+
     const orders = await prisma.order.findMany({
       include: {
         items: {
