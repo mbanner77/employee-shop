@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
+import { sendOrderStatusChangedEmail } from "@/lib/email"
 
 export async function GET(
   request: Request,
@@ -34,7 +35,18 @@ export async function PATCH(
   try {
     const { id } = await params
     const body = await request.json()
-    
+
+    const existingOrder = await prisma.order.findUnique({
+      where: { id },
+      select: { status: true, employeeId: true },
+    })
+
+    if (!existingOrder) {
+      return NextResponse.json({ error: "Order not found" }, { status: 404 })
+    }
+
+    const oldStatus = existingOrder.status
+
     const order = await prisma.order.update({
       where: { id },
       data: {
@@ -48,6 +60,20 @@ export async function PATCH(
         },
       },
     })
+
+    try {
+      if (existingOrder.employeeId && oldStatus !== order.status) {
+        await sendOrderStatusChangedEmail({
+          employeeId: existingOrder.employeeId,
+          orderId: order.id,
+          oldStatus,
+          newStatus: order.status,
+        })
+      }
+    } catch (error) {
+      console.error("Failed to send order status changed email:", error)
+    }
+
     return NextResponse.json(order)
   } catch (error) {
     console.error("Failed to update order:", error)

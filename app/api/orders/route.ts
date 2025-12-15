@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
+import { sendOrderCreatedEmail } from "@/lib/email"
 
 export async function GET() {
   try {
@@ -56,6 +57,15 @@ export async function POST(request: Request) {
         },
       },
     })
+
+    try {
+      const settings = await prisma.settings.findUnique({ where: { id: "settings" } })
+      if (settings?.notifyOnOrder && order.employeeId) {
+        await sendOrderCreatedEmail({ employeeId: order.employeeId, orderId: order.id })
+      }
+    } catch (error) {
+      console.error("Failed to send order created email:", error)
+    }
     
     return NextResponse.json(order, { status: 201 })
   } catch (error) {
