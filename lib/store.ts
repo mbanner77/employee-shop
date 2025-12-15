@@ -85,7 +85,11 @@ export const useShopStore = create<ShopState>()(
               })),
             }),
           })
-          if (!response.ok) throw new Error("Failed to create order")
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}))
+            console.error("Order creation failed:", response.status, errorData)
+            throw new Error(errorData.error || "Failed to create order")
+          }
           const order = await response.json()
           set({ cart: [] })
           return order
