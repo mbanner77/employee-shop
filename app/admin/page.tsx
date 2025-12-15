@@ -10,8 +10,9 @@ import { AdminLogin } from "@/components/admin/admin-login"
 import { AdminEmployees } from "@/components/admin/admin-employees"
 import { AdminSettings } from "@/components/admin/admin-settings"
 import { AdminReports } from "@/components/admin/admin-reports"
+import { AdminUsers } from "@/components/admin/admin-users"
 
-type AdminView = "stats" | "orders" | "products" | "employees" | "reports" | "settings"
+type AdminView = "stats" | "orders" | "products" | "employees" | "users" | "reports" | "settings"
 
 export default function AdminPage() {
   const [activeView, setActiveView] = useState<AdminView>("stats")
@@ -58,6 +59,7 @@ export default function AdminPage() {
           {activeView === "orders" && <AdminOrders />}
           {activeView === "products" && <AdminProducts />}
           {activeView === "employees" && <AdminEmployees />}
+          {activeView === "users" && <AdminUsers />}
           {activeView === "reports" && <AdminReports />}
           {activeView === "settings" && <AdminSettings />}
         </main>
