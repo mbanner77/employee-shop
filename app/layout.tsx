@@ -4,6 +4,7 @@ import { Inter, Playfair_Display } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { Toaster } from "sonner"
 import { ShopProvider } from "@/components/shop-provider"
+import { ThemeProvider } from "@/components/theme-provider"
 import "./globals.css"
 
 const _inter = Inter({ subsets: ["latin"] })
@@ -21,10 +22,17 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="de">
+    <html lang="de" suppressHydrationWarning>
       <body className="font-sans antialiased">
-        <ShopProvider>{children}</ShopProvider>
-        <Toaster richColors position="top-center" />
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <ShopProvider>{children}</ShopProvider>
+          <Toaster richColors position="top-center" />
+        </ThemeProvider>
         <Analytics />
       </body>
     </html>

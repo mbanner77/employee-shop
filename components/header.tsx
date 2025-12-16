@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { useShopStore } from "@/lib/store"
 import { useState, useEffect } from "react"
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { cn } from "@/lib/utils"
 
 export function Header() {
@@ -91,6 +92,9 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-2">
+          <div className={cn(useDarkHeader && !isAdminPage ? "" : "text-white")}>
+            <ThemeToggle />
+          </div>
           <Link href="/checkout">
             <Button
               variant="ghost"
