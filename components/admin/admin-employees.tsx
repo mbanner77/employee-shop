@@ -8,8 +8,9 @@ import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { 
   Loader2, Search, Users, ShoppingBag, Eye, UserX, UserCheck, 
-  ChevronDown, ChevronUp, Mail, Building, Hash 
+  ChevronDown, ChevronUp, Mail, Building, Hash, Upload, FileSpreadsheet 
 } from "lucide-react"
+import { toast } from "sonner"
 
 interface Employee {
   id: string
@@ -54,10 +55,83 @@ export function AdminEmployees() {
   const [selectedEmployee, setSelectedEmployee] = useState<EmployeeDetail | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null)
+  const [importing, setImporting] = useState(false)
 
   useEffect(() => {
     fetchEmployees()
   }, [])
+
+  const handleCSVImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setImporting(true)
+    try {
+      const text = await file.text()
+      const lines = text.split("\n").filter(line => line.trim())
+      
+      if (lines.length < 2) {
+        toast.error("CSV-Datei ist leer oder hat keine Daten")
+        return
+      }
+
+      // Parse header
+      const header = lines[0].split(/[,;]/).map(h => h.trim().toLowerCase().replace(/"/g, ""))
+      const employeeIdIdx = header.findIndex(h => h.includes("mitarbeiter") || h.includes("employee") || h === "id")
+      const emailIdx = header.findIndex(h => h.includes("email") || h.includes("mail"))
+      const firstNameIdx = header.findIndex(h => h.includes("vorname") || h.includes("firstname") || h.includes("first"))
+      const lastNameIdx = header.findIndex(h => h.includes("nachname") || h.includes("lastname") || h.includes("last"))
+      const departmentIdx = header.findIndex(h => h.includes("abteilung") || h.includes("department") || h.includes("bereich"))
+
+      if (emailIdx === -1 || firstNameIdx === -1 || lastNameIdx === -1) {
+        toast.error("CSV muss mindestens Email, Vorname und Nachname enthalten")
+        return
+      }
+
+      // Parse data rows
+      const employeesToImport = []
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(/[,;]/).map(v => v.trim().replace(/"/g, ""))
+        if (values.length < 3) continue
+
+        employeesToImport.push({
+          employeeId: employeeIdIdx >= 0 ? values[employeeIdIdx] : `EMP${String(i).padStart(4, "0")}`,
+          email: values[emailIdx],
+          firstName: values[firstNameIdx],
+          lastName: values[lastNameIdx],
+          department: departmentIdx >= 0 ? values[departmentIdx] : "Allgemein",
+        })
+      }
+
+      if (employeesToImport.length === 0) {
+        toast.error("Keine gültigen Mitarbeiter in der CSV gefunden")
+        return
+      }
+
+      const response = await fetch("/api/employees/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ employees: employeesToImport }),
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        toast.success(`Import abgeschlossen: ${result.created} neu, ${result.updated} aktualisiert`)
+        if (result.errors.length > 0) {
+          toast.warning(`${result.errors.length} Fehler beim Import`)
+        }
+        fetchEmployees()
+      } else {
+        toast.error("Import fehlgeschlagen")
+      }
+    } catch (error) {
+      console.error("CSV import error:", error)
+      toast.error("Fehler beim Lesen der CSV-Datei")
+    } finally {
+      setImporting(false)
+      e.target.value = ""
+    }
+  }
 
   const fetchEmployees = async () => {
     try {
@@ -170,15 +244,36 @@ export function AdminEmployees() {
         </Card>
       </div>
 
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          placeholder="Mitarbeiter suchen..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-9"
-        />
+      {/* Search and Import */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Mitarbeiter suchen..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <label>
+          <input
+            type="file"
+            accept=".csv"
+            onChange={handleCSVImport}
+            className="hidden"
+            disabled={importing}
+          />
+          <Button variant="outline" asChild disabled={importing}>
+            <span>
+              {importing ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Upload className="h-4 w-4 mr-2" />
+              )}
+              CSV Import
+            </span>
+          </Button>
+        </label>
       </div>
 
       {/* Employee List */}

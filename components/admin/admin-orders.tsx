@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { ChevronDown, ChevronUp, Search, Loader2, User, Download, CheckSquare } from "lucide-react"
+import { ChevronDown, ChevronUp, Search, Loader2, User, Download, CheckSquare, Printer } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 
@@ -172,6 +172,83 @@ export function AdminOrders() {
     link.download = `bestellungen_${new Date().toISOString().split("T")[0]}.csv`
     link.click()
     toast.success(`${ordersToExport.length} Bestellungen exportiert`)
+  }
+
+  const printOrder = (order: OrderWithEmployee) => {
+    const printWindow = window.open("", "_blank")
+    if (!printWindow) return
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Bestellung ${order.id}</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
+          h1 { font-size: 24px; margin-bottom: 8px; }
+          .order-id { color: #666; font-family: monospace; margin-bottom: 24px; }
+          .section { margin-bottom: 24px; }
+          .section-title { font-weight: bold; margin-bottom: 8px; border-bottom: 1px solid #ddd; padding-bottom: 4px; }
+          .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+          .item { padding: 8px; background: #f5f5f5; margin-bottom: 8px; display: flex; justify-content: space-between; }
+          .label { color: #666; font-size: 12px; }
+          .value { font-weight: 500; }
+          .status { display: inline-block; padding: 4px 12px; border-radius: 4px; font-size: 12px; }
+          .status-PENDING { background: #fef3c7; color: #92400e; }
+          .status-PROCESSING { background: #dbeafe; color: #1e40af; }
+          .status-SHIPPED { background: #e9d5ff; color: #6b21a8; }
+          .status-DELIVERED { background: #dcfce7; color: #166534; }
+          @media print { body { padding: 20px; } }
+        </style>
+      </head>
+      <body>
+        <h1>RealCore Mitarbeitershop</h1>
+        <div class="order-id">Bestellung #${order.id}</div>
+        
+        <div class="section">
+          <span class="status status-${order.status}">${statusLabels[order.status]}</span>
+          <span style="margin-left: 16px; color: #666;">
+            Bestellt am ${new Date(order.createdAt).toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" })}
+          </span>
+        </div>
+
+        <div class="grid">
+          <div class="section">
+            <div class="section-title">Kundendaten</div>
+            <p><span class="label">Name:</span> <span class="value">${order.customerName}</span></p>
+            <p><span class="label">E-Mail:</span> <span class="value">${order.email}</span></p>
+            <p><span class="label">Abteilung:</span> <span class="value">${order.department}</span></p>
+            ${order.employee ? `<p><span class="label">Mitarbeiter-Nr:</span> <span class="value">${order.employee.employeeId}</span></p>` : ""}
+          </div>
+          
+          <div class="section">
+            <div class="section-title">Lieferadresse</div>
+            <p class="value">${order.customerName}</p>
+            <p>${order.street}</p>
+            <p>${order.zip} ${order.city}</p>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Bestellte Artikel (${order.items.length})</div>
+          ${order.items.map(item => `
+            <div class="item">
+              <span>${item.product.name}</span>
+              <span>Größe: ${item.size}</span>
+            </div>
+          `).join("")}
+        </div>
+
+        <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666;">
+          Gedruckt am ${new Date().toLocaleDateString("de-DE")} um ${new Date().toLocaleTimeString("de-DE")}
+        </div>
+      </body>
+      </html>
+    `
+
+    printWindow.document.write(html)
+    printWindow.document.close()
+    printWindow.print()
   }
 
   if (loading) {
@@ -354,6 +431,15 @@ export function AdminOrders() {
                           <SelectItem value="DELIVERED">Zugestellt</SelectItem>
                         </SelectContent>
                       </Select>
+
+                      <Button 
+                        variant="outline" 
+                        className="w-full mt-4"
+                        onClick={() => printOrder(order)}
+                      >
+                        <Printer className="h-4 w-4 mr-2" />
+                        Bestellung drucken
+                      </Button>
                     </div>
                   </div>
                 </CardContent>

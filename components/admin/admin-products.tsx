@@ -109,10 +109,30 @@ export function AdminProducts() {
 function ProductCard({ product, onRefresh }: { product: Product; onRefresh: () => void }) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   const handleSaved = () => {
     setEditDialogOpen(false)
     onRefresh()
+  }
+
+  const handleDelete = async () => {
+    if (!confirm(`Produkt "${product.name}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`)) return
+    
+    setDeleting(true)
+    try {
+      const response = await fetch(`/api/products/${product.id}`, { method: "DELETE" })
+      if (response.ok) {
+        onRefresh()
+      } else {
+        alert("Fehler beim Löschen des Produkts")
+      }
+    } catch (error) {
+      console.error("Failed to delete product:", error)
+      alert("Fehler beim Löschen des Produkts")
+    } finally {
+      setDeleting(false)
+    }
   }
   
   const allImages = product.images && product.images.length > 0 
@@ -192,23 +212,28 @@ function ProductCard({ product, onRefresh }: { product: Product; onRefresh: () =
             </Badge>
             <CardTitle className="text-base">{product.name}</CardTitle>
           </div>
-          <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Edit className="h-4 w-4" />
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Produkt bearbeiten</DialogTitle>
-              </DialogHeader>
-              <ProductForm 
-                product={product} 
-                onSuccess={handleSaved}
-                onCancel={() => setEditDialogOpen(false)}
-              />
-            </DialogContent>
-          </Dialog>
+          <div className="flex gap-1">
+            <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Edit className="h-4 w-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Produkt bearbeiten</DialogTitle>
+                </DialogHeader>
+                <ProductForm 
+                  product={product} 
+                  onSuccess={handleSaved}
+                  onCancel={() => setEditDialogOpen(false)}
+                />
+              </DialogContent>
+            </Dialog>
+            <Button variant="ghost" size="icon" onClick={handleDelete} disabled={deleting}>
+              {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4 text-destructive" />}
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="pt-0">
