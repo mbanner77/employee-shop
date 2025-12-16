@@ -84,7 +84,15 @@ export async function POST(request: Request) {
     try {
       const settings = await prisma.settings.findUnique({ where: { id: "settings" } })
       if (settings?.notifyOnOrder && order.employeeId) {
-        await sendOrderCreatedEmail({ employeeId: order.employeeId, orderId: order.id })
+        const items = order.items.map(item => ({
+          name: item.product.name,
+          size: item.size,
+        }))
+        await sendOrderCreatedEmail({ 
+          employeeId: order.employeeId, 
+          orderId: order.id,
+          items,
+        })
       }
     } catch (error) {
       console.error("Failed to send order created email:", error)

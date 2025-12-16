@@ -39,6 +39,7 @@ export function SupplierOrders() {
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [filterStatus, setFilterStatus] = useState<string>("all")
+  const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null)
 
   const fetchOrders = async () => {
     try {
@@ -59,6 +60,7 @@ export function SupplierOrders() {
   }, [])
 
   const updateOrderStatus = async (orderId: string, status: Order["status"]) => {
+    setUpdatingOrderId(orderId)
     try {
       const response = await fetch(`/api/orders/${orderId}`, {
         method: "PATCH",
@@ -70,6 +72,8 @@ export function SupplierOrders() {
       }
     } catch (error) {
       console.error("Failed to update order:", error)
+    } finally {
+      setUpdatingOrderId(null)
     }
   }
 
@@ -208,20 +212,30 @@ export function SupplierOrders() {
                       </div>
 
                       <h4 className="mb-3 mt-4 font-semibold">Status ändern</h4>
-                      <Select
-                        value={order.status}
-                        onValueChange={(value) => updateOrderStatus(order.id, value as Order["status"])}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="PENDING">Ausstehend</SelectItem>
-                          <SelectItem value="PROCESSING">In Bearbeitung</SelectItem>
-                          <SelectItem value="SHIPPED">Versendet</SelectItem>
-                          <SelectItem value="DELIVERED">Zugestellt</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <div className="relative">
+                        <Select
+                          value={order.status}
+                          onValueChange={(value) => updateOrderStatus(order.id, value as Order["status"])}
+                          disabled={updatingOrderId === order.id}
+                        >
+                          <SelectTrigger>
+                            {updatingOrderId === order.id ? (
+                              <span className="flex items-center gap-2">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                Wird aktualisiert...
+                              </span>
+                            ) : (
+                              <SelectValue />
+                            )}
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="PENDING">Ausstehend</SelectItem>
+                            <SelectItem value="PROCESSING">In Bearbeitung</SelectItem>
+                            <SelectItem value="SHIPPED">Versendet</SelectItem>
+                            <SelectItem value="DELIVERED">Zugestellt</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                   </div>
                 </CardContent>

@@ -38,6 +38,7 @@ export function AdminOrders() {
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [filterStatus, setFilterStatus] = useState<string>("all")
+  const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null)
 
   const fetchOrders = async () => {
     try {
@@ -58,6 +59,7 @@ export function AdminOrders() {
   }, [])
 
   const updateOrderStatus = async (orderId: string, status: Order["status"]) => {
+    setUpdatingOrderId(orderId)
     try {
       const response = await fetch(`/api/orders/${orderId}`, {
         method: "PATCH",
@@ -71,6 +73,8 @@ export function AdminOrders() {
       }
     } catch (error) {
       console.error("Failed to update order:", error)
+    } finally {
+      setUpdatingOrderId(null)
     }
   }
 
@@ -204,9 +208,17 @@ export function AdminOrders() {
                       <Select
                         value={order.status}
                         onValueChange={(value) => updateOrderStatus(order.id, value as Order["status"])}
+                        disabled={updatingOrderId === order.id}
                       >
                         <SelectTrigger>
-                          <SelectValue />
+                          {updatingOrderId === order.id ? (
+                            <span className="flex items-center gap-2">
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Wird aktualisiert...
+                            </span>
+                          ) : (
+                            <SelectValue />
+                          )}
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="PENDING">Ausstehend</SelectItem>
