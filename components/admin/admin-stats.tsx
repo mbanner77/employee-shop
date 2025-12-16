@@ -12,8 +12,11 @@ interface Stats {
   totalProducts: number
   pendingOrders: number
   totalItems: number
+  totalEmployees: number
   ordersByDepartment: { department: string; count: number }[]
   ordersByCategory: { category: string; count: number }[]
+  ordersBySize: { size: string; count: number }[]
+  ordersByStatus: { status: string; count: number }[]
 }
 
 export function AdminStats() {
@@ -49,6 +52,7 @@ export function AdminStats() {
   const totalItems = stats?.totalItems || 0
   const pendingOrders = stats?.pendingOrders || 0
   const totalProducts = stats?.totalProducts || 0
+  const totalEmployees = stats?.totalEmployees || 0
 
   const categoryData = stats?.ordersByCategory.map((item) => ({
     name: item.category,
@@ -60,8 +64,13 @@ export function AdminStats() {
     orders: item.count,
   })) || []
 
-  // Size data would need separate API endpoint - using placeholder for now
-  const sizeData: { name: string; count: number }[] = []
+  const sizeData = stats?.ordersBySize.map((item) => ({
+    name: item.size,
+    count: item.count,
+  })) || []
+
+  const completedOrders = stats?.ordersByStatus.find(s => s.status === "DELIVERED")?.count || 0
+  const shippedOrders = stats?.ordersByStatus.find(s => s.status === "SHIPPED")?.count || 0
 
   return (
     <div className="space-y-6">
@@ -70,7 +79,7 @@ export function AdminStats() {
         <p className="text-muted-foreground">Statistiken zur Mitarbeiterkollektion 2025</p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Bestellungen</CardTitle>
@@ -78,6 +87,9 @@ export function AdminStats() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalOrders}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {completedOrders} zugestellt, {shippedOrders} versendet
+            </p>
           </CardContent>
         </Card>
 
@@ -88,6 +100,9 @@ export function AdminStats() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalItems}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              ∅ {totalOrders > 0 ? (totalItems / totalOrders).toFixed(1) : 0} pro Bestellung
+            </p>
           </CardContent>
         </Card>
 
@@ -98,16 +113,35 @@ export function AdminStats() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{pendingOrders}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {totalOrders > 0 ? ((pendingOrders / totalOrders) * 100).toFixed(0) : 0}% aller Bestellungen
+            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Verfügbare Produkte</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Mitarbeiter</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
+            <div className="text-2xl font-bold">{totalEmployees}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              registrierte Accounts
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Produkte</CardTitle>
+            <Package className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
             <div className="text-2xl font-bold">{totalProducts}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              in der Kollektion
+            </p>
           </CardContent>
         </Card>
       </div>

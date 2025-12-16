@@ -244,8 +244,17 @@ export function CheckoutForm() {
             id="zip"
             placeholder="12345"
             value={formData.zip}
-            onChange={(e) => handleChange("zip", e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value.replace(/\D/g, "").slice(0, 5)
+              handleChange("zip", value)
+            }}
+            maxLength={5}
+            inputMode="numeric"
+            pattern="[0-9]*"
           />
+          {formData.zip && formData.zip.length !== 5 && (
+            <p className="text-xs text-amber-600">PLZ muss 5 Ziffern haben</p>
+          )}
         </div>
         <div className="space-y-2">
           <Label htmlFor="city">Stadt</Label>

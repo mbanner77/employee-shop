@@ -9,6 +9,9 @@ export async function GET() {
       pendingOrders,
       ordersByDepartment,
       ordersByCategory,
+      ordersBySize,
+      totalEmployees,
+      ordersByStatus,
     ] = await Promise.all([
       prisma.order.count(),
       prisma.product.count(),
@@ -19,6 +22,15 @@ export async function GET() {
       }),
       prisma.orderItem.groupBy({
         by: ["productId"],
+        _count: { id: true },
+      }),
+      prisma.orderItem.groupBy({
+        by: ["size"],
+        _count: { id: true },
+      }),
+      prisma.employee.count(),
+      prisma.order.groupBy({
+        by: ["status"],
         _count: { id: true },
       }),
     ])
@@ -40,11 +52,15 @@ export async function GET() {
       categoryCount[category] = (categoryCount[category] || 0) + item._count.id
     }
 
+    // Define size order for sorting
+    const sizeOrder = ["XS", "S", "M", "L", "XL", "XXL", "3XL"]
+    
     return NextResponse.json({
       totalOrders,
       totalProducts,
       pendingOrders,
       totalItems,
+      totalEmployees,
       ordersByDepartment: ordersByDepartment.map((d: { department: string; _count: { id: number } }) => ({
         department: d.department,
         count: d._count.id,
@@ -52,6 +68,16 @@ export async function GET() {
       ordersByCategory: Object.entries(categoryCount).map(([category, count]) => ({
         category,
         count,
+      })),
+      ordersBySize: (ordersBySize as { size: string; _count: { id: number } }[])
+        .map((s) => ({
+          size: s.size,
+          count: s._count.id,
+        }))
+        .sort((a, b) => sizeOrder.indexOf(a.size) - sizeOrder.indexOf(b.size)),
+      ordersByStatus: (ordersByStatus as { status: string; _count: { id: number } }[]).map((s) => ({
+        status: s.status,
+        count: s._count.id,
       })),
     })
   } catch (error) {
