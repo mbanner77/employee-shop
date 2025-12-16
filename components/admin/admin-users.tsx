@@ -6,34 +6,47 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import { Loader2, Plus, Pencil, Trash2, Truck, Eye, EyeOff } from "lucide-react"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Loader2, Plus, Pencil, Trash2, Truck, Eye, EyeOff, Shield } from "lucide-react"
 
-interface SupplierUser {
+interface User {
   id: string
   username: string
   createdAt: string
 }
 
+type UserType = "supplier" | "admin"
+
 export function AdminUsers() {
-  const [users, setUsers] = useState<SupplierUser[]>([])
+  const [supplierUsers, setSupplierUsers] = useState<User[]>([])
+  const [adminUsers, setAdminUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [editingUser, setEditingUser] = useState<SupplierUser | null>(null)
+  const [editingUser, setEditingUser] = useState<User | null>(null)
+  const [editingType, setEditingType] = useState<UserType>("supplier")
   const [formData, setFormData] = useState({ username: "", password: "" })
   const [showPassword, setShowPassword] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
+  const [activeTab, setActiveTab] = useState<UserType>("supplier")
 
   useEffect(() => {
-    fetchUsers()
+    fetchAllUsers()
   }, [])
 
-  const fetchUsers = async () => {
+  const fetchAllUsers = async () => {
     try {
-      const response = await fetch("/api/admin/users")
-      if (response.ok) {
-        const data = await response.json()
-        setUsers(data)
+      const [supplierRes, adminRes] = await Promise.all([
+        fetch("/api/admin/users"),
+        fetch("/api/admin/admins"),
+      ])
+      if (supplierRes.ok) {
+        const data = await supplierRes.json()
+        setSupplierUsers(data)
+      }
+      if (adminRes.ok) {
+        const data = await adminRes.json()
+        setAdminUsers(data)
       }
     } catch (error) {
       console.error("Failed to fetch users:", error)
@@ -42,23 +55,29 @@ export function AdminUsers() {
     }
   }
 
-  const openCreateDialog = () => {
+  const openCreateDialog = (type: UserType) => {
     setEditingUser(null)
+    setEditingType(type)
     setFormData({ username: "", password: "" })
     setError("")
     setDialogOpen(true)
   }
 
-  const openEditDialog = (user: SupplierUser) => {
+  const openEditDialog = (user: User, type: UserType) => {
     setEditingUser(user)
+    setEditingType(type)
     setFormData({ username: user.username, password: "" })
     setError("")
     setDialogOpen(true)
   }
 
+  const getApiPath = (type: UserType) => type === "admin" ? "/api/admin/admins" : "/api/admin/users"
+
   const handleSave = async () => {
     setError("")
     setSaving(true)
+
+    const apiPath = getApiPath(editingType)
 
     try {
       if (editingUser) {
@@ -71,7 +90,7 @@ export function AdminUsers() {
           updateData.password = formData.password
         }
 
-        const response = await fetch(`/api/admin/users/${editingUser.id}`, {
+        const response = await fetch(`${apiPath}/${editingUser.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(updateData),
@@ -89,7 +108,7 @@ export function AdminUsers() {
           return
         }
 
-        const response = await fetch("/api/admin/users", {
+        const response = await fetch(apiPath, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(formData),
@@ -103,7 +122,7 @@ export function AdminUsers() {
       }
 
       setDialogOpen(false)
-      fetchUsers()
+      fetchAllUsers()
     } catch {
       setError("Verbindungsfehler")
     } finally {
@@ -111,19 +130,70 @@ export function AdminUsers() {
     }
   }
 
-  const handleDelete = async (user: SupplierUser) => {
-    if (!confirm(`Lieferant "${user.username}" wirklich löschen?`)) return
+  const handleDelete = async (user: User, type: UserType) => {
+    const label = type === "admin" ? "Administrator" : "Lieferant"
+    if (!confirm(`${label} "${user.username}" wirklich löschen?`)) return
 
     try {
-      const response = await fetch(`/api/admin/users/${user.id}`, {
+      const apiPath = getApiPath(type)
+      const response = await fetch(`${apiPath}/${user.id}`, {
         method: "DELETE",
       })
       if (response.ok) {
-        fetchUsers()
+        fetchAllUsers()
+      } else {
+        const data = await response.json()
+        alert(data.error || "Fehler beim Löschen")
       }
     } catch (error) {
       console.error("Failed to delete user:", error)
     }
+  }
+
+  const renderUserList = (users: User[], type: UserType) => {
+    const Icon = type === "admin" ? Shield : Truck
+    const label = type === "admin" ? "Administrator" : "Lieferant"
+    const emptyText = type === "admin" ? "Keine Administratoren angelegt" : "Keine Lieferanten angelegt"
+
+    return (
+      <div className="space-y-3">
+        {users.length === 0 ? (
+          <Card>
+            <CardContent className="flex h-32 items-center justify-center">
+              <p className="text-muted-foreground">{emptyText}</p>
+            </CardContent>
+          </Card>
+        ) : (
+          users.map((user) => (
+            <Card key={user.id}>
+              <CardContent className="py-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Icon className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <div className="font-medium">{user.username}</div>
+                      <div className="text-sm text-muted-foreground">
+                        Erstellt am {new Date(user.createdAt).toLocaleDateString("de-DE")}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="icon" onClick={() => openEditDialog(user, type)}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => handleDelete(user, type)}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
+    )
   }
 
   if (loading) {
@@ -136,75 +206,74 @@ export function AdminUsers() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Benutzerverwaltung</h1>
-          <p className="text-muted-foreground">Verwalte Lieferanten-Zugänge für den Shop</p>
-        </div>
-        <Button onClick={openCreateDialog}>
-          <Plus className="h-4 w-4 mr-2" />
-          Neuer Lieferant
-        </Button>
+      <div>
+        <h1 className="text-2xl font-bold text-foreground">Benutzerverwaltung</h1>
+        <p className="text-muted-foreground">Verwalte Admin- und Lieferanten-Zugänge</p>
       </div>
 
       {/* Stats */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-center gap-4">
-            <Truck className="h-8 w-8 text-primary" />
-            <div>
-              <div className="text-2xl font-bold">{users.length}</div>
-              <div className="text-sm text-muted-foreground">Lieferanten-Accounts</div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-4">
+              <Shield className="h-8 w-8 text-primary" />
+              <div>
+                <div className="text-2xl font-bold">{adminUsers.length}</div>
+                <div className="text-sm text-muted-foreground">Admin-Accounts</div>
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* User List */}
-      <div className="space-y-3">
-        {users.length === 0 ? (
-          <Card>
-            <CardContent className="flex h-32 items-center justify-center">
-              <p className="text-muted-foreground">Keine Lieferanten angelegt</p>
-            </CardContent>
-          </Card>
-        ) : (
-          users.map((user) => (
-            <Card key={user.id}>
-              <CardContent className="py-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Truck className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <div className="font-medium">{user.username}</div>
-                      <div className="text-sm text-muted-foreground">
-                        Erstellt am {new Date(user.createdAt).toLocaleDateString("de-DE")}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" onClick={() => openEditDialog(user)}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(user)}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        )}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-4">
+              <Truck className="h-8 w-8 text-primary" />
+              <div>
+                <div className="text-2xl font-bold">{supplierUsers.length}</div>
+                <div className="text-sm text-muted-foreground">Lieferanten-Accounts</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Tabs for User Types */}
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as UserType)}>
+        <div className="flex items-center justify-between">
+          <TabsList>
+            <TabsTrigger value="supplier" className="gap-2">
+              <Truck className="h-4 w-4" />
+              Lieferanten
+            </TabsTrigger>
+            <TabsTrigger value="admin" className="gap-2">
+              <Shield className="h-4 w-4" />
+              Administratoren
+            </TabsTrigger>
+          </TabsList>
+          <Button onClick={() => openCreateDialog(activeTab)}>
+            <Plus className="h-4 w-4 mr-2" />
+            {activeTab === "admin" ? "Neuer Admin" : "Neuer Lieferant"}
+          </Button>
+        </div>
+
+        <TabsContent value="supplier" className="mt-4">
+          {renderUserList(supplierUsers, "supplier")}
+        </TabsContent>
+
+        <TabsContent value="admin" className="mt-4">
+          {renderUserList(adminUsers, "admin")}
+        </TabsContent>
+      </Tabs>
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {editingUser ? "Lieferant bearbeiten" : "Neuer Lieferant"}
+              {editingUser 
+                ? (editingType === "admin" ? "Administrator bearbeiten" : "Lieferant bearbeiten")
+                : (editingType === "admin" ? "Neuer Administrator" : "Neuer Lieferant")
+              }
             </DialogTitle>
           </DialogHeader>
 
@@ -243,7 +312,7 @@ export function AdminUsers() {
             </div>
 
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm dark:bg-red-950 dark:border-red-800 dark:text-red-400">
                 {error}
               </div>
             )}
