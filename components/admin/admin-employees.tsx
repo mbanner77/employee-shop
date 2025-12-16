@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { 
   Loader2, Search, Users, ShoppingBag, Eye, UserX, UserCheck, 
-  ChevronDown, ChevronUp, Mail, Building, Hash, Upload, Plus, UserPlus, RotateCcw 
+  ChevronDown, ChevronUp, Mail, Building, Hash, Upload, Plus, UserPlus, RotateCcw, Download 
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -73,6 +73,32 @@ export function AdminEmployees() {
   useEffect(() => {
     fetchEmployees()
   }, [])
+
+  const exportEmployeesToCSV = () => {
+    const headers = ["Mitarbeiter-Nr", "Vorname", "Nachname", "E-Mail", "Abteilung", "Status", "Bestellungen", "Registriert am"]
+    const rows = employees.map(emp => [
+      emp.employeeId,
+      emp.firstName,
+      emp.lastName,
+      emp.email,
+      emp.department,
+      emp.isActive ? "Aktiv" : "Inaktiv",
+      emp._count.orders,
+      new Date(emp.createdAt).toLocaleDateString("de-DE"),
+    ])
+    
+    const csvContent = [
+      headers.join(";"),
+      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(";"))
+    ].join("\n")
+    
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" })
+    const link = document.createElement("a")
+    link.href = URL.createObjectURL(blob)
+    link.download = `mitarbeiter_${new Date().toISOString().split("T")[0]}.csv`
+    link.click()
+    toast.success(`${employees.length} Mitarbeiter exportiert`)
+  }
 
   const handleResetQuota = async (employeeId?: string) => {
     if (employeeId) {
@@ -355,6 +381,10 @@ export function AdminEmployees() {
         <Button variant="outline" onClick={() => handleResetQuota()} disabled={resettingAll}>
           {resettingAll ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RotateCcw className="h-4 w-4 mr-2" />}
           Alle Kontingente zurücksetzen
+        </Button>
+        <Button variant="outline" onClick={exportEmployeesToCSV} disabled={employees.length === 0}>
+          <Download className="h-4 w-4 mr-2" />
+          Export CSV
         </Button>
       </div>
 

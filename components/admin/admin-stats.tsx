@@ -2,10 +2,20 @@
 
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Package, ShoppingCart, Users, TrendingUp, Loader2 } from "lucide-react"
+import { Package, ShoppingCart, Users, TrendingUp, Loader2, Clock } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts"
 
 const COLORS = ["oklch(0.45 0.15 260)", "oklch(0.65 0.18 145)", "oklch(0.55 0.22 27)", "oklch(0.70 0.15 60)"]
+
+interface RecentOrder {
+  id: string
+  customerName: string
+  status: string
+  createdAt: string
+  department: string
+  itemCount: number
+}
 
 interface Stats {
   totalOrders: number
@@ -17,6 +27,21 @@ interface Stats {
   ordersByCategory: { category: string; count: number }[]
   ordersBySize: { size: string; count: number }[]
   ordersByStatus: { status: string; count: number }[]
+  recentOrders: RecentOrder[]
+}
+
+const statusLabels: Record<string, string> = {
+  PENDING: "Ausstehend",
+  PROCESSING: "In Bearbeitung",
+  SHIPPED: "Versendet",
+  DELIVERED: "Zugestellt",
+}
+
+const statusColors: Record<string, string> = {
+  PENDING: "bg-yellow-100 text-yellow-800",
+  PROCESSING: "bg-blue-100 text-blue-800",
+  SHIPPED: "bg-purple-100 text-purple-800",
+  DELIVERED: "bg-green-100 text-green-800",
 }
 
 export function AdminStats() {
@@ -224,6 +249,51 @@ export function AdminStats() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Recent Orders */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="h-5 w-5" />
+            Letzte Bestellungen
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {stats?.recentOrders && stats.recentOrders.length > 0 ? (
+            <div className="space-y-3">
+              {stats.recentOrders.map((order) => (
+                <div key={order.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                  <div className="flex items-center gap-4">
+                    <div>
+                      <p className="font-medium">{order.customerName}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {order.department} • {order.itemCount} Artikel
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Badge className={statusColors[order.status]}>
+                      {statusLabels[order.status]}
+                    </Badge>
+                    <span className="text-sm text-muted-foreground">
+                      {new Date(order.createdAt).toLocaleDateString("de-DE", {
+                        day: "2-digit",
+                        month: "short",
+                        hour: "2-digit",
+                        minute: "2-digit"
+                      })}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex h-24 items-center justify-center text-muted-foreground">
+              Noch keine Bestellungen vorhanden
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }

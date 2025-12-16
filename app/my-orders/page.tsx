@@ -211,30 +211,46 @@ export default function MyOrdersPage() {
                           <p className="text-muted-foreground">{order.zip} {order.city}</p>
                         </div>
 
-                        <h4 className="font-semibold mt-4 mb-3">Status-Verlauf</h4>
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 rounded-full bg-green-500" />
-                            <span className="text-sm">Bestellt am {new Date(order.createdAt).toLocaleDateString("de-DE")}</span>
+                        <h4 className="font-semibold mt-4 mb-3">Bestellfortschritt</h4>
+                        <div className="relative">
+                          {/* Progress bar background */}
+                          <div className="absolute top-3 left-3 right-3 h-1 bg-muted rounded" />
+                          {/* Progress bar fill */}
+                          <div 
+                            className="absolute top-3 left-3 h-1 bg-primary rounded transition-all"
+                            style={{ 
+                              width: order.status === "PENDING" ? "0%" : 
+                                     order.status === "PROCESSING" ? "33%" : 
+                                     order.status === "SHIPPED" ? "66%" : "100%",
+                              maxWidth: "calc(100% - 24px)"
+                            }}
+                          />
+                          <div className="relative flex justify-between">
+                            <div className="flex flex-col items-center">
+                              <div className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                                true ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                              }`}>✓</div>
+                              <span className="text-xs mt-2 text-center">Bestellt</span>
+                            </div>
+                            <div className="flex flex-col items-center">
+                              <div className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                                order.status !== "PENDING" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                              }`}>{order.status !== "PENDING" ? "✓" : "2"}</div>
+                              <span className="text-xs mt-2 text-center">Bearbeitung</span>
+                            </div>
+                            <div className="flex flex-col items-center">
+                              <div className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                                order.status === "SHIPPED" || order.status === "DELIVERED" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                              }`}>{order.status === "SHIPPED" || order.status === "DELIVERED" ? "✓" : "3"}</div>
+                              <span className="text-xs mt-2 text-center">Versendet</span>
+                            </div>
+                            <div className="flex flex-col items-center">
+                              <div className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                                order.status === "DELIVERED" ? "bg-green-600 text-white" : "bg-muted text-muted-foreground"
+                              }`}>{order.status === "DELIVERED" ? "✓" : "4"}</div>
+                              <span className="text-xs mt-2 text-center">Zugestellt</span>
+                            </div>
                           </div>
-                          {order.status !== "PENDING" && (
-                            <div className="flex items-center gap-2">
-                              <div className="h-2 w-2 rounded-full bg-blue-500" />
-                              <span className="text-sm">In Bearbeitung</span>
-                            </div>
-                          )}
-                          {(order.status === "SHIPPED" || order.status === "DELIVERED") && (
-                            <div className="flex items-center gap-2">
-                              <div className="h-2 w-2 rounded-full bg-purple-500" />
-                              <span className="text-sm">Versendet</span>
-                            </div>
-                          )}
-                          {order.status === "DELIVERED" && (
-                            <div className="flex items-center gap-2">
-                              <div className="h-2 w-2 rounded-full bg-green-500" />
-                              <span className="text-sm">Zugestellt</span>
-                            </div>
-                          )}
                         </div>
                       </div>
                     </div>

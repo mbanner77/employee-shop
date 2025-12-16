@@ -45,6 +45,20 @@ export async function GET() {
     // Calculate total items ordered
     const totalItems = await prisma.orderItem.count()
 
+    // Get recent orders
+    const recentOrders = await prisma.order.findMany({
+      take: 5,
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        customerName: true,
+        status: true,
+        createdAt: true,
+        department: true,
+        items: { select: { id: true } },
+      },
+    })
+
     // Group by category
     const categoryCount: Record<string, number> = {}
     for (const item of ordersByCategory as { productId: string; _count: { id: number } }[]) {
@@ -78,6 +92,14 @@ export async function GET() {
       ordersByStatus: (ordersByStatus as { status: string; _count: { id: number } }[]).map((s) => ({
         status: s.status,
         count: s._count.id,
+      })),
+      recentOrders: recentOrders.map((o) => ({
+        id: o.id,
+        customerName: o.customerName,
+        status: o.status,
+        createdAt: o.createdAt,
+        department: o.department,
+        itemCount: o.items.length,
       })),
     })
   } catch (error) {
