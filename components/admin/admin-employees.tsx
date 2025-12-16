@@ -5,10 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { 
   Loader2, Search, Users, ShoppingBag, Eye, UserX, UserCheck, 
-  ChevronDown, ChevronUp, Mail, Building, Hash, Upload, FileSpreadsheet 
+  ChevronDown, ChevronUp, Mail, Building, Hash, Upload, Plus, UserPlus 
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -56,10 +58,50 @@ export function AdminEmployees() {
   const [detailLoading, setDetailLoading] = useState(false)
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null)
   const [importing, setImporting] = useState(false)
+  const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [creating, setCreating] = useState(false)
+  const [newEmployee, setNewEmployee] = useState({
+    employeeId: "",
+    email: "",
+    firstName: "",
+    lastName: "",
+    department: "Allgemein",
+  })
 
   useEffect(() => {
     fetchEmployees()
   }, [])
+
+  const handleCreateEmployee = async () => {
+    if (!newEmployee.employeeId || !newEmployee.email || !newEmployee.firstName || !newEmployee.lastName) {
+      toast.error("Bitte alle Pflichtfelder ausfüllen")
+      return
+    }
+
+    setCreating(true)
+    try {
+      const response = await fetch("/api/employees", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newEmployee),
+      })
+
+      if (response.ok) {
+        toast.success("Mitarbeiter erfolgreich angelegt")
+        setCreateDialogOpen(false)
+        setNewEmployee({ employeeId: "", email: "", firstName: "", lastName: "", department: "Allgemein" })
+        fetchEmployees()
+      } else {
+        const data = await response.json()
+        toast.error(data.error || "Fehler beim Anlegen")
+      }
+    } catch (error) {
+      console.error("Create employee error:", error)
+      toast.error("Verbindungsfehler")
+    } finally {
+      setCreating(false)
+    }
+  }
 
   const handleCSVImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -274,7 +316,81 @@ export function AdminEmployees() {
             </span>
           </Button>
         </label>
+        <Button onClick={() => setCreateDialogOpen(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Mitarbeiter anlegen
+        </Button>
       </div>
+
+      {/* Create Employee Dialog */}
+      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Neuen Mitarbeiter anlegen</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="empId">Mitarbeiter-Nr. *</Label>
+                <Input
+                  id="empId"
+                  placeholder="z.B. EMP001"
+                  value={newEmployee.employeeId}
+                  onChange={(e) => setNewEmployee({ ...newEmployee, employeeId: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="empEmail">E-Mail *</Label>
+                <Input
+                  id="empEmail"
+                  type="email"
+                  placeholder="max.mustermann@realcore.de"
+                  value={newEmployee.email}
+                  onChange={(e) => setNewEmployee({ ...newEmployee, email: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="empFirstName">Vorname *</Label>
+                <Input
+                  id="empFirstName"
+                  placeholder="Max"
+                  value={newEmployee.firstName}
+                  onChange={(e) => setNewEmployee({ ...newEmployee, firstName: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="empLastName">Nachname *</Label>
+                <Input
+                  id="empLastName"
+                  placeholder="Mustermann"
+                  value={newEmployee.lastName}
+                  onChange={(e) => setNewEmployee({ ...newEmployee, lastName: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="empDepartment">Abteilung</Label>
+              <Input
+                id="empDepartment"
+                placeholder="z.B. IT, Marketing, Vertrieb"
+                value={newEmployee.department}
+                onChange={(e) => setNewEmployee({ ...newEmployee, department: e.target.value })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
+              Abbrechen
+            </Button>
+            <Button onClick={handleCreateEmployee} disabled={creating}>
+              {creating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <UserPlus className="h-4 w-4 mr-2" />}
+              Anlegen
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Employee List */}
       <div className="space-y-3">

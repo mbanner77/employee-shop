@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { ChevronDown, ChevronUp, Search, Loader2, User, Download, CheckSquare, Printer } from "lucide-react"
+import { ChevronDown, ChevronUp, Search, Loader2, User, Download, CheckSquare, Printer, Calendar } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 
@@ -41,6 +41,7 @@ export function AdminOrders() {
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [filterStatus, setFilterStatus] = useState<string>("all")
+  const [filterDateRange, setFilterDateRange] = useState<string>("all")
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null)
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set())
   const [bulkUpdating, setBulkUpdating] = useState(false)
@@ -83,6 +84,26 @@ export function AdminOrders() {
     }
   }
 
+  const getDateRangeFilter = (range: string) => {
+    const now = new Date()
+    switch (range) {
+      case "today":
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+        return (date: Date) => date >= today
+      case "week":
+        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+        return (date: Date) => date >= weekAgo
+      case "month":
+        const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+        return (date: Date) => date >= monthAgo
+      case "quarter":
+        const quarterAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000)
+        return (date: Date) => date >= quarterAgo
+      default:
+        return () => true
+    }
+  }
+
   const filteredOrders = orders.filter((order) => {
     const matchesSearch =
       order.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -90,8 +111,11 @@ export function AdminOrders() {
       order.email.toLowerCase().includes(searchTerm.toLowerCase())
 
     const matchesStatus = filterStatus === "all" || order.status === filterStatus
+    
+    const dateFilter = getDateRangeFilter(filterDateRange)
+    const matchesDate = dateFilter(new Date(order.createdAt))
 
-    return matchesSearch && matchesStatus
+    return matchesSearch && matchesStatus && matchesDate
   })
 
   const sortedOrders = [...filteredOrders].sort(
@@ -277,7 +301,7 @@ export function AdminOrders() {
           />
         </div>
         <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="w-full sm:w-48">
+          <SelectTrigger className="w-full sm:w-40">
             <SelectValue placeholder="Status filtern" />
           </SelectTrigger>
           <SelectContent>
@@ -286,6 +310,19 @@ export function AdminOrders() {
             <SelectItem value="PROCESSING">In Bearbeitung</SelectItem>
             <SelectItem value="SHIPPED">Versendet</SelectItem>
             <SelectItem value="DELIVERED">Zugestellt</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={filterDateRange} onValueChange={setFilterDateRange}>
+          <SelectTrigger className="w-full sm:w-40">
+            <Calendar className="h-4 w-4 mr-2" />
+            <SelectValue placeholder="Zeitraum" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Alle Zeit</SelectItem>
+            <SelectItem value="today">Heute</SelectItem>
+            <SelectItem value="week">Letzte 7 Tage</SelectItem>
+            <SelectItem value="month">Letzte 30 Tage</SelectItem>
+            <SelectItem value="quarter">Letzte 90 Tage</SelectItem>
           </SelectContent>
         </Select>
         <Button variant="outline" onClick={exportToCSV} disabled={sortedOrders.length === 0}>
