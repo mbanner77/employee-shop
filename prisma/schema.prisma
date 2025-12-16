@@ -25,17 +25,18 @@ model Product {
 }
 
 model Employee {
-  id           String   @id @default(cuid())
-  employeeId   String   @unique // Personalnummer
-  email        String   @unique
-  firstName    String
-  lastName     String
-  department   String
-  password     String
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  orders       Order[]
+  id             String    @id @default(cuid())
+  employeeId     String    @unique // Personalnummer
+  email          String    @unique
+  firstName      String
+  lastName       String
+  department     String
+  password       String
+  isActive       Boolean   @default(true)
+  quotaResetDate DateTime? // Datum ab dem das Jahreskontingent zählt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  orders         Order[]
 }
 
 model Order {

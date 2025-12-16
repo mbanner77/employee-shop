@@ -31,12 +31,15 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
     })
 
-    // Calculate yearly stats
-    const currentYear = new Date().getFullYear()
-    const thisYearOrders = orders.filter((order: { createdAt: Date }) => 
-      new Date(order.createdAt).getFullYear() === currentYear
+    // Calculate quota stats based on quotaResetDate or current year
+    const quotaStartDate = employee.quotaResetDate 
+      ? new Date(employee.quotaResetDate)
+      : new Date(new Date().getFullYear(), 0, 1) // Default: Start of current year
+    
+    const quotaOrders = orders.filter((order: { createdAt: Date }) => 
+      new Date(order.createdAt) >= quotaStartDate
     )
-    const yearlyItemCount = thisYearOrders.reduce((sum: number, order: { items: unknown[] }) => 
+    const yearlyItemCount = quotaOrders.reduce((sum: number, order: { items: unknown[] }) => 
       sum + order.items.length, 0
     )
 
@@ -44,7 +47,7 @@ export async function GET() {
       orders,
       stats: {
         totalOrders: orders.length,
-        yearlyOrders: thisYearOrders.length,
+        yearlyOrders: quotaOrders.length,
         yearlyItemCount,
         remainingItems: Math.max(0, 4 - yearlyItemCount),
       },

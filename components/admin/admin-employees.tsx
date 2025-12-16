@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { 
   Loader2, Search, Users, ShoppingBag, Eye, UserX, UserCheck, 
-  ChevronDown, ChevronUp, Mail, Building, Hash, Upload, Plus, UserPlus 
+  ChevronDown, ChevronUp, Mail, Building, Hash, Upload, Plus, UserPlus, RotateCcw 
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -60,6 +60,8 @@ export function AdminEmployees() {
   const [importing, setImporting] = useState(false)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [creating, setCreating] = useState(false)
+  const [resettingAll, setResettingAll] = useState(false)
+  const [resettingId, setResettingId] = useState<string | null>(null)
   const [newEmployee, setNewEmployee] = useState({
     employeeId: "",
     email: "",
@@ -71,6 +73,36 @@ export function AdminEmployees() {
   useEffect(() => {
     fetchEmployees()
   }, [])
+
+  const handleResetQuota = async (employeeId?: string) => {
+    if (employeeId) {
+      setResettingId(employeeId)
+    } else {
+      if (!confirm("Kontingent für ALLE Mitarbeiter zurücksetzen? Diese Aktion startet das Jahreskontingent für alle neu.")) return
+      setResettingAll(true)
+    }
+
+    try {
+      const response = await fetch("/api/employees/reset-quota", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(employeeId ? { employeeIds: [employeeId] } : { resetAll: true }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        toast.success(data.message)
+      } else {
+        toast.error("Fehler beim Zurücksetzen")
+      }
+    } catch (error) {
+      console.error("Reset quota error:", error)
+      toast.error("Verbindungsfehler")
+    } finally {
+      setResettingAll(false)
+      setResettingId(null)
+    }
+  }
 
   const handleCreateEmployee = async () => {
     if (!newEmployee.employeeId || !newEmployee.email || !newEmployee.firstName || !newEmployee.lastName) {
@@ -320,6 +352,10 @@ export function AdminEmployees() {
           <Plus className="h-4 w-4 mr-2" />
           Mitarbeiter anlegen
         </Button>
+        <Button variant="outline" onClick={() => handleResetQuota()} disabled={resettingAll}>
+          {resettingAll ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RotateCcw className="h-4 w-4 mr-2" />}
+          Alle Kontingente zurücksetzen
+        </Button>
       </div>
 
       {/* Create Employee Dialog */}
@@ -455,6 +491,19 @@ export function AdminEmployees() {
                         <UserX className="h-4 w-4 text-destructive" />
                       ) : (
                         <UserCheck className="h-4 w-4 text-green-600" />
+                      )}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleResetQuota(employee.id)}
+                      disabled={resettingId === employee.id}
+                      title="Kontingent zurücksetzen"
+                    >
+                      {resettingId === employee.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <RotateCcw className="h-4 w-4" />
                       )}
                     </Button>
                   </div>
