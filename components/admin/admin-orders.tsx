@@ -1,12 +1,15 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import { type Order } from "@/lib/store"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
-import { ChevronDown, ChevronUp, Search, Loader2, User } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+import { ChevronDown, ChevronUp, Search, Loader2, User, Download, CheckSquare } from "lucide-react"
+import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 
 interface OrderWithEmployee extends Order {
@@ -39,6 +42,8 @@ export function AdminOrders() {
   const [searchTerm, setSearchTerm] = useState("")
   const [filterStatus, setFilterStatus] = useState<string>("all")
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null)
+  const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set())
+  const [bulkUpdating, setBulkUpdating] = useState(false)
 
   const fetchOrders = async () => {
     try {
@@ -93,6 +98,82 @@ export function AdminOrders() {
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   )
 
+  const toggleOrderSelection = (orderId: string) => {
+    const newSelected = new Set(selectedOrders)
+    if (newSelected.has(orderId)) {
+      newSelected.delete(orderId)
+    } else {
+      newSelected.add(orderId)
+    }
+    setSelectedOrders(newSelected)
+  }
+
+  const toggleAllOrders = () => {
+    if (selectedOrders.size === sortedOrders.length) {
+      setSelectedOrders(new Set())
+    } else {
+      setSelectedOrders(new Set(sortedOrders.map(o => o.id)))
+    }
+  }
+
+  const bulkUpdateStatus = async (status: Order["status"]) => {
+    if (selectedOrders.size === 0) return
+    setBulkUpdating(true)
+    try {
+      const promises = Array.from(selectedOrders).map(orderId =>
+        fetch(`/api/orders/${orderId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status }),
+        })
+      )
+      await Promise.all(promises)
+      setOrders(orders.map(order =>
+        selectedOrders.has(order.id) ? { ...order, status } : order
+      ))
+      toast.success(`${selectedOrders.size} Bestellungen aktualisiert`)
+      setSelectedOrders(new Set())
+    } catch (error) {
+      console.error("Failed to bulk update orders:", error)
+      toast.error("Fehler beim Aktualisieren")
+    } finally {
+      setBulkUpdating(false)
+    }
+  }
+
+  const exportToCSV = () => {
+    const ordersToExport = selectedOrders.size > 0 
+      ? sortedOrders.filter(o => selectedOrders.has(o.id))
+      : sortedOrders
+    
+    const headers = ["Bestellnummer", "Datum", "Status", "Name", "E-Mail", "Abteilung", "Straße", "PLZ", "Stadt", "Artikel", "Größen"]
+    const rows = ordersToExport.map(order => [
+      order.id,
+      new Date(order.createdAt).toLocaleDateString("de-DE"),
+      statusLabels[order.status],
+      order.customerName,
+      order.email,
+      order.department,
+      order.street,
+      order.zip,
+      order.city,
+      order.items.map(i => i.product.name).join("; "),
+      order.items.map(i => i.size).join("; "),
+    ])
+    
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+    ].join("\n")
+    
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" })
+    const link = document.createElement("a")
+    link.href = URL.createObjectURL(blob)
+    link.download = `bestellungen_${new Date().toISOString().split("T")[0]}.csv`
+    link.click()
+    toast.success(`${ordersToExport.length} Bestellungen exportiert`)
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -130,7 +211,36 @@ export function AdminOrders() {
             <SelectItem value="DELIVERED">Zugestellt</SelectItem>
           </SelectContent>
         </Select>
+        <Button variant="outline" onClick={exportToCSV} disabled={sortedOrders.length === 0}>
+          <Download className="h-4 w-4 mr-2" />
+          {selectedOrders.size > 0 ? `Export (${selectedOrders.size})` : "Export CSV"}
+        </Button>
       </div>
+
+      {selectedOrders.size > 0 && (
+        <Card className="bg-muted/50">
+          <CardContent className="py-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-sm font-medium">{selectedOrders.size} ausgewählt</span>
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" variant="outline" onClick={() => bulkUpdateStatus("PROCESSING")} disabled={bulkUpdating}>
+                  {bulkUpdating ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+                  In Bearbeitung
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => bulkUpdateStatus("SHIPPED")} disabled={bulkUpdating}>
+                  Versendet
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => bulkUpdateStatus("DELIVERED")} disabled={bulkUpdating}>
+                  Zugestellt
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setSelectedOrders(new Set())}>
+                  Auswahl aufheben
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {sortedOrders.length === 0 ? (
         <Card>
@@ -142,20 +252,37 @@ export function AdminOrders() {
         </Card>
       ) : (
         <div className="space-y-4">
+          <div className="flex items-center gap-2 px-1">
+            <Checkbox
+              checked={selectedOrders.size === sortedOrders.length && sortedOrders.length > 0}
+              onCheckedChange={toggleAllOrders}
+            />
+            <span className="text-sm text-muted-foreground">Alle auswählen</span>
+          </div>
           {sortedOrders.map((order) => (
-            <Card key={order.id}>
-              <CardHeader
-                className="cursor-pointer"
-                onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}
-              >
+            <Card key={order.id} className={cn(selectedOrders.has(order.id) && "ring-2 ring-primary")}>
+              <CardHeader className="cursor-pointer">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <CardTitle className="text-base font-mono">{order.id}</CardTitle>
+                    <Checkbox
+                      checked={selectedOrders.has(order.id)}
+                      onCheckedChange={() => toggleOrderSelection(order.id)}
+                      onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                    />
+                    <CardTitle 
+                      className="text-base font-mono"
+                      onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}
+                    >
+                      {order.id}
+                    </CardTitle>
                     <Badge className={cn("font-normal", statusColors[order.status])}>
                       {statusLabels[order.status]}
                     </Badge>
                   </div>
-                  <div className="flex items-center gap-4">
+                  <div 
+                    className="flex items-center gap-4"
+                    onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}
+                  >
                     <span className="hidden text-sm text-muted-foreground sm:block">
                       {new Date(order.createdAt).toLocaleDateString("de-DE")}
                     </span>
