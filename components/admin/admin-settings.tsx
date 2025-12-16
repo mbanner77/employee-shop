@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
-import { Loader2, Save, Mail, Settings, Store } from "lucide-react"
+import { Loader2, Save, Mail, Settings, Store, Send } from "lucide-react"
 import { AdminCompanyAreas } from "./admin-company-areas"
 
 interface Settings {
@@ -28,6 +28,8 @@ export function AdminSettings() {
   const [settings, setSettings] = useState<Settings | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [sendingTest, setSendingTest] = useState(false)
+  const [testEmail, setTestEmail] = useState("")
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
 
   useEffect(() => {
@@ -76,6 +78,35 @@ export function AdminSettings() {
   const updateSetting = <K extends keyof Settings>(key: K, value: Settings[K]) => {
     if (settings) {
       setSettings({ ...settings, [key]: value })
+    }
+  }
+
+  const handleSendTestEmail = async () => {
+    if (!testEmail) {
+      setMessage({ type: "error", text: "Bitte E-Mail-Adresse eingeben" })
+      return
+    }
+    setSendingTest(true)
+    setMessage(null)
+
+    try {
+      const response = await fetch("/api/admin/test-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: testEmail }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setMessage({ type: "success", text: data.message })
+      } else {
+        setMessage({ type: "error", text: data.error || "Senden fehlgeschlagen" })
+      }
+    } catch {
+      setMessage({ type: "error", text: "Verbindungsfehler" })
+    } finally {
+      setSendingTest(false)
     }
   }
 
@@ -222,6 +253,37 @@ export function AdminSettings() {
                   onChange={(e) => updateSetting("emailFromName", e.target.value)}
                 />
               </div>
+            </div>
+
+            {/* Test Email Section */}
+            <div className="pt-4 border-t">
+              <Label className="text-sm font-medium mb-2 block">Test-E-Mail senden</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="email"
+                  placeholder="test@example.com"
+                  value={testEmail}
+                  onChange={(e) => setTestEmail(e.target.value)}
+                  className="flex-1"
+                />
+                <Button 
+                  variant="outline" 
+                  onClick={handleSendTestEmail} 
+                  disabled={sendingTest || !settings.smtpHost}
+                >
+                  {sendingTest ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4 mr-2" />
+                      Testen
+                    </>
+                  )}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Sendet eine Test-E-Mail um die SMTP-Konfiguration zu prüfen
+              </p>
             </div>
           </CardContent>
         </Card>
