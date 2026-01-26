@@ -75,22 +75,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Bewertung muss zwischen 1 und 5 sein" }, { status: 400 })
     }
 
-    // Check if employee has ordered this product
-    const hasOrdered = await prisma.orderItem.findFirst({
-      where: {
-        productId,
-        order: {
-          employeeId,
-        },
-      },
-    })
-
-    if (!hasOrdered) {
-      return NextResponse.json({ 
-        error: "Du kannst nur Produkte bewerten, die du bestellt hast" 
-      }, { status: 400 })
-    }
-
     // Upsert review (create or update)
     const review = await prisma.review.upsert({
       where: {
