@@ -15,6 +15,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 interface SizeChartDialogProps {
   category?: string
   sizeChart?: string | null
+  productName?: string
+  sizeChartUrl?: string
+  // Controlled mode props
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 // Default size charts for different categories
@@ -60,23 +65,38 @@ const defaultSizeCharts: Record<string, { sizes: string[]; measurements: Record<
   },
 }
 
-export function SizeChartDialog({ category, sizeChart }: SizeChartDialogProps) {
-  const [open, setOpen] = useState(false)
+export function SizeChartDialog({ 
+  category, 
+  sizeChart, 
+  productName,
+  sizeChartUrl,
+  open: controlledOpen, 
+  onOpenChange: controlledOnOpenChange 
+}: SizeChartDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false)
+  
+  // Use controlled or uncontrolled mode
+  const isControlled = controlledOpen !== undefined
+  const open = isControlled ? controlledOpen : internalOpen
+  const setOpen = isControlled ? controlledOnOpenChange! : setInternalOpen
 
   // Use custom size chart if provided (URL or content), otherwise use default
   const chartData = defaultSizeCharts[category || ""] || defaultSizeCharts.default
 
-  // If sizeChart is a URL, show an image
-  const isUrl = sizeChart?.startsWith("http")
+  // If sizeChart or sizeChartUrl is a URL, show an image
+  const chartUrl = sizeChartUrl || sizeChart
+  const isUrl = chartUrl?.startsWith("http")
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="text-xs text-muted-foreground hover:text-primary">
-          <Ruler className="h-3 w-3 mr-1" />
-          Größentabelle
-        </Button>
-      </DialogTrigger>
+      {!isControlled && (
+        <DialogTrigger asChild>
+          <Button variant="ghost" size="sm" className="text-xs text-muted-foreground hover:text-primary">
+            <Ruler className="h-3 w-3 mr-1" />
+            Größentabelle
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Größentabelle {category && `- ${category}`}</DialogTitle>

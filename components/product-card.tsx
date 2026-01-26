@@ -3,14 +3,18 @@
 import React from "react"
 import Image from "next/image"
 import { useState, useEffect } from "react"
-import { Plus, Check, ChevronLeft, ChevronRight } from "lucide-react"
+import { Plus, Check, ChevronLeft, ChevronRight, Heart, Ruler } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useShopStore, type Product, type Size } from "@/lib/store"
+import { SizeChartDialog } from "@/components/size-chart-dialog"
 
 interface ProductCardProps {
-  product: Product
+  product: Product & { 
+    stock?: Record<string, number> | null
+    sizeChart?: string | null
+  }
 }
 
 export function ProductCard({ product }: ProductCardProps) {
@@ -18,7 +22,53 @@ export function ProductCard({ product }: ProductCardProps) {
   const [mounted, setMounted] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [isFavorite, setIsFavorite] = useState(false)
+  const [favoriteLoading, setFavoriteLoading] = useState(false)
+  const [showSizeChart, setShowSizeChart] = useState(false)
   const { cart, addToCart } = useShopStore()
+
+  // Check if product is in favorites
+  useEffect(() => {
+    const checkFavorite = async () => {
+      try {
+        const res = await fetch("/api/favorites")
+        if (res.ok) {
+          const favorites = await res.json()
+          setIsFavorite(favorites.some((f: { productId: string }) => f.productId === product.id))
+        }
+      } catch {
+        // Not logged in or error
+      }
+    }
+    checkFavorite()
+  }, [product.id])
+
+  const toggleFavorite = async () => {
+    setFavoriteLoading(true)
+    try {
+      if (isFavorite) {
+        await fetch(`/api/favorites?productId=${product.id}`, { method: "DELETE" })
+        setIsFavorite(false)
+      } else {
+        await fetch("/api/favorites", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ productId: product.id }),
+        })
+        setIsFavorite(true)
+      }
+    } catch {
+      // Error handling
+    } finally {
+      setFavoriteLoading(false)
+    }
+  }
+
+  // Get stock for selected size
+  const getStock = (size: string): number | null => {
+    if (!product.stock) return null
+    return (product.stock as Record<string, number>)[size] ?? null
+  }
 
   // Combine main image with additional images array
   const allImages = product.images && product.images.length > 0 
@@ -78,6 +128,18 @@ export function ProductCard({ product }: ProductCardProps) {
           fill
           className="object-cover transition-transform duration-500 group-hover:scale-105"
         />
+        {/* Favorite Button */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            toggleFavorite()
+          }}
+          disabled={favoriteLoading}
+          className="absolute left-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-background/80 text-foreground transition-all hover:bg-background hover:scale-110"
+          aria-label={isFavorite ? "Von Favoriten entfernen" : "Zu Favoriten hinzufügen"}
+        >
+          <Heart className={`h-4 w-4 ${isFavorite ? "fill-red-500 text-red-500" : ""}`} />
+        </button>
         {isInCart && (
           <div className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-accent">
             <Check className="h-4 w-4 text-accent-foreground" />
@@ -129,7 +191,21 @@ export function ProductCard({ product }: ProductCardProps) {
           {product.category}
         </div>
         <h3 className="mb-2 font-serif text-lg font-semibold leading-tight text-foreground">{product.name}</h3>
-        <p className="mb-4 text-sm text-muted-foreground line-clamp-2">{product.description}</p>
+        <p className="mb-2 text-sm text-muted-foreground line-clamp-2">{product.description}</p>
+        {/* Size Chart Button */}
+        <button
+          onClick={() => setShowSizeChart(true)}
+          className="mb-3 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <Ruler className="h-3 w-3" />
+          Größentabelle
+        </button>
+        {/* Stock indicator */}
+        {selectedSize && getStock(selectedSize) !== null && (
+          <div className={`mb-2 text-xs ${getStock(selectedSize)! > 5 ? "text-green-600" : getStock(selectedSize)! > 0 ? "text-orange-500" : "text-red-500"}`}>
+            {getStock(selectedSize)! > 5 ? "Auf Lager" : getStock(selectedSize)! > 0 ? `Nur noch ${getStock(selectedSize)} verfügbar` : "Nicht verfügbar"}
+          </div>
+        )}
         <div className="flex items-center gap-2">
           <Select
             value={selectedSize || undefined}
@@ -157,6 +233,15 @@ export function ProductCard({ product }: ProductCardProps) {
           </Button>
         </div>
       </CardContent>
+      
+      {/* Size Chart Dialog */}
+      <SizeChartDialog
+        open={showSizeChart}
+        onOpenChange={setShowSizeChart}
+        productName={product.name}
+        category={product.category}
+        sizeChartUrl={product.sizeChart || undefined}
+      />
     </Card>
   )
 }

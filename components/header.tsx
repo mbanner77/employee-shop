@@ -3,12 +3,13 @@
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
-import { ShoppingBag, Menu, Settings, X } from "lucide-react"
+import { ShoppingBag, Menu, Settings, X, Heart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useShopStore } from "@/lib/store"
 import { useState, useEffect } from "react"
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { LanguageSwitcher } from "@/components/language-switcher"
 import { cn } from "@/lib/utils"
 
 export function Header() {
@@ -79,6 +80,17 @@ export function Header() {
             Bestellung
           </Link>
           <Link
+            href="/favorites"
+            className={cn(
+              "rounded-full px-4 py-2 text-sm font-medium transition-colors",
+              useDarkHeader && !isAdminPage
+                ? "text-muted-foreground hover:bg-muted hover:text-foreground"
+                : "text-white/70 hover:bg-white/10 hover:text-white",
+            )}
+          >
+            Favoriten
+          </Link>
+          <Link
             href="/admin"
             className={cn(
               "rounded-full px-4 py-2 text-sm font-medium transition-colors",
@@ -92,6 +104,7 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-2">
+          <LanguageSwitcher />
           <div className={cn(useDarkHeader && !isAdminPage ? "" : "text-white")}>
             <ThemeToggle />
           </div>
@@ -146,6 +159,20 @@ export function Header() {
                     className="rounded-lg px-4 py-3 text-lg font-medium hover:bg-muted"
                   >
                     Bestellung
+                  </Link>
+                  <Link
+                    href="/favorites"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="rounded-lg px-4 py-3 text-lg font-medium hover:bg-muted"
+                  >
+                    Favoriten
+                  </Link>
+                  <Link
+                    href="/feedback"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="rounded-lg px-4 py-3 text-lg font-medium hover:bg-muted"
+                  >
+                    Feedback
                   </Link>
                   <Link
                     href="/admin"
