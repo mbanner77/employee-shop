@@ -62,11 +62,14 @@ export function ProductReviews({ productId, productName }: ProductReviewsProps) 
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [canReview, setCanReview] = useState(true)
 
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
+
   const submitReview = async () => {
     if (newRating === 0) return
 
     setSubmitting(true)
     setErrorMessage(null)
+    setSuccessMessage(null)
     try {
       const res = await fetch("/api/reviews", {
         method: "POST",
@@ -79,8 +82,14 @@ export function ProductReviews({ productId, productName }: ProductReviewsProps) 
       })
 
       if (res.ok) {
+        const newReview = await res.json()
+        // Add new review to the list immediately
+        setReviews(prev => [newReview, ...prev])
+        // Recalculate average
+        const newAvg = [...reviews, newReview].reduce((sum, r) => sum + r.rating, 0) / (reviews.length + 1)
+        setAverageRating(Math.round(newAvg * 10) / 10)
         setHasReviewed(true)
-        fetchReviews()
+        setSuccessMessage("Danke für deine Bewertung!")
         setNewRating(0)
         setNewComment("")
       } else if (res.status === 401) {
@@ -89,9 +98,6 @@ export function ProductReviews({ productId, productName }: ProductReviewsProps) 
       } else {
         const data = await res.json()
         setErrorMessage(data.error || "Fehler beim Absenden")
-        if (data.error?.includes("bestellt")) {
-          setCanReview(false)
-        }
       }
     } catch (error) {
       console.error("Error submitting review:", error)
@@ -233,13 +239,14 @@ export function ProductReviews({ productId, productName }: ProductReviewsProps) 
             </div>
           )}
 
-          {reviews.length === 0 && hasReviewed && (
-            <p className="text-center text-sm text-muted-foreground py-4">
-              Danke für deine Bewertung!
-            </p>
+          {/* Success message after submitting */}
+          {hasReviewed && successMessage && (
+            <div className="rounded-md bg-green-100 dark:bg-green-900/20 p-3 text-sm text-green-700 dark:text-green-400 text-center">
+              {successMessage}
+            </div>
           )}
 
-          {reviews.length === 0 && !hasReviewed && (
+          {reviews.length === 0 && !hasReviewed && canReview && (
             <p className="text-center text-sm text-muted-foreground py-4">
               Noch keine Bewertungen. Sei der Erste!
             </p>
