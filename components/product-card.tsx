@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useShopStore, type Product, type Size } from "@/lib/store"
 import { SizeChartDialog } from "@/components/size-chart-dialog"
+import { ProductReviews } from "@/components/product-reviews"
 
 interface ProductCardProps {
   product: Product & { 
@@ -190,7 +191,11 @@ export function ProductCard({ product }: ProductCardProps) {
         <div className="mb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
           {product.category}
         </div>
-        <h3 className="mb-2 font-serif text-lg font-semibold leading-tight text-foreground">{product.name}</h3>
+        <h3 className="mb-1 font-serif text-lg font-semibold leading-tight text-foreground">{product.name}</h3>
+        {/* Product Reviews */}
+        <div className="mb-2">
+          <ProductReviews productId={product.id} productName={product.name} />
+        </div>
         <p className="mb-2 text-sm text-muted-foreground line-clamp-2">{product.description}</p>
         {/* Size Chart Button */}
         <button
