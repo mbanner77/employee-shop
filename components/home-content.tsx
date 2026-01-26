@@ -6,7 +6,8 @@ import { Header } from "@/components/header"
 import { HeroSection } from "@/components/hero-section"
 import { ProductGrid } from "@/components/product-grid"
 import { EmployeeLogin } from "@/components/employee-login"
-import { Package, Truck, Award, LogOut, ClipboardList } from "lucide-react"
+import { Package, Truck, Award, LogOut, ClipboardList, Star } from "lucide-react"
+import { TopRatedProducts } from "@/components/top-rated-products"
 import { Button } from "@/components/ui/button"
 
 interface Employee {
@@ -126,6 +127,8 @@ export function HomeContent() {
             </div>
           </div>
         </section>
+
+        <TopRatedProducts />
 
         <ProductGrid />
       </main>

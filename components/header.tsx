@@ -91,6 +91,17 @@ export function Header() {
             Favoriten
           </Link>
           <Link
+            href="/feedback"
+            className={cn(
+              "rounded-full px-4 py-2 text-sm font-medium transition-colors",
+              useDarkHeader && !isAdminPage
+                ? "text-muted-foreground hover:bg-muted hover:text-foreground"
+                : "text-white/70 hover:bg-white/10 hover:text-white",
+            )}
+          >
+            Feedback
+          </Link>
+          <Link
             href="/admin"
             className={cn(
               "rounded-full px-4 py-2 text-sm font-medium transition-colors",
