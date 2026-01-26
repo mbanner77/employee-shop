@@ -41,7 +41,6 @@ services:
     name: yearly-quota-reset
     runtime: node
     region: frankfurt
-    plan: free
     schedule: "0 0 1 1 *"
     buildCommand: echo "Cron job ready"
     startCommand: |
