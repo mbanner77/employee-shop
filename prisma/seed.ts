@@ -136,11 +136,10 @@ async function main() {
       data: {
         email: "admin@realcore.de",
         password: process.env.ADMIN_PASSWORD || "realcore2025",
-        employeeNumber: "ADMIN001",
+        employeeId: "ADMIN001",
         firstName: "Admin",
         lastName: "RealCore",
-        yearlyLimit: 999999,
-        usedBudget: 0,
+        department: "Administration",
       },
     })
     console.log("Created admin employee (admin@realcore.de)")
