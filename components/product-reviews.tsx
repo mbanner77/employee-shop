@@ -48,11 +48,9 @@ export function ProductReviews({ productId, productName }: ProductReviewsProps) 
       const res = await fetch(`/api/reviews?productId=${productId}`)
       if (res.ok) {
         const data = await res.json()
-        setReviews(data)
-        if (data.length > 0) {
-          const avg = data.reduce((acc: number, r: Review) => acc + r.rating, 0) / data.length
-          setAverageRating(avg)
-        }
+        // API returns { reviews, averageRating, totalReviews }
+        setReviews(data.reviews || [])
+        setAverageRating(data.averageRating || 0)
       }
     } catch (error) {
       console.error("Error fetching reviews:", error)
@@ -61,10 +59,14 @@ export function ProductReviews({ productId, productName }: ProductReviewsProps) 
     }
   }
 
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [canReview, setCanReview] = useState(true)
+
   const submitReview = async () => {
     if (newRating === 0) return
 
     setSubmitting(true)
+    setErrorMessage(null)
     try {
       const res = await fetch("/api/reviews", {
         method: "POST",
@@ -78,17 +80,22 @@ export function ProductReviews({ productId, productName }: ProductReviewsProps) 
 
       if (res.ok) {
         setHasReviewed(true)
-        setShowDialog(false)
         fetchReviews()
         setNewRating(0)
         setNewComment("")
-      } else if (res.status === 400) {
+      } else if (res.status === 401) {
+        setErrorMessage("Bitte melde dich an, um zu bewerten")
+        setCanReview(false)
+      } else {
         const data = await res.json()
-        alert(data.error || "Du hast dieses Produkt bereits bewertet")
-        setHasReviewed(true)
+        setErrorMessage(data.error || "Fehler beim Absenden")
+        if (data.error?.includes("bestellt")) {
+          setCanReview(false)
+        }
       }
     } catch (error) {
       console.error("Error submitting review:", error)
+      setErrorMessage("Netzwerkfehler")
     } finally {
       setSubmitting(false)
     }
@@ -155,9 +162,14 @@ export function ProductReviews({ productId, productName }: ProductReviewsProps) 
           )}
 
           {/* Add review form */}
-          {!hasReviewed && (
+          {!hasReviewed && canReview && (
             <div className="space-y-3 border-t pt-4">
               <p className="text-sm font-medium">Deine Bewertung</p>
+              {errorMessage && (
+                <div className="rounded-md bg-destructive/10 p-2 text-sm text-destructive">
+                  {errorMessage}
+                </div>
+              )}
               <div className="flex gap-1">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button

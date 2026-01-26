@@ -12,10 +12,7 @@ import { SizeChartDialog } from "@/components/size-chart-dialog"
 import { ProductReviews } from "@/components/product-reviews"
 
 interface ProductCardProps {
-  product: Product & { 
-    stock?: Record<string, number> | null
-    sizeChart?: string | null
-  }
+  product: Product
 }
 
 export function ProductCard({ product }: ProductCardProps) {

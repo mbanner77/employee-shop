@@ -12,6 +12,9 @@ export interface Product {
   images?: string[]
   sizes: string[]
   color: string
+  yearlyLimit?: number
+  stock?: Record<string, number> | null
+  sizeChart?: string | null
 }
 
 export interface CartItem {
