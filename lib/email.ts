@@ -161,6 +161,79 @@ export async function sendOrderStatusChangedEmail(args: {
   })
 }
 
+export async function sendOrderCreatedEmailToAdmin(args: {
+  orderId: string
+  customerName: string
+  customerEmail: string
+  department: string
+  items: Array<{ name: string; size: string }>
+}) {
+  const settings = await prisma.settings.findUnique({ where: { id: "settings" } })
+  if (!settings?.adminEmail) return
+
+  const itemsHtml = args.items.length
+    ? `
+      <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 16px;">
+        <tr style="background-color: #e4e4e7;">
+          <th style="padding: 8px; text-align: left; font-size: 12px;">Artikel</th>
+          <th style="padding: 8px; text-align: right; font-size: 12px;">Größe</th>
+        </tr>
+        ${args.items.map(item => `
+          <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #e4e4e7;">${item.name}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #e4e4e7; text-align: right;">${item.size}</td>
+          </tr>
+        `).join("")}
+      </table>
+    `
+    : ""
+
+  const htmlContent = `
+    <h2 style="margin: 0 0 16px 0; color: #18181b; font-size: 20px;">Neue Bestellung eingegangen</h2>
+    <p style="margin: 0 0 24px 0; color: #3f3f46; font-size: 16px; line-height: 1.6;">
+      Eine neue Bestellung wurde im Mitarbeiter-Shop aufgegeben.
+    </p>
+    
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f5; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+      <tr>
+        <td>
+          <p style="margin: 0 0 8px 0; color: #71717a; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Bestellnummer</p>
+          <p style="margin: 0 0 16px 0; color: #18181b; font-size: 14px; font-family: monospace;">${args.orderId}</p>
+          
+          <p style="margin: 0 0 8px 0; color: #71717a; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Besteller</p>
+          <p style="margin: 0 0 16px 0; color: #18181b; font-size: 14px;">${args.customerName}</p>
+          
+          <p style="margin: 0 0 8px 0; color: #71717a; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">E-Mail</p>
+          <p style="margin: 0 0 16px 0; color: #18181b; font-size: 14px;">${args.customerEmail}</p>
+          
+          <p style="margin: 0 0 8px 0; color: #71717a; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Firmenbereich</p>
+          <p style="margin: 0; color: #18181b; font-size: 14px;">${args.department}</p>
+        </td>
+      </tr>
+    </table>
+    
+    <h3 style="margin: 0 0 12px 0; color: #18181b; font-size: 16px;">Bestellte Artikel (${args.items.length})</h3>
+    ${itemsHtml}
+  `
+
+  await sendEmail({
+    to: settings.adminEmail,
+    subject: `🛒 Neue Bestellung von ${args.customerName}`,
+    text: [
+      `Neue Bestellung eingegangen`,
+      "",
+      `Bestellnummer: ${args.orderId}`,
+      `Besteller: ${args.customerName}`,
+      `E-Mail: ${args.customerEmail}`,
+      `Firmenbereich: ${args.department}`,
+      "",
+      `Artikel:`,
+      ...args.items.map(item => `- ${item.name} (Größe: ${item.size})`),
+    ].join("\n"),
+    html: emailTemplate(htmlContent),
+  })
+}
+
 export async function sendOrderCreatedEmail(args: {
   employeeId: string
   orderId: string

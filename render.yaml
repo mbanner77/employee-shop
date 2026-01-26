@@ -29,5 +29,34 @@ services:
         value: supplier2025
       - key: SEED_SECRET
         generateValue: true
+      - key: CRON_SECRET
+        generateValue: true
+      - key: NEXT_PUBLIC_BASE_URL
+        value: https://mitarbeitershop.realcore.de
     healthCheckPath: /
     autoDeploy: true
+
+  # Cron Job für automatischen Jahres-Reset am 1. Januar
+  - type: cron
+    name: yearly-quota-reset
+    runtime: node
+    region: frankfurt
+    plan: free
+    schedule: "0 0 1 1 *"
+    buildCommand: echo "Cron job ready"
+    startCommand: |
+      curl -X POST \
+        -H "Authorization: Bearer $CRON_SECRET" \
+        -H "Content-Type: application/json" \
+        "$NEXT_PUBLIC_BASE_URL/api/cron/yearly-reset"
+    envVars:
+      - key: CRON_SECRET
+        fromService:
+          name: realcore-employee-shop
+          type: web
+          envVarKey: CRON_SECRET
+      - key: NEXT_PUBLIC_BASE_URL
+        fromService:
+          name: realcore-employee-shop
+          type: web
+          envVarKey: NEXT_PUBLIC_BASE_URL

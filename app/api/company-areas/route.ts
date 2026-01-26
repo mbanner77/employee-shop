@@ -25,7 +25,7 @@ export async function GET(request: Request) {
 // POST - Neuen Firmenbereich erstellen (Admin)
 export async function POST(request: Request) {
   try {
-    const { name, isActive = true, sortOrder = 0 } = await request.json()
+    const { name, isActive = true, sortOrder = 0, costCenter } = await request.json()
     
     if (!name || name.trim() === "") {
       return NextResponse.json({ error: "Name ist erforderlich" }, { status: 400 })
@@ -44,6 +44,7 @@ export async function POST(request: Request) {
         name: name.trim(),
         isActive,
         sortOrder,
+        costCenter: costCenter?.trim() || null,
       },
     })
     
@@ -57,7 +58,7 @@ export async function POST(request: Request) {
 // PUT - Firmenbereich aktualisieren (Admin)
 export async function PUT(request: Request) {
   try {
-    const { id, name, isActive, sortOrder } = await request.json()
+    const { id, name, isActive, sortOrder, costCenter } = await request.json()
     
     if (!id) {
       return NextResponse.json({ error: "ID ist erforderlich" }, { status: 400 })
@@ -69,6 +70,7 @@ export async function PUT(request: Request) {
         ...(name !== undefined && { name: name.trim() }),
         ...(isActive !== undefined && { isActive }),
         ...(sortOrder !== undefined && { sortOrder }),
+        ...(costCenter !== undefined && { costCenter: costCenter?.trim() || null }),
       },
     })
     

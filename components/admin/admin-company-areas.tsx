@@ -13,6 +13,7 @@ interface CompanyArea {
   name: string
   isActive: boolean
   sortOrder: number
+  costCenter: string | null
 }
 
 export function AdminCompanyAreas() {
@@ -185,6 +186,19 @@ export function AdminCompanyAreas() {
                   onChange={(e) => handleNameChange(area.id, e.target.value)}
                   onBlur={() => handleSaveName(area)}
                   className="flex-1"
+                  placeholder="Bereichsname"
+                />
+                
+                <Input
+                  value={area.costCenter || ""}
+                  onChange={(e) => {
+                    setCompanyAreas(areas => 
+                      areas.map(a => a.id === area.id ? { ...a, costCenter: e.target.value } : a)
+                    )
+                  }}
+                  onBlur={() => handleUpdateArea(area)}
+                  className="w-32"
+                  placeholder="Kostenstelle"
                 />
                 
                 <div className="flex items-center gap-2">

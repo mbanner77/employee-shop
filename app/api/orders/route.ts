@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
-import { sendOrderCreatedEmail } from "@/lib/email"
+import { sendOrderCreatedEmail, sendOrderCreatedEmailToAdmin } from "@/lib/email"
 import { cookies } from "next/headers"
 
 export async function GET() {
@@ -83,14 +83,27 @@ export async function POST(request: Request) {
 
     try {
       const settings = await prisma.settings.findUnique({ where: { id: "settings" } })
+      const items = order.items.map((item: { product: { name: string }; size: string }) => ({
+        name: item.product.name,
+        size: item.size,
+      }))
+      
+      // E-Mail an Besteller
       if (settings?.notifyOnOrder && order.employeeId) {
-        const items = order.items.map(item => ({
-          name: item.product.name,
-          size: item.size,
-        }))
         await sendOrderCreatedEmail({ 
           employeeId: order.employeeId, 
           orderId: order.id,
+          items,
+        })
+      }
+      
+      // E-Mail an Admin (marketing@realcore.de)
+      if (settings?.notifyOnOrder && settings?.adminEmail) {
+        await sendOrderCreatedEmailToAdmin({
+          orderId: order.id,
+          customerName: order.customerName,
+          customerEmail: order.email,
+          department: order.department,
           items,
         })
       }

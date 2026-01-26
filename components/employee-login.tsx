@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from "react"
 import Image from "next/image"
-import { Lock, Mail, User, Eye, EyeOff, UserPlus, LogIn, Building } from "lucide-react"
+import { Lock, Mail, User, Eye, EyeOff, UserPlus, LogIn, Building, Loader2, CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 
 interface EmployeeLoginProps {
   onLogin: (employee: Employee) => void
@@ -33,6 +34,13 @@ export function EmployeeLogin({ onLogin }: EmployeeLoginProps) {
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [companyAreas, setCompanyAreas] = useState<CompanyArea[]>([])
+  
+  // Passwort vergessen
+  const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false)
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState("")
+  const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false)
+  const [forgotPasswordSuccess, setForgotPasswordSuccess] = useState(false)
+  const [forgotPasswordError, setForgotPasswordError] = useState("")
   
   // Login form
   const [loginEmail, setLoginEmail] = useState("")
@@ -130,6 +138,32 @@ export function EmployeeLogin({ onLogin }: EmployeeLoginProps) {
     }
   }
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setForgotPasswordError("")
+    setForgotPasswordLoading(true)
+
+    try {
+      const response = await fetch("/api/employees/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: forgotPasswordEmail }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setForgotPasswordSuccess(true)
+      } else {
+        setForgotPasswordError(data.error || "Fehler beim Senden der E-Mail")
+      }
+    } catch {
+      setForgotPasswordError("Verbindungsfehler. Bitte versuchen Sie es erneut.")
+    } finally {
+      setForgotPasswordLoading(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
       <Card className="w-full max-w-md shadow-2xl border-0 bg-white/95 backdrop-blur">
@@ -211,6 +245,66 @@ export function EmployeeLogin({ onLogin }: EmployeeLoginProps) {
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? "Wird angemeldet..." : "Anmelden"}
                 </Button>
+
+                <Dialog open={forgotPasswordOpen} onOpenChange={(open) => {
+                  setForgotPasswordOpen(open)
+                  if (!open) {
+                    setForgotPasswordSuccess(false)
+                    setForgotPasswordError("")
+                    setForgotPasswordEmail("")
+                  }
+                }}>
+                  <DialogTrigger asChild>
+                    <button type="button" className="w-full text-center text-sm text-muted-foreground hover:text-primary mt-2">
+                      Passwort vergessen?
+                    </button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Passwort zurücksetzen</DialogTitle>
+                      <DialogDescription>
+                        Gib deine E-Mail-Adresse ein und wir senden dir einen Link zum Zurücksetzen deines Passworts.
+                      </DialogDescription>
+                    </DialogHeader>
+                    {forgotPasswordSuccess ? (
+                      <div className="flex flex-col items-center py-4">
+                        <CheckCircle className="h-12 w-12 text-green-600 mb-3" />
+                        <p className="text-center text-sm">
+                          Falls ein Konto mit dieser E-Mail existiert, wurde eine E-Mail zum Zurücksetzen des Passworts gesendet.
+                        </p>
+                      </div>
+                    ) : (
+                      <form onSubmit={handleForgotPassword} className="space-y-4">
+                        {forgotPasswordError && (
+                          <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-lg">
+                            {forgotPasswordError}
+                          </div>
+                        )}
+                        <div className="space-y-2">
+                          <Label htmlFor="forgot-email">E-Mail</Label>
+                          <Input
+                            id="forgot-email"
+                            type="email"
+                            placeholder="max.mustermann@firma.de"
+                            value={forgotPasswordEmail}
+                            onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                            required
+                          />
+                        </div>
+                        <Button type="submit" className="w-full" disabled={forgotPasswordLoading}>
+                          {forgotPasswordLoading ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Wird gesendet...
+                            </>
+                          ) : (
+                            "Link senden"
+                          )}
+                        </Button>
+                      </form>
+                    )}
+                  </DialogContent>
+                </Dialog>
               </form>
             </TabsContent>
 

@@ -11,32 +11,48 @@ datasource db {
 }
 
 model Product {
-  id          String      @id @default(cuid())
-  name        String
-  category    String
-  description String
-  image       String
-  images      String[]
-  sizes       String[]
-  color       String
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  orderItems  OrderItem[]
+  id              String      @id @default(cuid())
+  name            String
+  category        String
+  description     String
+  image           String
+  images          String[]
+  sizes           String[]
+  color           String
+  // Artikelspezifische Limits: 1 = max 1x pro Jahr, 4 = max 4x pro Jahr (default)
+  yearlyLimit     Int         @default(4)
+  // Lagerbestand pro Größe (JSON: {"S": 10, "M": 5, ...})
+  stock           Json?
+  // Größentabelle URL oder Inhalt
+  sizeChart       String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  orderItems      OrderItem[]
+  favorites       Favorite[]
+  reviews         Review[]
 }
 
 model Employee {
-  id             String    @id @default(cuid())
-  employeeId     String    @unique // Personalnummer
-  email          String    @unique
-  firstName      String
-  lastName       String
-  department     String
-  password       String
-  isActive       Boolean   @default(true)
-  quotaResetDate DateTime? // Datum ab dem das Jahreskontingent zählt
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  orders         Order[]
+  id                  String    @id @default(cuid())
+  employeeId          String    @unique // Personalnummer
+  email               String    @unique
+  firstName           String
+  lastName            String
+  department          String
+  password            String
+  isActive            Boolean   @default(true)
+  quotaResetDate      DateTime? // Datum ab dem das Jahreskontingent zählt
+  // Password Reset
+  passwordResetToken  String?   @unique
+  passwordResetExpiry DateTime?
+  // Sprache
+  language            String    @default("de")
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  orders              Order[]
+  favorites           Favorite[]
+  feedbacks           Feedback[]
+  reviews             Review[]
 }
 
 model Order {
@@ -79,12 +95,14 @@ model SupplierUser {
 }
 
 model CompanyArea {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  isActive  Boolean  @default(true)
-  sortOrder Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(cuid())
+  name        String   @unique
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  // Kostenstellen-Zuordnung
+  costCenter  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Settings {
@@ -116,4 +134,43 @@ enum OrderStatus {
   PROCESSING
   SHIPPED
   DELIVERED
+}
+
+// Favoriten / Merkliste
+model Favorite {
+  id         String   @id @default(cuid())
+  employeeId String
+  productId  String
+  createdAt  DateTime @default(now())
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  @@unique([employeeId, productId])
+}
+
+// Feedback-Modul
+model Feedback {
+  id         String   @id @default(cuid())
+  employeeId String
+  orderId    String?
+  message    String
+  rating     Int?     // 1-5 Sterne optional
+  createdAt  DateTime @default(now())
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+}
+
+// Bewertungen der Artikel
+model Review {
+  id         String   @id @default(cuid())
+  employeeId String
+  productId  String
+  rating     Int      // 1-5 Sterne
+  comment    String?
+  isPublic   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  @@unique([employeeId, productId])
 }
