@@ -10,7 +10,7 @@ services:
     name: realcore-employee-shop
     runtime: node
     region: frankfurt
-    plan: free
+    plan: starter
     numInstances: 1
     buildCommand: pnpm install --no-frozen-lockfile --strict-peer-dependencies=false && pnpm exec prisma generate && pnpm exec prisma db push && pnpm run build
     startCommand: pnpm run start
