@@ -240,13 +240,14 @@ export function ProductReviews({ productId, productName }: ProductReviewsProps) 
           )}
 
           {/* Success message after submitting */}
-          {hasReviewed && successMessage && (
+          {hasReviewed && (
             <div className="rounded-md bg-green-100 dark:bg-green-900/20 p-3 text-sm text-green-700 dark:text-green-400 text-center">
-              {successMessage}
+              Danke für deine Bewertung!
             </div>
           )}
 
-          {reviews.length === 0 && !hasReviewed && canReview && (
+          {/* Only show "no reviews" message if there are truly no reviews AND user hasn't just submitted one */}
+          {reviews.length === 0 && !hasReviewed && (
             <p className="text-center text-sm text-muted-foreground py-4">
               Noch keine Bewertungen. Sei der Erste!
             </p>
