@@ -125,6 +125,29 @@ async function main() {
     console.log("Admin user already exists")
   }
 
+  // Create admin employee for frontend login
+  const existingAdminEmployee = await prisma.employee.findUnique({
+    where: { email: "admin@realcore.de" }
+  })
+
+  if (!existingAdminEmployee) {
+    console.log("Creating admin employee for frontend...")
+    await prisma.employee.create({
+      data: {
+        email: "admin@realcore.de",
+        password: process.env.ADMIN_PASSWORD || "realcore2025",
+        employeeNumber: "ADMIN001",
+        firstName: "Admin",
+        lastName: "RealCore",
+        yearlyLimit: 999999,
+        usedBudget: 0,
+      },
+    })
+    console.log("Created admin employee (admin@realcore.de)")
+  } else {
+    console.log("Admin employee already exists")
+  }
+
   console.log("Seeding complete!")
 }
 
