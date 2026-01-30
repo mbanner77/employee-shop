@@ -70,14 +70,16 @@ export function AdminProducts() {
               Neues Produkt
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
+          <DialogContent className="flex max-w-2xl max-h-[85vh] flex-col overflow-hidden p-0">
+            <DialogHeader className="p-6 pb-0">
               <DialogTitle>Neues Produkt hinzufügen</DialogTitle>
             </DialogHeader>
-            <ProductForm 
-              onSuccess={handleProductSaved} 
-              onCancel={() => setNewDialogOpen(false)} 
-            />
+            <div className="flex-1 overflow-y-auto p-6 pt-0">
+              <ProductForm 
+                onSuccess={handleProductSaved} 
+                onCancel={() => setNewDialogOpen(false)} 
+              />
+            </div>
           </DialogContent>
         </Dialog>
       </div>
@@ -219,15 +221,17 @@ function ProductCard({ product, onRefresh }: { product: Product; onRefresh: () =
                   <Edit className="h-4 w-4" />
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
+              <DialogContent className="flex max-w-2xl max-h-[85vh] flex-col overflow-hidden p-0">
+                <DialogHeader className="p-6 pb-0">
                   <DialogTitle>Produkt bearbeiten</DialogTitle>
                 </DialogHeader>
-                <ProductForm 
-                  product={product} 
-                  onSuccess={handleSaved}
-                  onCancel={() => setEditDialogOpen(false)}
-                />
+                <div className="flex-1 overflow-y-auto p-6 pt-0">
+                  <ProductForm 
+                    product={product} 
+                    onSuccess={handleSaved}
+                    onCancel={() => setEditDialogOpen(false)}
+                  />
+                </div>
               </DialogContent>
             </Dialog>
             <Button variant="ghost" size="icon" onClick={handleDelete} disabled={deleting}>
@@ -261,7 +265,15 @@ function ProductForm({ product, onSuccess, onCancel }: { product?: Product; onSu
     image: product?.image || "",
     sizes: product?.sizes?.join(", ") || "XS, S, M, L, XL, XXL",
     additionalImages: product?.images || [] as string[],
+    yearlyLimit: String(product?.yearlyLimit ?? 4),
+    sizeChart: product?.sizeChart || "",
+    stock: (product?.stock || {}) as Record<string, number>,
   })
+
+  const parsedSizes = formData.sizes
+    .split(",")
+    .map((s: string) => s.trim())
+    .filter(Boolean)
 
   const allImages = formData.image 
     ? [formData.image, ...formData.additionalImages]
@@ -335,14 +347,25 @@ function ProductForm({ product, onSuccess, onCancel }: { product?: Product; onSu
     e.preventDefault()
     setSaving(true)
 
+    const stockPayload: Record<string, number> = {}
+    for (const size of parsedSizes) {
+      const value = formData.stock[size]
+      if (typeof value === "number" && Number.isFinite(value)) {
+        stockPayload[size] = value
+      }
+    }
+
     const payload = {
       name: formData.name,
       category: formData.category,
       description: formData.description,
       color: formData.color,
       image: formData.image,
-      sizes: formData.sizes.split(",").map((s: string) => s.trim()).filter(Boolean),
+      sizes: parsedSizes,
       images: formData.additionalImages,
+      yearlyLimit: parseInt(formData.yearlyLimit, 10) || 4,
+      sizeChart: formData.sizeChart?.trim() || null,
+      stock: Object.keys(stockPayload).length > 0 ? stockPayload : null,
     }
 
     try {
@@ -369,6 +392,17 @@ function ProductForm({ product, onSuccess, onCancel }: { product?: Product; onSu
 
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
+  }
+
+  const handleStockChange = (size: string, value: string) => {
+    const next = value === "" ? NaN : parseInt(value, 10)
+    setFormData(prev => ({
+      ...prev,
+      stock: {
+        ...prev.stock,
+        [size]: Number.isFinite(next) ? Math.max(0, next) : prev.stock[size],
+      },
+    }))
   }
 
   return (
@@ -425,6 +459,50 @@ function ProductForm({ product, onSuccess, onCancel }: { product?: Product; onSu
             onChange={(e) => handleChange("sizes", e.target.value)}
             placeholder="XS, S, M, L, XL, XXL" 
           />
+        </div>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="yearlyLimit">Artikellimit pro Jahr</Label>
+          <Input
+            id="yearlyLimit"
+            type="number"
+            min={1}
+            value={formData.yearlyLimit}
+            onChange={(e) => handleChange("yearlyLimit", e.target.value)}
+            placeholder="4"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="sizeChart">Größentabelle (URL)</Label>
+          <Input
+            id="sizeChart"
+            value={formData.sizeChart}
+            onChange={(e) => handleChange("sizeChart", e.target.value)}
+            placeholder="https://..."
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Bestand pro Größe</Label>
+        <div className="grid gap-2 sm:grid-cols-3">
+          {parsedSizes.map((size) => (
+            <div key={size} className="space-y-1">
+              <Label htmlFor={`stock-${size}`} className="text-xs text-muted-foreground">
+                {size}
+              </Label>
+              <Input
+                id={`stock-${size}`}
+                type="number"
+                min={0}
+                value={typeof formData.stock[size] === "number" ? String(formData.stock[size]) : ""}
+                onChange={(e) => handleStockChange(size, e.target.value)}
+                placeholder="-"
+              />
+            </div>
+          ))}
         </div>
       </div>
 

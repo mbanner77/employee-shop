@@ -21,7 +21,7 @@ const menuItems = [
 
 export function AdminSidebar({ activeView, onViewChange }: AdminSidebarProps) {
   return (
-    <aside className="hidden w-64 border-r border-border bg-card lg:block">
+    <aside className="w-64 border-r border-border bg-card">
       <div className="sticky top-16 p-4">
         <h2 className="mb-4 px-2 text-lg font-semibold text-foreground">Admin Dashboard</h2>
         <nav className="space-y-1">

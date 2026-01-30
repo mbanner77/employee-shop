@@ -31,6 +31,9 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
     })
 
+    const settings = await prisma.settings.findUnique({ where: { id: "settings" } })
+    const maxItemsPerOrder = settings?.maxItemsPerOrder ?? 4
+
     // Calculate quota stats based on quotaResetDate or current year
     const quotaStartDate = employee.quotaResetDate 
       ? new Date(employee.quotaResetDate)
@@ -49,7 +52,7 @@ export async function GET() {
         totalOrders: orders.length,
         yearlyOrders: quotaOrders.length,
         yearlyItemCount,
-        remainingItems: Math.max(0, 4 - yearlyItemCount),
+        remainingItems: Math.max(0, maxItemsPerOrder - yearlyItemCount),
       },
     })
   } catch (error) {

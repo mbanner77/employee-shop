@@ -1,5 +1,14 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
+import { cookies } from "next/headers"
+
+async function isAdmin() {
+  const cookieStore = await cookies()
+  const adminSession = cookieStore.get("admin-session")
+  if (!adminSession) return false
+  const admin = await prisma.adminUser.findUnique({ where: { id: adminSession.value } })
+  return !!admin
+}
 
 export async function GET(
   request: Request,
@@ -25,6 +34,10 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    if (!(await isAdmin())) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
+    }
+
     const { id } = await params
     const body = await request.json()
     const product = await prisma.product.update({
@@ -37,6 +50,9 @@ export async function PUT(
         images: body.images,
         sizes: body.sizes,
         color: body.color,
+        stock: body.stock ?? null,
+        yearlyLimit: body.yearlyLimit ?? undefined,
+        sizeChart: body.sizeChart ?? null,
       },
     })
     return NextResponse.json(product)
@@ -51,6 +67,10 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    if (!(await isAdmin())) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
+    }
+
     const { id } = await params
     await prisma.product.delete({
       where: { id },
