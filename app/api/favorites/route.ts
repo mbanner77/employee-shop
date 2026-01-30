@@ -15,19 +15,45 @@ async function getEmployeeId(): Promise<string | null> {
 }
 
 // GET all favorites for current employee
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const employeeId = await getEmployeeId()
     if (!employeeId) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
     }
 
+    const { searchParams } = new URL(request.url)
+    const idsOnly = searchParams.get("idsOnly") === "1"
+
     const favorites = await prisma.favorite.findMany({
       where: { employeeId },
-      include: {
-        product: true,
-      },
       orderBy: { createdAt: "desc" },
+      ...(idsOnly
+        ? {
+            select: {
+              id: true,
+              productId: true,
+              createdAt: true,
+            },
+          }
+        : {
+            select: {
+              id: true,
+              productId: true,
+              createdAt: true,
+              product: {
+                select: {
+                  id: true,
+                  name: true,
+                  category: true,
+                  description: true,
+                  image: true,
+                  sizes: true,
+                  color: true,
+                },
+              },
+            },
+          }),
     })
 
     return NextResponse.json(favorites)
@@ -68,8 +94,21 @@ export async function POST(request: Request) {
         employeeId,
         productId,
       },
-      include: {
-        product: true,
+      select: {
+        id: true,
+        productId: true,
+        createdAt: true,
+        product: {
+          select: {
+            id: true,
+            name: true,
+            category: true,
+            description: true,
+            image: true,
+            sizes: true,
+            color: true,
+          },
+        },
       },
     })
 

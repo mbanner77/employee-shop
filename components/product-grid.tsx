@@ -13,11 +13,15 @@ const categories = ["Alle", "Hoodies", "T-Shirts", "Polos", "Jacken", "Pullover"
 export function ProductGrid() {
   const [activeCategory, setActiveCategory] = useState("Alle")
   const [searchQuery, setSearchQuery] = useState("")
-  const { products, productsLoading, fetchProducts } = useShopStore()
+  const { products, productsLoading, fetchProducts, fetchFavoriteIds } = useShopStore()
 
   useEffect(() => {
     fetchProducts()
   }, [fetchProducts])
+
+  useEffect(() => {
+    fetchFavoriteIds()
+  }, [fetchFavoriteIds])
 
   // Filter by category and search query
   const filteredProducts = useMemo(() => {

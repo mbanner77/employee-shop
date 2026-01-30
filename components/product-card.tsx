@@ -20,40 +20,25 @@ export function ProductCard({ product }: ProductCardProps) {
   const [mounted, setMounted] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
-  const [isFavorite, setIsFavorite] = useState(false)
   const [favoriteLoading, setFavoriteLoading] = useState(false)
   const [showSizeChart, setShowSizeChart] = useState(false)
-  const { cart, addToCart } = useShopStore()
+  const { cart, addToCart, favoriteProductIds, addFavoriteLocal, removeFavoriteLocal } = useShopStore()
 
-  // Check if product is in favorites
-  useEffect(() => {
-    const checkFavorite = async () => {
-      try {
-        const res = await fetch("/api/favorites")
-        if (res.ok) {
-          const favorites = await res.json()
-          setIsFavorite(favorites.some((f: { productId: string }) => f.productId === product.id))
-        }
-      } catch {
-        // Not logged in or error
-      }
-    }
-    checkFavorite()
-  }, [product.id])
+  const isFavorite = favoriteProductIds.includes(product.id)
 
   const toggleFavorite = async () => {
     setFavoriteLoading(true)
     try {
       if (isFavorite) {
         await fetch(`/api/favorites?productId=${product.id}`, { method: "DELETE" })
-        setIsFavorite(false)
+        removeFavoriteLocal(product.id)
       } else {
         await fetch("/api/favorites", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ productId: product.id }),
         })
-        setIsFavorite(true)
+        addFavoriteLocal(product.id)
       }
     } catch {
       // Error handling

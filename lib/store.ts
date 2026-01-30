@@ -46,11 +46,16 @@ interface ShopState {
   cart: CartItem[]
   products: Product[]
   productsLoading: boolean
+  favoriteProductIds: string[]
+  favoritesLoading: boolean
   addToCart: (product: Product, size: Size) => boolean
   removeFromCart: (productId: string) => void
   clearCart: () => void
   submitOrder: (customerInfo: Omit<Order, "id" | "items" | "createdAt" | "status">) => Promise<Order | null>
   fetchProducts: () => Promise<void>
+  fetchFavoriteIds: () => Promise<void>
+  addFavoriteLocal: (productId: string) => void
+  removeFavoriteLocal: (productId: string) => void
 }
 
 export const useShopStore = create<ShopState>()(
@@ -59,6 +64,8 @@ export const useShopStore = create<ShopState>()(
       cart: [],
       products: [],
       productsLoading: true,
+      favoriteProductIds: [],
+      favoritesLoading: false,
       addToCart: (product, size) => {
         const currentCart = get().cart
         if (currentCart.length >= 4) {
@@ -74,6 +81,14 @@ export const useShopStore = create<ShopState>()(
         set({ cart: get().cart.filter((item) => item.product.id !== productId) })
       },
       clearCart: () => set({ cart: [] }),
+      addFavoriteLocal: (productId) => {
+        const current = get().favoriteProductIds
+        if (current.includes(productId)) return
+        set({ favoriteProductIds: [...current, productId] })
+      },
+      removeFavoriteLocal: (productId) => {
+        set({ favoriteProductIds: get().favoriteProductIds.filter((id) => id !== productId) })
+      },
       submitOrder: async (customerInfo) => {
         const cart = get().cart
         try {
@@ -111,6 +126,27 @@ export const useShopStore = create<ShopState>()(
         } catch (error) {
           console.error("Failed to fetch products:", error)
           set({ productsLoading: false })
+        }
+      },
+      fetchFavoriteIds: async () => {
+        try {
+          set({ favoritesLoading: true })
+          const response = await fetch("/api/favorites?idsOnly=1")
+          if (response.status === 401) {
+            set({ favoriteProductIds: [], favoritesLoading: false })
+            return
+          }
+          if (!response.ok) throw new Error("Failed to fetch favorites")
+          const favorites = await response.json()
+          const ids = Array.isArray(favorites)
+            ? favorites
+                .map((f: { productId?: unknown }) => String(f.productId || ""))
+                .filter(Boolean)
+            : []
+          set({ favoriteProductIds: ids, favoritesLoading: false })
+        } catch (error) {
+          console.error("Failed to fetch favorites:", error)
+          set({ favoritesLoading: false })
         }
       },
     }),
