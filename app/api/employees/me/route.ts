@@ -21,6 +21,10 @@ export async function GET() {
         lastName: true,
         department: true,
         isActive: true,
+        notifyStatusUpdates: true,
+        notifyNewsletter: true,
+        notifyWishlistAvailable: true,
+        language: true,
       },
     })
 

@@ -21,7 +21,19 @@ export async function GET() {
 
     const orders = await prisma.order.findMany({
       where: { employeeId: employee.id },
-      include: {
+      select: {
+        id: true,
+        orderNumber: true,
+        status: true,
+        createdAt: true,
+        customerName: true,
+        street: true,
+        zip: true,
+        city: true,
+        country: true,
+        trackingNumber: true,
+        trackingUrl: true,
+        orderType: true,
         items: {
           include: {
             product: true,

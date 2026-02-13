@@ -87,7 +87,7 @@ export default function ProfilePage() {
 
       if (empRes.ok) {
         const empData = await empRes.json()
-        setEmployee(empData)
+        setEmployee(empData.employee || empData)
       }
 
       if (addrRes.ok) {

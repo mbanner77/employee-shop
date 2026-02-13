@@ -32,6 +32,8 @@ export async function GET() {
             name: true,
             nameDe: true,
             nameEn: true,
+            category: true,
+            description: true,
             image: true,
             sizes: true,
             colors: true,
@@ -159,9 +161,19 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
     
-    const { searchParams } = new URL(request.url)
-    const productId = searchParams.get("productId")
-    const id = searchParams.get("id")
+    // Unterstütze sowohl body als auch searchParams
+    let productId: string | null = null
+    let id: string | null = null
+    
+    try {
+      const body = await request.json()
+      productId = body.productId || null
+      id = body.id || null
+    } catch {
+      const { searchParams } = new URL(request.url)
+      productId = searchParams.get("productId")
+      id = searchParams.get("id")
+    }
     
     if (!productId && !id) {
       return NextResponse.json({ error: "Product ID or item ID required" }, { status: 400 })

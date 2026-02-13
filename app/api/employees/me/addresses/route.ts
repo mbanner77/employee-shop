@@ -141,8 +141,16 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
     
-    const { searchParams } = new URL(request.url)
-    const id = searchParams.get("id")
+    // Unterstütze sowohl body als auch searchParams
+    let id: string | null = null
+    
+    try {
+      const body = await request.json()
+      id = body.id
+    } catch {
+      const { searchParams } = new URL(request.url)
+      id = searchParams.get("id")
+    }
     
     if (!id) {
       return NextResponse.json({ error: "Address ID required" }, { status: 400 })
