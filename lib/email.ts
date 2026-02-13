@@ -234,6 +234,279 @@ export async function sendOrderCreatedEmailToAdmin(args: {
   })
 }
 
+// Budget-Erinnerung E-Mail
+export async function sendBudgetReminderEmail(args: {
+  employeeId: string
+  usedItems: number
+  maxItems: number
+  language?: string
+}) {
+  const employee = await prisma.employee.findUnique({ where: { id: args.employeeId } })
+  if (!employee || !employee.notifyStatusUpdates) return
+
+  const remainingItems = args.maxItems - args.usedItems
+  const lang = args.language || employee.language || "de"
+  
+  const texts = {
+    de: {
+      subject: `📊 Budget-Erinnerung: Noch ${remainingItems} Artikel verfügbar`,
+      greeting: `Hallo ${employee.firstName},`,
+      intro: "dies ist eine freundliche Erinnerung an dein Jahresbudget im Mitarbeiter-Shop.",
+      used: "Bereits bestellt",
+      remaining: "Noch verfügbar",
+      total: "Jahreslimit",
+      items: "Artikel",
+      note: remainingItems <= 1 
+        ? "⚠️ Du hast nur noch wenige Artikel verfügbar. Nutze dein Budget weise!"
+        : "Nutze dein Budget für hochwertige Teamkleidung.",
+      closing: "Viele Grüße",
+      team: "Dein RealCore Mitarbeiter-Shop Team",
+    },
+    en: {
+      subject: `📊 Budget Reminder: ${remainingItems} items remaining`,
+      greeting: `Hello ${employee.firstName},`,
+      intro: "this is a friendly reminder about your annual budget in the employee shop.",
+      used: "Already ordered",
+      remaining: "Still available",
+      total: "Yearly limit",
+      items: "items",
+      note: remainingItems <= 1 
+        ? "⚠️ You only have a few items left. Use your budget wisely!"
+        : "Use your budget for quality team apparel.",
+      closing: "Best regards",
+      team: "Your RealCore Employee Shop Team",
+    },
+  }
+  
+  const t = texts[lang as keyof typeof texts] || texts.de
+  
+  const htmlContent = `
+    <h2 style="margin: 0 0 16px 0; color: #18181b; font-size: 20px;">${t.greeting}</h2>
+    <p style="margin: 0 0 24px 0; color: #3f3f46; font-size: 16px; line-height: 1.6;">
+      ${t.intro}
+    </p>
+    
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f5; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+      <tr>
+        <td>
+          <table width="100%" cellpadding="8" cellspacing="0">
+            <tr>
+              <td style="color: #71717a; font-size: 14px;">${t.used}:</td>
+              <td style="color: #18181b; font-size: 14px; font-weight: 600; text-align: right;">${args.usedItems} ${t.items}</td>
+            </tr>
+            <tr>
+              <td style="color: #71717a; font-size: 14px;">${t.remaining}:</td>
+              <td style="color: ${remainingItems <= 1 ? '#dc2626' : '#22c55e'}; font-size: 14px; font-weight: 600; text-align: right;">${remainingItems} ${t.items}</td>
+            </tr>
+            <tr style="border-top: 1px solid #e4e4e7;">
+              <td style="color: #71717a; font-size: 14px; padding-top: 12px;">${t.total}:</td>
+              <td style="color: #18181b; font-size: 14px; font-weight: 600; text-align: right; padding-top: 12px;">${args.maxItems} ${t.items}</td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+    
+    <p style="margin: 0 0 24px 0; color: #3f3f46; font-size: 14px; background-color: #fef3c7; padding: 12px; border-radius: 8px;">
+      ${t.note}
+    </p>
+    
+    <p style="margin: 0; color: #71717a; font-size: 14px;">
+      ${t.closing}<br/>
+      ${t.team}
+    </p>
+  `
+
+  await sendEmail({
+    to: employee.email,
+    subject: t.subject,
+    text: [
+      t.greeting,
+      "",
+      t.intro,
+      "",
+      `${t.used}: ${args.usedItems} ${t.items}`,
+      `${t.remaining}: ${remainingItems} ${t.items}`,
+      `${t.total}: ${args.maxItems} ${t.items}`,
+      "",
+      t.note,
+      "",
+      t.closing,
+      t.team,
+    ].join("\n"),
+    html: emailTemplate(htmlContent),
+  })
+}
+
+// Wunschliste Verfügbarkeits-Benachrichtigung
+export async function sendWishlistAvailableEmail(args: {
+  employeeId: string
+  productName: string
+  productNameEn?: string
+  productId: string
+  availableSize?: string
+  availableColor?: string
+}) {
+  const employee = await prisma.employee.findUnique({ where: { id: args.employeeId } })
+  if (!employee || !employee.notifyWishlistAvailable) return
+
+  const lang = employee.language || "de"
+  const productName = lang === "en" && args.productNameEn ? args.productNameEn : args.productName
+  
+  const texts = {
+    de: {
+      subject: `🎉 Artikel von deiner Wunschliste ist verfügbar: ${productName}`,
+      greeting: `Hallo ${employee.firstName},`,
+      intro: "gute Nachrichten! Ein Artikel von deiner Wunschliste ist jetzt verfügbar:",
+      product: "Produkt",
+      size: "Größe",
+      color: "Farbe",
+      cta: "Jetzt bestellen",
+      note: "Greif schnell zu, bevor der Artikel wieder vergriffen ist!",
+      closing: "Viele Grüße",
+      team: "Dein RealCore Mitarbeiter-Shop Team",
+    },
+    en: {
+      subject: `🎉 Wishlist item available: ${productName}`,
+      greeting: `Hello ${employee.firstName},`,
+      intro: "great news! An item from your wishlist is now available:",
+      product: "Product",
+      size: "Size",
+      color: "Color",
+      cta: "Order now",
+      note: "Act fast before it's out of stock again!",
+      closing: "Best regards",
+      team: "Your RealCore Employee Shop Team",
+    },
+  }
+  
+  const t = texts[lang as keyof typeof texts] || texts.de
+  
+  const detailsHtml = `
+    ${args.availableSize ? `<p style="margin: 0 0 8px 0;"><strong>${t.size}:</strong> ${args.availableSize}</p>` : ""}
+    ${args.availableColor ? `<p style="margin: 0 0 8px 0;"><strong>${t.color}:</strong> ${args.availableColor}</p>` : ""}
+  `
+  
+  const htmlContent = `
+    <h2 style="margin: 0 0 16px 0; color: #18181b; font-size: 20px;">${t.greeting}</h2>
+    <p style="margin: 0 0 24px 0; color: #3f3f46; font-size: 16px; line-height: 1.6;">
+      ${t.intro}
+    </p>
+    
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #dcfce7; border-radius: 8px; padding: 20px; margin-bottom: 24px; border: 1px solid #22c55e;">
+      <tr>
+        <td>
+          <p style="margin: 0 0 8px 0; color: #166534; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">${t.product}</p>
+          <p style="margin: 0 0 16px 0; color: #166534; font-size: 18px; font-weight: 600;">${productName}</p>
+          ${detailsHtml}
+        </td>
+      </tr>
+    </table>
+    
+    <p style="margin: 0 0 24px 0; color: #3f3f46; font-size: 14px;">
+      ${t.note}
+    </p>
+    
+    <p style="margin: 0; color: #71717a; font-size: 14px;">
+      ${t.closing}<br/>
+      ${t.team}
+    </p>
+  `
+
+  await sendEmail({
+    to: employee.email,
+    subject: t.subject,
+    text: [
+      t.greeting,
+      "",
+      t.intro,
+      "",
+      `${t.product}: ${productName}`,
+      args.availableSize ? `${t.size}: ${args.availableSize}` : "",
+      args.availableColor ? `${t.color}: ${args.availableColor}` : "",
+      "",
+      t.note,
+      "",
+      t.closing,
+      t.team,
+    ].filter(Boolean).join("\n"),
+    html: emailTemplate(htmlContent),
+  })
+  
+  // Markiere als benachrichtigt
+  await prisma.wishlistItem.updateMany({
+    where: {
+      employeeId: args.employeeId,
+      productId: args.productId,
+      notifyWhenAvailable: true,
+      notifiedAt: null,
+    },
+    data: {
+      notifiedAt: new Date(),
+    },
+  })
+}
+
+// Mindestbestand-Warnung für Admin
+export async function sendLowStockWarningEmail(args: {
+  products: Array<{
+    name: string
+    articleNumber?: string
+    currentStock: number
+    minStock: number
+    size?: string
+  }>
+}) {
+  const settings = await prisma.settings.findUnique({ where: { id: "settings" } })
+  if (!settings?.adminEmail || args.products.length === 0) return
+
+  const productsHtml = args.products.map(p => `
+    <tr>
+      <td style="padding: 8px; border-bottom: 1px solid #e4e4e7;">
+        ${p.name}${p.size ? ` (${p.size})` : ""}
+        ${p.articleNumber ? `<br/><small style="color: #71717a;">${p.articleNumber}</small>` : ""}
+      </td>
+      <td style="padding: 8px; border-bottom: 1px solid #e4e4e7; text-align: center; color: #dc2626; font-weight: 600;">${p.currentStock}</td>
+      <td style="padding: 8px; border-bottom: 1px solid #e4e4e7; text-align: center;">${p.minStock}</td>
+    </tr>
+  `).join("")
+
+  const htmlContent = `
+    <h2 style="margin: 0 0 16px 0; color: #18181b; font-size: 20px;">⚠️ Mindestbestand-Warnung</h2>
+    <p style="margin: 0 0 24px 0; color: #3f3f46; font-size: 16px; line-height: 1.6;">
+      Die folgenden ${args.products.length} Artikel haben den Mindestbestand unterschritten:
+    </p>
+    
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
+      <tr style="background-color: #fef2f2;">
+        <th style="padding: 12px 8px; text-align: left; font-size: 12px; color: #991b1b;">Artikel</th>
+        <th style="padding: 12px 8px; text-align: center; font-size: 12px; color: #991b1b;">Aktuell</th>
+        <th style="padding: 12px 8px; text-align: center; font-size: 12px; color: #991b1b;">Mindest</th>
+      </tr>
+      ${productsHtml}
+    </table>
+    
+    <p style="margin: 0; color: #71717a; font-size: 14px;">
+      Bitte prüfe die Bestände und bestelle ggf. nach.
+    </p>
+  `
+
+  await sendEmail({
+    to: settings.adminEmail,
+    subject: `⚠️ Mindestbestand-Warnung: ${args.products.length} Artikel`,
+    text: [
+      "Mindestbestand-Warnung",
+      "",
+      `Die folgenden ${args.products.length} Artikel haben den Mindestbestand unterschritten:`,
+      "",
+      ...args.products.map(p => `- ${p.name}${p.size ? ` (${p.size})` : ""}: ${p.currentStock}/${p.minStock}`),
+      "",
+      "Bitte prüfe die Bestände und bestelle ggf. nach.",
+    ].join("\n"),
+    html: emailTemplate(htmlContent),
+  })
+}
+
 export async function sendOrderCreatedEmail(args: {
   employeeId: string
   orderId: string

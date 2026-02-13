@@ -64,3 +64,27 @@ services:
           name: realcore-employee-shop
           type: web
           envVarKey: NEXT_PUBLIC_BASE_URL
+
+  # Cron Job für tägliche Bestandsprüfung (09:00 Uhr)
+  - type: cron
+    name: daily-stock-check
+    runtime: node
+    region: frankfurt
+    schedule: "0 9 * * *"
+    buildCommand: echo "Stock check cron ready"
+    startCommand: |
+      curl -X POST \
+        -H "Authorization: Bearer $CRON_SECRET" \
+        -H "Content-Type: application/json" \
+        "$NEXT_PUBLIC_BASE_URL/api/cron/check-stock"
+    envVars:
+      - key: CRON_SECRET
+        fromService:
+          name: realcore-employee-shop
+          type: web
+          envVarKey: CRON_SECRET
+      - key: NEXT_PUBLIC_BASE_URL
+        fromService:
+          name: realcore-employee-shop
+          type: web
+          envVarKey: NEXT_PUBLIC_BASE_URL

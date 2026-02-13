@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
-import { sendOrderCreatedEmail, sendOrderCreatedEmailToAdmin } from "@/lib/email"
+import { sendOrderCreatedEmail, sendOrderCreatedEmailToAdmin, sendBudgetReminderEmail } from "@/lib/email"
 import { cookies } from "next/headers"
 
 // Typen für neue Schema-Felder (bis Prisma-Client regeneriert wird)
@@ -397,6 +397,25 @@ export async function POST(request: Request) {
           department: order.department,
           items,
         })
+      }
+      
+      // Budget-Erinnerung senden wenn weniger als 2 Artikel übrig
+      if (order.employeeId) {
+        const companyItemsInOrder = order.items.filter(
+          (item: { costBearer?: string }) => item.costBearer === 'COMPANY' || !item.costBearer
+        ).length
+        const newYearlyCount = yearlyItemCount + companyItemsInOrder
+        const maxItems = settings?.maxItemsPerOrder || 4
+        const remainingAfterOrder = maxItems - newYearlyCount
+        
+        if (remainingAfterOrder <= 1 && remainingAfterOrder >= 0) {
+          await sendBudgetReminderEmail({
+            employeeId: order.employeeId,
+            usedItems: newYearlyCount,
+            maxItems,
+            language: employee.language,
+          })
+        }
       }
     } catch (error) {
       console.error("Failed to send order created email:", error)

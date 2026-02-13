@@ -59,6 +59,40 @@ export async function GET() {
       },
     })
 
+    // Check low stock items
+    const lowStockItems: Array<{
+      id: string
+      name: string
+      size: string
+      currentStock: number
+      minStock: number
+    }> = []
+
+    for (const product of products as Array<{ id: string; category: string; name?: string; stock?: Record<string, number> | null; minStock?: number | null }>) {
+      const fullProduct = await prisma.product.findUnique({
+        where: { id: product.id },
+        select: { name: true, stock: true, minStock: true },
+      })
+      if (!fullProduct) continue
+      
+      const minStock = fullProduct.minStock || 5
+      const stockData = fullProduct.stock as Record<string, number> | null
+      
+      if (stockData) {
+        for (const [size, quantity] of Object.entries(stockData)) {
+          if (quantity < minStock) {
+            lowStockItems.push({
+              id: product.id,
+              name: fullProduct.name,
+              size,
+              currentStock: quantity,
+              minStock,
+            })
+          }
+        }
+      }
+    }
+
     // Group by category
     const categoryCount: Record<string, number> = {}
     for (const item of ordersByCategory as { productId: string; _count: { id: number } }[]) {
@@ -93,7 +127,7 @@ export async function GET() {
         status: s.status,
         count: s._count.id,
       })),
-      recentOrders: recentOrders.map((o) => ({
+      recentOrders: recentOrders.map((o: { id: string; customerName: string; status: string; createdAt: Date; department: string; items: { id: string }[] }) => ({
         id: o.id,
         customerName: o.customerName,
         status: o.status,
@@ -101,6 +135,8 @@ export async function GET() {
         department: o.department,
         itemCount: o.items.length,
       })),
+      lowStockItems: lowStockItems.slice(0, 10), // Top 10 low stock items
+      lowStockCount: lowStockItems.length,
     })
   } catch (error) {
     console.error("Failed to fetch stats:", error)
