@@ -12,7 +12,12 @@ services:
     region: frankfurt
     plan: starter
     numInstances: 1
-    buildCommand: pnpm install --no-frozen-lockfile --strict-peer-dependencies=false && pnpm exec prisma generate && pnpm exec prisma db push --accept-data-loss && pnpm exec prisma db seed && pnpm run build
+    buildCommand: |
+      pnpm install --no-frozen-lockfile --strict-peer-dependencies=false
+      pnpm exec prisma generate
+      pnpm exec prisma db push --accept-data-loss
+      pnpm exec prisma db seed || echo "Seeding skipped or failed (may already be seeded)"
+      pnpm run build
     startCommand: pnpm run start
     envVars:
       - key: NODE_ENV

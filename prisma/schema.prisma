@@ -10,8 +10,68 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Firmen-Tabelle
+model Company {
+  id                  String     @id @default(cuid())
+  name                String     @unique
+  billingAddress      String?    // Rechnungsadresse
+  paymentTerms        String?    @default("30 Tage netto") // Zahlungsbedingungen
+  isActive            Boolean    @default(true)
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+  employees           Employee[] @relation("CompanyEmployees")
+  orders              Order[]    @relation("CompanyOrders")
+}
+
+// Lieferanten-Tabelle
+model Supplier {
+  id                String    @id @default(cuid())
+  companyName       String
+  email             String    @unique
+  phone             String?
+  // API-Integration
+  apiActive         Boolean   @default(false)
+  apiKey            String?   @unique // Bearer Token für API-Zugriff
+  webhookUrl        String?   // URL für Webhook-Benachrichtigungen
+  // Portal-Zugang
+  portalActive      Boolean   @default(true)
+  portalUsername    String?   @unique
+  portalPassword    String?
+  // Kontaktdaten
+  contactPerson     String?
+  address           String?
+  isActive          Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  products          Product[]
+  orderItems        OrderItem[]
+}
+
+// Kategorien-Tabelle (hierarchisch)
+model Category {
+  id           String     @id @default(cuid())
+  nameDe       String
+  nameEn       String
+  slug         String     @unique
+  parentId     String?
+  parent       Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children     Category[] @relation("CategoryHierarchy")
+  sortOrder    Int        @default(0)
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  products     Product[]
+}
+
 model Product {
   id              String      @id @default(cuid())
+  articleNumber   String?     @unique // SKU/Artikelnummer
+  // Mehrsprachige Felder
+  nameDe          String
+  nameEn          String
+  descriptionDe   String
+  descriptionEn   String
+  // Legacy-Felder (für Kompatibilität)
   name            String
   category        String
   description     String
@@ -19,17 +79,67 @@ model Product {
   images          String[]
   sizes           String[]
   color           String
+  colors          String[]    @default([]) // Mehrere Farben
+  price           Decimal?    @db.Decimal(10, 2) // Preis in Euro
   // Artikelspezifische Limits: 1 = max 1x pro Jahr, 4 = max 4x pro Jahr (default)
   yearlyLimit     Int         @default(4)
+  // Kann mehrfach bestellt werden?
+  multipleOrdersAllowed Boolean @default(true)
+  maxQuantityPerOrder   Int     @default(2)
   // Lagerbestand pro Größe (JSON: {"S": 10, "M": 5, ...})
   stock           Json?
+  minStock        Int?        @default(5) // Mindestbestand für Warnung
+  nextDelivery    DateTime?   // Nächste Lieferung erwartet
   // Größentabelle URL oder Inhalt
   sizeChart       String?
+  // Beziehungen
+  supplierId      String?
+  supplier        Supplier?   @relation(fields: [supplierId], references: [id])
+  categoryId      String?
+  categoryRef     Category?   @relation(fields: [categoryId], references: [id])
+  isActive        Boolean     @default(true)
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
   orderItems      OrderItem[]
   favorites       Favorite[]
   reviews         Review[]
+  productImages   ProductImage[]
+  wishlistItems   WishlistItem[]
+}
+
+// Produktbilder mit Metadaten
+model ProductImage {
+  id          String   @id @default(cuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  imageUrl    String
+  imageType   ImageType @default(MAIN) // hauptbild, detail, tragebild
+  sortOrder   Int       @default(0)
+  altTextDe   String?
+  altTextEn   String?
+  createdAt   DateTime  @default(now())
+}
+
+enum ImageType {
+  MAIN
+  DETAIL
+  LIFESTYLE
+}
+
+// Artikel-Varianten (Größe/Farbe Kombination)
+model ProductVariant {
+  id              String   @id @default(cuid())
+  productId       String
+  size            String
+  color           String
+  stock           Int      @default(0)
+  minStock        Int      @default(5)
+  isActive        Boolean  @default(true)
+  nextDelivery    DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@unique([productId, size, color])
 }
 
 model Employee {
@@ -42,42 +152,123 @@ model Employee {
   password            String
   isActive            Boolean   @default(true)
   quotaResetDate      DateTime? // Datum ab dem das Jahreskontingent zählt
+  lastCompanyOrderDate DateTime? // Für Jahres-Check
   // Password Reset
   passwordResetToken  String?   @unique
   passwordResetExpiry DateTime?
   // Sprache
   language            String    @default("de")
+  // Firmenzuordnung
+  companyId           String?
+  company             Company?  @relation("CompanyEmployees", fields: [companyId], references: [id])
+  // Benachrichtigungseinstellungen
+  notifyStatusUpdates   Boolean @default(true)
+  notifyNewsletter      Boolean @default(false)
+  notifyWishlistAvailable Boolean @default(true)
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
   orders              Order[]
   favorites           Favorite[]
   feedbacks           Feedback[]
   reviews             Review[]
+  addresses           EmployeeAddress[]
+  wishlistItems       WishlistItem[]
+}
+
+// Mitarbeiter-Adressen
+model EmployeeAddress {
+  id           String      @id @default(cuid())
+  employeeId   String
+  employee     Employee    @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  type         AddressType @default(PRIVATE)
+  label        String?     // z.B. "Zuhause", "Büro"
+  street       String
+  zip          String
+  city         String
+  country      String      @default("Deutschland")
+  isDefault    Boolean     @default(false)
+  isActive     Boolean     @default(true)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+enum AddressType {
+  PRIVATE
+  COMPANY
+  OTHER
 }
 
 model Order {
-  id           String      @id @default(cuid())
-  customerName String
-  email        String
-  street       String
-  city         String
-  zip          String
-  department   String
-  status       OrderStatus @default(PENDING)
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-  items        OrderItem[]
-  employeeId   String?
-  employee     Employee?   @relation(fields: [employeeId], references: [id])
+  id              String      @id @default(cuid())
+  orderNumber     String      @unique @default(cuid()) // z.B. RC-2026-00123
+  customerName    String
+  email           String
+  street          String
+  city            String
+  zip             String
+  country         String      @default("Deutschland")
+  department      String
+  status          OrderStatus @default(PENDING)
+  // Bestelltyp: firma, privat, gemischt
+  orderType       OrderType   @default(COMPANY)
+  // Sprache der Bestellung (für E-Mails)
+  language        String      @default("de")
+  // Tracking
+  trackingNumber  String?
+  trackingUrl     String?
+  // Zahlungsstatus für Privatartikel
+  privatePaymentStatus PaymentStatus? @default(OPEN)
+  // Firma
+  companyId       String?
+  company         Company?    @relation("CompanyOrders", fields: [companyId], references: [id])
+  // Notizen
+  adminNotes      String?
+  supplierNotes   String?
+  // Disclaimer akzeptiert
+  disclaimerAccepted Boolean  @default(false)
+  disclaimerAcceptedAt DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  items           OrderItem[]
+  employeeId      String?
+  employee        Employee?   @relation(fields: [employeeId], references: [id])
 }
 
 model OrderItem {
-  id        String  @id @default(cuid())
-  orderId   String
-  productId String
-  size      String
-  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product   Product @relation(fields: [productId], references: [id])
+  id            String      @id @default(cuid())
+  orderId       String
+  productId     String
+  size          String
+  color         String?
+  quantity      Int         @default(1)
+  // Kostenträger: firma oder mitarbeiter (privat)
+  costBearer    CostBearer  @default(COMPANY)
+  // Preis zum Bestellzeitpunkt
+  unitPrice     Decimal?    @db.Decimal(10, 2)
+  // Lieferant
+  supplierId    String?
+  supplier      Supplier?   @relation(fields: [supplierId], references: [id])
+  // Status pro Artikel (falls unterschiedlich)
+  itemStatus    OrderStatus @default(PENDING)
+  order         Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product       Product     @relation(fields: [productId], references: [id])
+}
+
+enum OrderType {
+  COMPANY   // Firmenbestellung
+  PRIVATE   // Privatbestellung
+  MIXED     // Gemischt
+}
+
+enum CostBearer {
+  COMPANY   // Firma zahlt
+  EMPLOYEE  // Mitarbeiter zahlt (privat)
+}
+
+enum PaymentStatus {
+  OPEN      // Offen
+  PAID      // Bezahlt
+  CANCELLED // Storniert
 }
 
 model AdminUser {
@@ -136,7 +327,7 @@ enum OrderStatus {
   DELIVERED
 }
 
-// Favoriten / Merkliste
+// Favoriten / Merkliste (Legacy)
 model Favorite {
   id         String   @id @default(cuid())
   employeeId String
@@ -144,6 +335,27 @@ model Favorite {
   createdAt  DateTime @default(now())
   employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  @@unique([employeeId, productId])
+}
+
+// Erweiterte Wunschliste mit Größe/Farbe/Notizen
+model WishlistItem {
+  id              String    @id @default(cuid())
+  employeeId      String
+  employee        Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  productId       String
+  product         Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  // Vorgemerkte Variante
+  preferredSize   String?
+  preferredColor  String?
+  // Notizen
+  notes           String?
+  // Benachrichtigung wenn verfügbar
+  notifyWhenAvailable Boolean @default(false)
+  notifiedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
   
   @@unique([employeeId, productId])
 }

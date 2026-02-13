@@ -9,9 +9,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
 import { useShopStore } from "@/lib/store"
 import { toast } from "sonner"
-import { Loader2, Send, AlertTriangle, CheckCircle } from "lucide-react"
+import { Loader2, Send, AlertTriangle, CheckCircle, Info } from "lucide-react"
 
 interface CompanyArea {
   id: string
@@ -34,6 +35,7 @@ export function CheckoutForm() {
   const [yearlyOrderCount, setYearlyOrderCount] = useState<number>(0)
   const [maxItems, setMaxItems] = useState<number>(4)
   const [companyAreas, setCompanyAreas] = useState<CompanyArea[]>([])
+  const [disclaimerAccepted, setDisclaimerAccepted] = useState(false)
   const [formData, setFormData] = useState({
     customerName: "",
     email: "",
@@ -122,6 +124,11 @@ export function CheckoutForm() {
 
     if (!canOrder) {
       toast.error(`Du hast dein Jahreslimit erreicht. Noch ${remainingItems} Artikel verfügbar.`)
+      return
+    }
+
+    if (!disclaimerAccepted) {
+      toast.error("Bitte bestätige die Hinweise zur Bestellung")
       return
     }
 
@@ -267,7 +274,34 @@ export function CheckoutForm() {
         </div>
       </div>
 
-      <Button type="submit" className="w-full" size="lg" disabled={cart.length === 0 || isSubmitting || !canOrder}>
+      {/* Disclaimer / Wichtige Hinweise */}
+      <Card className="border-amber-200 bg-amber-50">
+        <CardContent className="py-4">
+          <div className="flex items-start gap-3">
+            <Info className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+            <div className="space-y-2">
+              <p className="font-medium text-amber-800">Wichtige Hinweise</p>
+              <ul className="text-sm text-amber-700 space-y-1">
+                <li>⚠️ Bestellungen sind <strong>verbindlich</strong></li>
+                <li>⚠️ Kein Umtausch oder Rückgabe möglich</li>
+                <li>⚠️ Bitte beachte die Größentabelle vor der Bestellung</li>
+              </ul>
+              <div className="flex items-center space-x-2 pt-2">
+                <Checkbox 
+                  id="disclaimer" 
+                  checked={disclaimerAccepted}
+                  onCheckedChange={(checked) => setDisclaimerAccepted(checked === true)}
+                />
+                <Label htmlFor="disclaimer" className="text-sm text-amber-800 cursor-pointer">
+                  Ich habe die Hinweise gelesen und akzeptiert
+                </Label>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Button type="submit" className="w-full" size="lg" disabled={cart.length === 0 || isSubmitting || !canOrder || !disclaimerAccepted}>
         {isSubmitting ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />

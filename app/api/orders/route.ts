@@ -2,12 +2,34 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { sendOrderCreatedEmail, sendOrderCreatedEmailToAdmin } from "@/lib/email"
 import { cookies } from "next/headers"
-import type { Prisma } from "@prisma/client"
+
+// Typen für neue Schema-Felder (bis Prisma-Client regeneriert wird)
+type CostBearer = 'COMPANY' | 'EMPLOYEE'
+type OrderType = 'COMPANY' | 'PRIVATE' | 'MIXED'
+type PaymentStatus = 'OPEN' | 'PAID' | 'CANCELLED'
+
+// Prisma JSON-Typ
+type JsonValue = string | number | boolean | null | { [key: string]: JsonValue } | JsonValue[]
 
 function getQuotaStartDate(employee: { quotaResetDate: Date | null }) {
   return employee.quotaResetDate
     ? new Date(employee.quotaResetDate)
     : new Date(new Date().getFullYear(), 0, 1)
+}
+
+function generateOrderNumber(): string {
+  const year = new Date().getFullYear()
+  const random = Math.floor(Math.random() * 100000).toString().padStart(5, '0')
+  return `RC-${year}-${random}`
+}
+
+function determineOrderType(items: Array<{ costBearer: CostBearer }>): OrderType {
+  const hasCompany = items.some(i => i.costBearer === 'COMPANY')
+  const hasEmployee = items.some(i => i.costBearer === 'EMPLOYEE')
+  
+  if (hasCompany && hasEmployee) return 'MIXED'
+  if (hasEmployee) return 'PRIVATE'
+  return 'COMPANY'
 }
 
 export async function GET() {
@@ -102,6 +124,8 @@ export async function POST(request: Request) {
         department: true,
         isActive: true,
         quotaResetDate: true,
+        language: true,
+        companyId: true,
       },
     })
 
@@ -114,15 +138,30 @@ export async function POST(request: Request) {
     const quotaStartDate = getQuotaStartDate({ quotaResetDate: employee.quotaResetDate })
 
     // Aggregate requested items (allow API callers to send duplicates; validate correctly)
-    const requestedItems: Array<{ productId: string; size: string }> = (body.items as Array<unknown>)
+    type RequestedItem = { 
+      productId: string
+      size: string
+      color?: string
+      costBearer: CostBearer
+      quantity: number
+    }
+    
+    const requestedItems: RequestedItem[] = (body.items as Array<unknown>)
       .map((i: unknown) => {
-        const raw = i as { productId?: unknown; size?: unknown }
+        const raw = i as { productId?: unknown; size?: unknown; color?: unknown; costBearer?: unknown; quantity?: unknown }
         return {
           productId: String(raw.productId || ""),
           size: String(raw.size || ""),
+          color: raw.color ? String(raw.color) : undefined,
+          costBearer: (raw.costBearer === 'EMPLOYEE' ? 'EMPLOYEE' : 'COMPANY') as CostBearer,
+          quantity: typeof raw.quantity === 'number' ? raw.quantity : 1,
         }
       })
       .filter((i) => i.productId && i.size)
+    
+    // Separate company and private items for validation
+    const companyItems = requestedItems.filter(i => i.costBearer === 'COMPANY')
+    const privateItems = requestedItems.filter(i => i.costBearer === 'EMPLOYEE')
 
     if (requestedItems.length === 0) {
       return NextResponse.json({ error: "Invalid items" }, { status: 400 })
@@ -141,7 +180,9 @@ export async function POST(request: Request) {
       name: string
       sizes: string[]
       yearlyLimit: number
-      stock: Prisma.JsonValue | null
+      stock: JsonValue | null
+      price?: { toNumber?: () => number } | number | null
+      supplierId?: string | null
     }
 
     const products = (await prisma.product.findMany({
@@ -238,10 +279,13 @@ export async function POST(request: Request) {
     type TxProduct = {
       id: string
       name: string
-      stock: Prisma.JsonValue | null
+      stock: JsonValue | null
+      price?: { toNumber?: () => number } | number | null
+      supplierId?: string | null
     }
 
-    const order = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const order = await prisma.$transaction(async (tx: any) => {
       // Re-read products inside txn to reduce race conditions
       const txProducts = (await tx.product.findMany({
         where: { id: { in: productIds } },
@@ -280,20 +324,44 @@ export async function POST(request: Request) {
         })
       }
 
+      // Bestimme Bestelltyp basierend auf Kostenträgern
+      const orderType = determineOrderType(requestedItems)
+      const orderNumber = generateOrderNumber()
+      
       return tx.order.create({
         data: {
+          orderNumber,
           customerName: `${employee.firstName} ${employee.lastName}`,
           email: employee.email,
           street: body.street,
           city: body.city,
           zip: body.zip,
+          country: body.country || 'Deutschland',
           department: employee.department,
           employeeId: employee.id,
+          orderType,
+          language: employee.language || 'de',
+          disclaimerAccepted: body.disclaimerAccepted || false,
+          disclaimerAcceptedAt: body.disclaimerAccepted ? new Date() : null,
+          privatePaymentStatus: orderType !== 'COMPANY' ? 'OPEN' : null,
           items: {
-            create: requestedItems.map((item) => ({
-              productId: item.productId,
-              size: item.size,
-            })),
+            create: requestedItems.map((item) => {
+              const product = productById.get(item.productId)
+              const price = product?.price
+              const priceValue = price && typeof price === 'object' && 'toNumber' in price 
+                ? (price as { toNumber: () => number }).toNumber() 
+                : (typeof price === 'number' ? price : null)
+              
+              return {
+                productId: item.productId,
+                size: item.size,
+                color: item.color,
+                quantity: item.quantity,
+                costBearer: item.costBearer,
+                unitPrice: priceValue,
+                supplierId: product?.supplierId,
+              }
+            }),
           },
         },
         include: {
