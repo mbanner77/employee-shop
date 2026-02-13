@@ -60,7 +60,7 @@ export default function ProfilePage() {
   const [savingAddress, setSavingAddress] = useState(false)
 
   const [addressForm, setAddressForm] = useState({
-    type: "SHIPPING",
+    type: "PRIVATE",
     label: "",
     street: "",
     city: "",
@@ -128,7 +128,7 @@ export default function ProfilePage() {
 
   const resetAddressForm = () => {
     setAddressForm({
-      type: "SHIPPING",
+      type: "PRIVATE",
       label: "",
       street: "",
       city: "",
@@ -220,9 +220,9 @@ export default function ProfilePage() {
   }
 
   const addressTypeLabels: Record<string, string> = {
-    SHIPPING: "Lieferadresse",
-    BILLING: "Rechnungsadresse",
-    OFFICE: "Büroadresse",
+    PRIVATE: "Privat",
+    COMPANY: "Firma",
+    OTHER: "Sonstige",
   }
 
   return (
@@ -365,9 +365,9 @@ export default function ProfilePage() {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="SHIPPING">Lieferadresse</SelectItem>
-                            <SelectItem value="BILLING">Rechnungsadresse</SelectItem>
-                            <SelectItem value="OFFICE">Büroadresse</SelectItem>
+                            <SelectItem value="PRIVATE">Privat</SelectItem>
+                            <SelectItem value="COMPANY">Firma</SelectItem>
+                            <SelectItem value="OTHER">Sonstige</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>

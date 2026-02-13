@@ -138,6 +138,7 @@ export function CheckoutForm() {
       const orderData = {
         ...formData,
         employeeId: employee?.id,
+        disclaimerAccepted: true,
       }
       const order = await submitOrder(orderData)
 
