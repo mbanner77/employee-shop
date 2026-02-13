@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { cookies } from "next/headers"
-// @ts-ignore
-import bcrypt from "bcrypt"
 import crypto from "crypto"
 
 async function isAdminAuthenticated() {
@@ -72,7 +70,7 @@ export async function PUT(
     
     // Neues Portal-Passwort setzen
     if (body.portalPassword) {
-      updateData.portalPassword = await bcrypt.hash(body.portalPassword, 10)
+      updateData.portalPassword = crypto.createHash('sha256').update(body.portalPassword).digest('hex')
     }
     
     // Neuen API-Key generieren

@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { cookies } from "next/headers"
-// @ts-ignore - bcrypt types
-import bcrypt from "bcrypt"
 import crypto from "crypto"
 
 async function isAdminAuthenticated() {
@@ -73,7 +71,7 @@ export async function POST(request: Request) {
     
     // Hash Portal-Passwort falls angegeben
     const portalPassword = body.portalPassword 
-      ? await bcrypt.hash(body.portalPassword, 10) 
+      ? crypto.createHash('sha256').update(body.portalPassword).digest('hex') 
       : null
     
     const supplier = await prisma.supplier.create({
