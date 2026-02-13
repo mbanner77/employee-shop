@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Package, ShoppingCart, Users, TrendingUp, Loader2, Clock } from "lucide-react"
+import { Package, ShoppingCart, Users, TrendingUp, Loader2, Clock, AlertTriangle } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts"
 
@@ -17,6 +17,14 @@ interface RecentOrder {
   itemCount: number
 }
 
+interface LowStockItem {
+  id: string
+  name: string
+  size: string
+  currentStock: number
+  minStock: number
+}
+
 interface Stats {
   totalOrders: number
   totalProducts: number
@@ -28,6 +36,8 @@ interface Stats {
   ordersBySize: { size: string; count: number }[]
   ordersByStatus: { status: string; count: number }[]
   recentOrders: RecentOrder[]
+  lowStockItems?: LowStockItem[]
+  lowStockCount?: number
 }
 
 const statusLabels: Record<string, string> = {
@@ -249,6 +259,34 @@ export function AdminStats() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Low Stock Warning */}
+      {stats?.lowStockItems && stats.lowStockItems.length > 0 && (
+        <Card className="border-red-200 bg-red-50">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-red-800">
+              <AlertTriangle className="h-5 w-5" />
+              Mindestbestand-Warnung ({stats.lowStockCount} Artikel)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {stats.lowStockItems.map((item, index) => (
+                <div key={`${item.id}-${item.size}-${index}`} className="flex items-center justify-between p-3 bg-white rounded-lg border border-red-100">
+                  <div>
+                    <p className="font-medium text-red-900">{item.name}</p>
+                    <p className="text-sm text-red-700">Größe: {item.size}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg font-bold text-red-600">{item.currentStock}</p>
+                    <p className="text-xs text-red-500">Min: {item.minStock}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Recent Orders */}
       <Card>

@@ -1,12 +1,12 @@
 "use client"
 
-import { BarChart3, Package, ShoppingCart, Users, Settings, FileBarChart, UserCog } from "lucide-react"
+import { BarChart3, Package, ShoppingCart, Users, Settings, FileBarChart, UserCog, Truck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 interface AdminSidebarProps {
   activeView: string
-  onViewChange: (view: "stats" | "orders" | "products" | "employees" | "users" | "reports" | "settings") => void
+  onViewChange: (view: "stats" | "orders" | "products" | "employees" | "users" | "suppliers" | "reports" | "settings") => void
 }
 
 const menuItems = [
@@ -14,6 +14,7 @@ const menuItems = [
   { id: "orders", label: "Bestellungen", icon: ShoppingCart },
   { id: "products", label: "Produkte", icon: Package },
   { id: "employees", label: "Mitarbeiter", icon: Users },
+  { id: "suppliers", label: "Lieferanten", icon: Truck },
   { id: "users", label: "Benutzer", icon: UserCog },
   { id: "reports", label: "Auswertungen", icon: FileBarChart },
   { id: "settings", label: "Einstellungen", icon: Settings },

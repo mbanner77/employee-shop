@@ -3,7 +3,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
-import { ShoppingBag, Menu, Settings, X, Heart } from "lucide-react"
+import { ShoppingBag, Menu, Settings, X, Heart, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useShopStore } from "@/lib/store"
 import { useState, useEffect } from "react"
@@ -89,6 +89,28 @@ export function Header() {
             )}
           >
             Favoriten
+          </Link>
+          <Link
+            href="/my-orders"
+            className={cn(
+              "rounded-full px-4 py-2 text-sm font-medium transition-colors",
+              useDarkHeader && !isAdminPage
+                ? "text-muted-foreground hover:bg-muted hover:text-foreground"
+                : "text-white/70 hover:bg-white/10 hover:text-white",
+            )}
+          >
+            Bestellungen
+          </Link>
+          <Link
+            href="/profile"
+            className={cn(
+              "rounded-full px-4 py-2 text-sm font-medium transition-colors",
+              useDarkHeader && !isAdminPage
+                ? "text-muted-foreground hover:bg-muted hover:text-foreground"
+                : "text-white/70 hover:bg-white/10 hover:text-white",
+            )}
+          >
+            <User className="h-4 w-4" />
           </Link>
           <Link
             href="/feedback"
@@ -177,6 +199,20 @@ export function Header() {
                     className="rounded-lg px-4 py-3 text-lg font-medium hover:bg-muted"
                   >
                     Favoriten
+                  </Link>
+                  <Link
+                    href="/my-orders"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="rounded-lg px-4 py-3 text-lg font-medium hover:bg-muted"
+                  >
+                    Meine Bestellungen
+                  </Link>
+                  <Link
+                    href="/profile"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="rounded-lg px-4 py-3 text-lg font-medium hover:bg-muted"
+                  >
+                    Mein Profil
                   </Link>
                   <Link
                     href="/feedback"

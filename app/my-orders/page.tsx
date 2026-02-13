@@ -5,7 +5,7 @@ import { Header } from "@/components/header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Loader2, Package, ChevronDown, ChevronUp, ArrowLeft } from "lucide-react"
+import { Loader2, Package, ChevronDown, ChevronUp, ArrowLeft, Truck, ExternalLink } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 
@@ -22,12 +22,15 @@ interface OrderItem {
 
 interface Order {
   id: string
+  orderNumber?: string
   status: string
   createdAt: string
   customerName: string
   street: string
   zip: string
   city: string
+  trackingNumber?: string
+  trackingUrl?: string
   items: OrderItem[]
 }
 
@@ -210,6 +213,33 @@ export default function MyOrdersPage() {
                           <p className="text-muted-foreground">{order.street}</p>
                           <p className="text-muted-foreground">{order.zip} {order.city}</p>
                         </div>
+
+                        {/* Tracking Info */}
+                        {order.trackingNumber && (
+                          <div className="mt-4">
+                            <h4 className="font-semibold mb-3">Sendungsverfolgung</h4>
+                            <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+                              <div className="flex items-center gap-3">
+                                <Truck className="h-5 w-5 text-blue-600" />
+                                <div className="flex-1">
+                                  <p className="text-sm text-blue-800">Tracking-Nummer</p>
+                                  <p className="font-mono font-medium text-blue-900">{order.trackingNumber}</p>
+                                </div>
+                                {order.trackingUrl && (
+                                  <a
+                                    href={order.trackingUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800"
+                                  >
+                                    Verfolgen
+                                    <ExternalLink className="h-4 w-4" />
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
 
                         <h4 className="font-semibold mt-4 mb-3">Bestellfortschritt</h4>
                         <div className="relative">
