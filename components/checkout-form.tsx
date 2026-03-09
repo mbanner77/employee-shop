@@ -99,13 +99,30 @@ export function CheckoutForm() {
     }
   }
 
+  const companyCartCount = cart
+    .filter((item) => item.costBearer === "COMPANY")
+    .reduce((sum, item) => sum + item.quantity, 0)
+  const privateCartCount = cart
+    .filter((item) => item.costBearer === "EMPLOYEE")
+    .reduce((sum, item) => sum + item.quantity, 0)
+  const totalCartCount = cart.reduce((sum, item) => sum + item.quantity, 0)
+  const privateSubtotal = cart
+    .filter((item) => item.costBearer === "EMPLOYEE")
+    .reduce((sum, item) => {
+      const numericPrice = typeof item.product.price === "number"
+        ? item.product.price
+        : typeof item.product.price === "string"
+          ? Number(item.product.price)
+          : 0
+      return sum + (Number.isFinite(numericPrice) ? numericPrice : 0) * item.quantity
+    }, 0)
   const remainingItems = maxItems - yearlyOrderCount
-  const canOrder = remainingItems >= cart.length
+  const canOrder = remainingItems >= companyCartCount
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (cart.length === 0) {
+    if (totalCartCount === 0) {
       toast.error("Bitte wähle mindestens einen Artikel aus")
       return
     }
@@ -123,7 +140,7 @@ export function CheckoutForm() {
     }
 
     if (!canOrder) {
-      toast.error(`Du hast dein Jahreslimit erreicht. Noch ${remainingItems} Artikel verfügbar.`)
+      toast.error(`Du hast nur noch ${remainingItems} Firmenartikel verfügbar. Private Artikel sind weiterhin möglich.`)
       return
     }
 
@@ -173,12 +190,17 @@ export function CheckoutForm() {
             <div>
               <p className={`font-medium ${canOrder ? "text-green-800" : "text-red-800"}`}>
                 {remainingItems > 0 
-                  ? `Noch ${remainingItems} von ${maxItems} Artikeln verfügbar dieses Jahr`
+                  ? `Noch ${remainingItems} von ${maxItems} Firmenartikeln kostenlos verfügbar`
                   : "Jahreslimit erreicht"}
               </p>
               <p className="text-sm text-muted-foreground">
-                Bereits bestellt: {yearlyOrderCount} | Im Warenkorb: {cart.length}
+                Bereits bestellt: {yearlyOrderCount} Firmenartikel | Im Warenkorb: {companyCartCount} Firma / {privateCartCount} Privat
               </p>
+              {privateCartCount > 0 && (
+                <p className="text-sm text-muted-foreground">
+                  Private Artikel im Warenkorb: {privateCartCount} | Zwischensumme: {privateSubtotal.toFixed(2)} €
+                </p>
+              )}
             </div>
           </div>
         </CardContent>
@@ -186,7 +208,7 @@ export function CheckoutForm() {
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="name">Vollständiger Name</Label>
+          <Label htmlFor="name">Vollständiger Name *</Label>
           <Input
             id="name"
             placeholder="Max Mustermann"
@@ -194,10 +216,11 @@ export function CheckoutForm() {
             onChange={(e) => handleChange("customerName", e.target.value)}
             disabled={!!employee}
             className={employee ? "bg-muted" : ""}
+            required
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="email">E-Mail</Label>
+          <Label htmlFor="email">E-Mail *</Label>
           <Input
             id="email"
             type="email"
@@ -206,12 +229,13 @@ export function CheckoutForm() {
             onChange={(e) => handleChange("email", e.target.value)}
             disabled={!!employee}
             className={employee ? "bg-muted" : ""}
+            required
           />
         </div>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="department">Firmenbereich</Label>
+        <Label htmlFor="department">Firmenbereich *</Label>
         {employee ? (
           <Input
             id="department"
@@ -236,18 +260,19 @@ export function CheckoutForm() {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="street">Straße & Hausnummer</Label>
+        <Label htmlFor="street">Straße & Hausnummer *</Label>
         <Input
           id="street"
           placeholder="Musterstraße 123"
           value={formData.street}
           onChange={(e) => handleChange("street", e.target.value)}
+          required
         />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="zip">PLZ</Label>
+          <Label htmlFor="zip">PLZ *</Label>
           <Input
             id="zip"
             placeholder="12345"
@@ -259,18 +284,20 @@ export function CheckoutForm() {
             maxLength={5}
             inputMode="numeric"
             pattern="[0-9]*"
+            required
           />
           {formData.zip && formData.zip.length !== 5 && (
             <p className="text-xs text-amber-600">PLZ muss 5 Ziffern haben</p>
           )}
         </div>
         <div className="space-y-2">
-          <Label htmlFor="city">Stadt</Label>
+          <Label htmlFor="city">Stadt *</Label>
           <Input
             id="city"
             placeholder="Musterstadt"
             value={formData.city}
             onChange={(e) => handleChange("city", e.target.value)}
+            required
           />
         </div>
       </div>
@@ -302,7 +329,7 @@ export function CheckoutForm() {
         </CardContent>
       </Card>
 
-      <Button type="submit" className="w-full" size="lg" disabled={cart.length === 0 || isSubmitting || !canOrder || !disclaimerAccepted}>
+      <Button type="submit" className="w-full" size="lg" disabled={totalCartCount === 0 || isSubmitting || !canOrder || !disclaimerAccepted}>
         {isSubmitting ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />

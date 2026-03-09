@@ -29,17 +29,35 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
+    const normalizedName = String(body.name || "").trim()
+    const normalizedDescription = String(body.description || "").trim()
+    const colors = Array.isArray(body.colors)
+      ? body.colors.map((color: unknown) => String(color).trim()).filter(Boolean)
+      : String(body.color || "")
+          .split(",")
+          .map((color) => color.trim())
+          .filter(Boolean)
+
     const product = await prisma.product.create({
       data: {
-        name: body.name,
+        name: normalizedName,
+        nameDe: String(body.nameDe || normalizedName),
+        nameEn: String(body.nameEn || normalizedName),
         category: body.category,
-        description: body.description,
+        description: normalizedDescription,
+        descriptionDe: String(body.descriptionDe || normalizedDescription),
+        descriptionEn: String(body.descriptionEn || normalizedDescription),
         image: body.image,
         images: body.images || [],
         sizes: body.sizes,
-        color: body.color,
+        color: String(body.color || colors[0] || ""),
+        colors,
+        price: body.price ?? null,
         stock: body.stock ?? null,
+        minStock: body.minStock ?? 5,
         yearlyLimit: body.yearlyLimit ?? undefined,
+        multipleOrdersAllowed: body.multipleOrdersAllowed ?? true,
+        maxQuantityPerOrder: body.maxQuantityPerOrder ?? 2,
         sizeChart: body.sizeChart ?? null,
       },
     })

@@ -55,7 +55,7 @@ export default function WishlistPage() {
   const [loading, setLoading] = useState(true)
   const [editingItem, setEditingItem] = useState<WishlistItem | null>(null)
   const [saving, setSaving] = useState(false)
-  const { addToCart, cart } = useShopStore()
+  const { addToCart } = useShopStore()
 
   const [editForm, setEditForm] = useState({
     preferredSize: "",
@@ -144,14 +144,15 @@ export default function WishlistPage() {
   }
 
   const handleAddToCart = (item: WishlistItem) => {
-    if (cart.length >= 4) {
-      toast.error("Maximal 4 Artikel im Warenkorb")
-      return
-    }
-
     const size = item.preferredSize || item.product.sizes[0]
-    addToCart(item.product as any, size as any)
-    toast.success("In den Warenkorb gelegt")
+    const success = addToCart(item.product as any, size as any, {
+      color: item.preferredColor || item.product.colors?.[0],
+    })
+    if (success) {
+      toast.success("In den Warenkorb gelegt")
+    } else {
+      toast.error("Dieser Artikel hat bereits die maximale Menge im Warenkorb erreicht")
+    }
   }
 
   const isInStock = (item: WishlistItem): boolean => {
@@ -285,15 +286,10 @@ export default function WishlistPage() {
                   <Button
                     className="w-full"
                     onClick={() => handleAddToCart(item)}
-                    disabled={
-                      !isInStock(item) ||
-                      cart.some((c) => c.product.id === item.productId)
-                    }
+                    disabled={!isInStock(item)}
                   >
                     <ShoppingBag className="mr-2 h-4 w-4" />
-                    {cart.some((c) => c.product.id === item.productId)
-                      ? "Im Warenkorb"
-                      : "In den Warenkorb"}
+                    In den Warenkorb
                   </Button>
                 </CardContent>
               </Card>

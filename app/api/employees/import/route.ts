@@ -64,6 +64,7 @@ export async function POST(request: Request) {
               firstName: emp.firstName,
               lastName: emp.lastName,
               department: emp.department || "Allgemein",
+              password: emp.password || "welcome123",
               isActive: emp.isActive ?? true,
             },
           })

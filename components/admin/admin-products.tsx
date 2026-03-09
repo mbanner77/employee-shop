@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { Edit, Plus, Search, ChevronLeft, ChevronRight, ImageIcon, Loader2, Upload, X, Trash2 } from "lucide-react"
 
@@ -262,10 +263,15 @@ function ProductForm({ product, onSuccess, onCancel }: { product?: Product; onSu
     category: product?.category || "",
     description: product?.description || "",
     color: product?.color || "",
+    colorsInput: product?.colors?.join(", ") || product?.color || "",
+    price: product?.price != null ? String(product.price) : "",
     image: product?.image || "",
     sizes: product?.sizes?.join(", ") || "XS, S, M, L, XL, XXL",
     additionalImages: product?.images || [] as string[],
     yearlyLimit: String(product?.yearlyLimit ?? 4),
+    multipleOrdersAllowed: product?.multipleOrdersAllowed ?? true,
+    maxQuantityPerOrder: String(product?.maxQuantityPerOrder ?? 2),
+    minStock: String(product?.minStock ?? 5),
     sizeChart: product?.sizeChart || "",
     stock: (product?.stock || {}) as Record<string, number>,
   })
@@ -360,10 +366,18 @@ function ProductForm({ product, onSuccess, onCancel }: { product?: Product; onSu
       category: formData.category,
       description: formData.description,
       color: formData.color,
+      colors: formData.colorsInput
+        .split(",")
+        .map((color: string) => color.trim())
+        .filter(Boolean),
+      price: formData.price.trim() ? Number(formData.price) : null,
       image: formData.image,
       sizes: parsedSizes,
       images: formData.additionalImages,
       yearlyLimit: parseInt(formData.yearlyLimit, 10) || 4,
+      multipleOrdersAllowed: formData.multipleOrdersAllowed,
+      maxQuantityPerOrder: parseInt(formData.maxQuantityPerOrder, 10) || 1,
+      minStock: parseInt(formData.minStock, 10) || 5,
       sizeChart: formData.sizeChart?.trim() || null,
       stock: Object.keys(stockPayload).length > 0 ? stockPayload : null,
     }
@@ -452,12 +466,35 @@ function ProductForm({ product, onSuccess, onCancel }: { product?: Product; onSu
           />
         </div>
         <div className="space-y-2">
+          <Label htmlFor="colorsInput">Farbauswahl (kommagetrennt)</Label>
+          <Input
+            id="colorsInput"
+            value={formData.colorsInput}
+            onChange={(e) => handleChange("colorsInput", e.target.value)}
+            placeholder="z.B. Navy, Schwarz, Weiß"
+          />
+        </div>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
           <Label htmlFor="sizes">Größen (kommagetrennt)</Label>
           <Input 
             id="sizes" 
             value={formData.sizes}
             onChange={(e) => handleChange("sizes", e.target.value)}
             placeholder="XS, S, M, L, XL, XXL" 
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="price">Privatpreis (€)</Label>
+          <Input
+            id="price"
+            type="number"
+            step="0.01"
+            min={0}
+            value={formData.price}
+            onChange={(e) => handleChange("price", e.target.value)}
+            placeholder="0.00"
           />
         </div>
       </div>
@@ -475,6 +512,31 @@ function ProductForm({ product, onSuccess, onCancel }: { product?: Product; onSu
           />
         </div>
         <div className="space-y-2">
+          <Label htmlFor="maxQuantityPerOrder">Max. Menge pro Bestellung</Label>
+          <Input
+            id="maxQuantityPerOrder"
+            type="number"
+            min={1}
+            value={formData.maxQuantityPerOrder}
+            onChange={(e) => handleChange("maxQuantityPerOrder", e.target.value)}
+            placeholder="2"
+          />
+        </div>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="minStock">Mindestbestand</Label>
+          <Input
+            id="minStock"
+            type="number"
+            min={0}
+            value={formData.minStock}
+            onChange={(e) => handleChange("minStock", e.target.value)}
+            placeholder="5"
+          />
+        </div>
+        <div className="space-y-2">
           <Label htmlFor="sizeChart">Größentabelle (URL)</Label>
           <Input
             id="sizeChart"
@@ -483,6 +545,18 @@ function ProductForm({ product, onSuccess, onCancel }: { product?: Product; onSu
             placeholder="https://..."
           />
         </div>
+      </div>
+
+      <div className="flex items-center justify-between rounded-lg border p-4">
+        <div className="space-y-1">
+          <Label htmlFor="multipleOrdersAllowed">Mehrfachbestellungen erlauben</Label>
+          <p className="text-xs text-muted-foreground">Wenn deaktiviert, kann der Artikel nur einmal pro Bestellung in den Warenkorb gelegt werden.</p>
+        </div>
+        <Switch
+          id="multipleOrdersAllowed"
+          checked={formData.multipleOrdersAllowed}
+          onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, multipleOrdersAllowed: checked }))}
+        />
       </div>
 
       <div className="space-y-2">

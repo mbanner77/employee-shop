@@ -27,7 +27,7 @@ export default function FavoritesPage() {
   const [loading, setLoading] = useState(true)
   const [removing, setRemoving] = useState<string | null>(null)
   const router = useRouter()
-  const { addToCart, cart } = useShopStore()
+  const { addToCart } = useShopStore()
 
   useEffect(() => {
     fetchFavorites()
@@ -68,12 +68,11 @@ export default function FavoritesPage() {
   }
 
   const handleAddToCart = (product: FavoriteProduct["product"]) => {
-    if (cart.length >= 4) {
-      alert("Maximal 4 Artikel im Warenkorb")
-      return
-    }
     const defaultSize = product.sizes[0]
-    addToCart(product as any, defaultSize as any)
+    const success = addToCart(product as any, defaultSize as any)
+    if (!success) {
+      alert("Dieser Artikel hat bereits die maximale Menge im Warenkorb erreicht")
+    }
   }
 
   if (loading) {
@@ -137,12 +136,9 @@ export default function FavoritesPage() {
                   <Button
                     className="w-full"
                     onClick={() => handleAddToCart(favorite.product)}
-                    disabled={cart.some((item) => item.product.id === favorite.product.id)}
                   >
                     <ShoppingBag className="mr-2 h-4 w-4" />
-                    {cart.some((item) => item.product.id === favorite.product.id)
-                      ? "Im Warenkorb"
-                      : "In den Warenkorb"}
+                    In den Warenkorb
                   </Button>
                 </CardContent>
               </Card>

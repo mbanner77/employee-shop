@@ -25,36 +25,36 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const idsOnly = searchParams.get("idsOnly") === "1"
 
-    const favorites = await prisma.favorite.findMany({
-      where: { employeeId },
-      orderBy: { createdAt: "desc" },
-      ...(idsOnly
-        ? {
-            select: {
-              id: true,
-              productId: true,
-              createdAt: true,
-            },
-          }
-        : {
-            select: {
-              id: true,
-              productId: true,
-              createdAt: true,
-              product: {
-                select: {
-                  id: true,
-                  name: true,
-                  category: true,
-                  description: true,
-                  image: true,
-                  sizes: true,
-                  color: true,
-                },
+    const favorites = idsOnly
+      ? await prisma.favorite.findMany({
+          where: { employeeId },
+          orderBy: { createdAt: "desc" },
+          select: {
+            id: true,
+            productId: true,
+            createdAt: true,
+          },
+        })
+      : await prisma.favorite.findMany({
+          where: { employeeId },
+          orderBy: { createdAt: "desc" },
+          select: {
+            id: true,
+            productId: true,
+            createdAt: true,
+            product: {
+              select: {
+                id: true,
+                name: true,
+                category: true,
+                description: true,
+                image: true,
+                sizes: true,
+                color: true,
               },
             },
-          }),
-    })
+          },
+        })
 
     return NextResponse.json(favorites)
   } catch (error) {

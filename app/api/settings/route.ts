@@ -1,5 +1,15 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
+import { cookies } from "next/headers"
+
+async function isAdminAuthenticated() {
+  const cookieStore = await cookies()
+  const adminSession = cookieStore.get("admin-session")
+  if (!adminSession) return false
+
+  const admin = await prisma.adminUser.findUnique({ where: { id: adminSession.value } })
+  return !!admin
+}
 
 // GET settings
 export async function GET() {
@@ -15,10 +25,25 @@ export async function GET() {
       })
     }
 
-    // Don't expose SMTP password
+    const isAdmin = await isAdminAuthenticated()
+    const microsoftSsoEnabled = Boolean(
+      process.env.MICROSOFT_CLIENT_ID &&
+      process.env.MICROSOFT_CLIENT_SECRET &&
+      process.env.MICROSOFT_TENANT_ID,
+    )
+
+    if (!isAdmin) {
+      return NextResponse.json({
+        shopName: settings.shopName,
+        maxItemsPerOrder: settings.maxItemsPerOrder,
+        microsoftSsoEnabled,
+      })
+    }
+
     return NextResponse.json({
       ...settings,
       smtpPassword: settings.smtpPassword ? "••••••••" : "",
+      microsoftSsoEnabled,
     })
   } catch (error) {
     console.error("Failed to fetch settings:", error)
@@ -29,10 +54,15 @@ export async function GET() {
 // PUT - update settings
 export async function PUT(request: Request) {
   try {
+    if (!(await isAdminAuthenticated())) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
+    }
+
     const data = await request.json()
 
     // Don't update password if it's masked
     const updateData: Record<string, unknown> = { ...data }
+    delete updateData.microsoftSsoEnabled
     if (updateData.smtpPassword === "••••••••") {
       delete updateData.smtpPassword
     }

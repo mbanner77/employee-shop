@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
+import { cookies } from "next/headers"
 
 // Generiere eine eindeutige Mitarbeiter-ID
 async function generateEmployeeId(): Promise<string> {
@@ -38,6 +39,14 @@ export async function POST(request: Request) {
         department: companyArea, // Firmenbereich wird als department gespeichert
         password, // In production, hash this!
       },
+    })
+
+    const cookieStore = await cookies()
+    cookieStore.set("employee_session", employee.id, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 7,
     })
 
     return NextResponse.json({

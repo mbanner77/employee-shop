@@ -54,8 +54,35 @@ export async function GET() {
     const quotaOrders = orders.filter((order: { createdAt: Date }) => 
       new Date(order.createdAt) >= quotaStartDate
     )
-    const yearlyItemCount = quotaOrders.reduce((sum: number, order: { items: unknown[] }) => 
-      sum + order.items.length, 0
+    const yearlyCompanyItemCount = quotaOrders.reduce(
+      (
+        sum: number,
+        order: {
+          items: Array<{ quantity?: number; costBearer?: string | null }>
+        },
+      ) =>
+        sum +
+        order.items.reduce(
+          (itemSum, item) =>
+            itemSum + ((item.costBearer || "COMPANY") === "COMPANY" ? item.quantity || 1 : 0),
+          0,
+        ),
+      0,
+    )
+    const yearlyPrivateItemCount = quotaOrders.reduce(
+      (
+        sum: number,
+        order: {
+          items: Array<{ quantity?: number; costBearer?: string | null }>
+        },
+      ) =>
+        sum +
+        order.items.reduce(
+          (itemSum, item) =>
+            itemSum + ((item.costBearer || "COMPANY") === "EMPLOYEE" ? item.quantity || 1 : 0),
+          0,
+        ),
+      0,
     )
 
     return NextResponse.json({
@@ -63,8 +90,10 @@ export async function GET() {
       stats: {
         totalOrders: orders.length,
         yearlyOrders: quotaOrders.length,
-        yearlyItemCount,
-        remainingItems: Math.max(0, maxItemsPerOrder - yearlyItemCount),
+        yearlyItemCount: yearlyCompanyItemCount,
+        yearlyCompanyItemCount,
+        yearlyPrivateItemCount,
+        remainingItems: Math.max(0, maxItemsPerOrder - yearlyCompanyItemCount),
       },
     })
   } catch (error) {

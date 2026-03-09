@@ -17,6 +17,8 @@ interface ProductCardProps {
 
 export function ProductCard({ product }: ProductCardProps) {
   const [selectedSize, setSelectedSize] = useState<Size | null>(null)
+  const [selectedColor, setSelectedColor] = useState<string>(product.colors?.[0] || product.color || "")
+  const [selectedCostBearer, setSelectedCostBearer] = useState<"COMPANY" | "EMPLOYEE">("COMPANY")
   const [mounted, setMounted] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
@@ -57,6 +59,11 @@ export function ProductCard({ product }: ProductCardProps) {
   const allImages = product.images && product.images.length > 0 
     ? [product.image, ...product.images] 
     : [product.image]
+  const availableColors = product.colors && product.colors.length > 0
+    ? product.colors
+    : product.color
+      ? [product.color]
+      : []
 
   const handlePrevImage = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -73,37 +80,69 @@ export function ProductCard({ product }: ProductCardProps) {
   }, [])
 
   useEffect(() => {
+    setSelectedColor(product.colors?.[0] || product.color || "")
+  }, [product.color, product.colors])
+
+  useEffect(() => {
     if (message) {
       const timer = setTimeout(() => setMessage(null), 3000)
       return () => clearTimeout(timer)
     }
   }, [message])
 
-  const isInCart = mounted ? cart.some((item) => item.product.id === product.id) : false
-  const cartFull = mounted ? cart.length >= 4 : false
+  const maxQuantityForProduct = product.multipleOrdersAllowed === false
+    ? 1
+    : Math.max(1, product.maxQuantityPerOrder ?? 2)
+  const productQuantityInCart = mounted
+    ? cart
+        .filter((item) => item.product.id === product.id)
+        .reduce((sum, item) => sum + item.quantity, 0)
+    : 0
+  const selectedVariantQuantity = mounted && selectedSize
+    ? cart
+        .filter(
+          (item) =>
+            item.product.id === product.id &&
+            item.size === selectedSize &&
+            (item.color || "") === (selectedColor || "") &&
+            item.costBearer === selectedCostBearer,
+        )
+        .reduce((sum, item) => sum + item.quantity, 0)
+    : 0
+  const isInCart = selectedVariantQuantity > 0
+  const cartFull = mounted ? productQuantityInCart >= maxQuantityForProduct : false
+  const parsedPrice = typeof product.price === "number"
+    ? product.price
+    : typeof product.price === "string"
+      ? Number(product.price)
+      : null
 
   const handleAddToCart = () => {
     if (!selectedSize) {
       setMessage("Bitte wähle eine Größe aus")
       return
     }
-    if (isInCart) {
-      setMessage("Bereits im Warenkorb")
+    if (availableColors.length > 0 && !selectedColor) {
+      setMessage("Bitte wähle eine Farbe aus")
       return
     }
     if (cartFull) {
-      setMessage("Maximal 4 Artikel")
+      setMessage(`Maximal ${maxQuantityForProduct}x pro Artikel`) 
       return
     }
-
-    const success = addToCart(product, selectedSize)
+    const success = addToCart(product, selectedSize, {
+      color: selectedColor || undefined,
+      costBearer: selectedCostBearer,
+    })
     if (success) {
-      setMessage("Hinzugefügt!")
+      setMessage(selectedVariantQuantity > 0 ? "Menge erhöht!" : "Hinzugefügt!")
+    } else {
+      setMessage(`Maximal ${maxQuantityForProduct}x pro Artikel`) 
     }
   }
 
   return (
-    <Card className="group overflow-hidden border-0 bg-card shadow-sm transition-all duration-300 hover:shadow-lg">
+    <Card id={product.id} className="group overflow-hidden border-0 bg-card shadow-sm transition-all duration-300 hover:shadow-lg">
       <div className="relative aspect-square overflow-hidden bg-muted">
         <Image
           src={allImages[currentImageIndex] || "/placeholder.svg"}
@@ -111,7 +150,6 @@ export function ProductCard({ product }: ProductCardProps) {
           fill
           className="object-cover transition-transform duration-500 group-hover:scale-105"
         />
-        {/* Favorite Button */}
         <button
           onClick={(e) => {
             e.stopPropagation()
@@ -124,12 +162,11 @@ export function ProductCard({ product }: ProductCardProps) {
           <Heart className={`h-4 w-4 ${isFavorite ? "fill-red-500 text-red-500" : ""}`} />
         </button>
         {isInCart && (
-          <div className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-accent">
-            <Check className="h-4 w-4 text-accent-foreground" />
+          <div className="absolute right-3 top-3 flex min-w-8 items-center justify-center rounded-full bg-accent px-2 py-1 text-xs font-semibold text-accent-foreground">
+            {selectedVariantQuantity}
           </div>
         )}
-        
-        {/* Image navigation for multiple images */}
+
         {allImages.length > 1 && (
           <>
             <button
@@ -174,12 +211,10 @@ export function ProductCard({ product }: ProductCardProps) {
           {product.category}
         </div>
         <h3 className="mb-1 font-serif text-lg font-semibold leading-tight text-foreground">{product.name}</h3>
-        {/* Product Reviews */}
         <div className="mb-2">
           <ProductReviews productId={product.id} productName={product.name} />
         </div>
         <p className="mb-2 text-sm text-muted-foreground line-clamp-2">{product.description}</p>
-        {/* Size Chart Button */}
         <button
           onClick={() => setShowSizeChart(true)}
           className="mb-3 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
@@ -187,17 +222,47 @@ export function ProductCard({ product }: ProductCardProps) {
           <Ruler className="h-3 w-3" />
           Größentabelle
         </button>
-        {/* Stock indicator */}
         {selectedSize && getStock(selectedSize) !== null && (
           <div className={`mb-2 text-xs ${getStock(selectedSize)! > 5 ? "text-green-600" : getStock(selectedSize)! > 0 ? "text-orange-500" : "text-red-500"}`}>
             {getStock(selectedSize)! > 5 ? "Auf Lager" : getStock(selectedSize)! > 0 ? `Nur noch ${getStock(selectedSize)} verfügbar` : "Nicht verfügbar"}
           </div>
         )}
+        {parsedPrice !== null && Number.isFinite(parsedPrice) && (
+          <p className="mb-2 text-sm font-medium text-foreground">Privatpreis: {parsedPrice.toFixed(2)} €</p>
+        )}
+        {availableColors.length > 1 ? (
+          <div className="mb-3">
+            <Select value={selectedColor} onValueChange={setSelectedColor}>
+              <SelectTrigger>
+                <SelectValue placeholder="Farbe wählen" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableColors.map((color) => (
+                  <SelectItem key={color} value={color}>
+                    {color}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        ) : availableColors.length === 1 ? (
+          <p className="mb-3 text-sm text-muted-foreground">Farbe: {availableColors[0]}</p>
+        ) : null}
+        <div className="mb-3">
+          <Select value={selectedCostBearer} onValueChange={(value) => setSelectedCostBearer(value as "COMPANY" | "EMPLOYEE")}>
+            <SelectTrigger>
+              <SelectValue placeholder="Bestellart wählen" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="COMPANY">Firma</SelectItem>
+              <SelectItem value="EMPLOYEE">Privat</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
         <div className="flex items-center gap-2">
           <Select
             value={selectedSize || undefined}
             onValueChange={(value) => setSelectedSize(value as Size)}
-            disabled={isInCart}
           >
             <SelectTrigger className="flex-1">
               <SelectValue placeholder="Größe wählen" />
@@ -213,15 +278,17 @@ export function ProductCard({ product }: ProductCardProps) {
           <Button
             size="icon"
             onClick={handleAddToCart}
-            disabled={isInCart || cartFull}
+            disabled={cartFull}
             className={isInCart ? "bg-accent hover:bg-accent" : ""}
           >
             {isInCart ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
           </Button>
         </div>
+        <p className="mt-2 text-xs text-muted-foreground">
+          {productQuantityInCart} von {maxQuantityForProduct} dieses Artikels im Warenkorb
+        </p>
       </CardContent>
       
-      {/* Size Chart Dialog */}
       <SizeChartDialog
         open={showSizeChart}
         onOpenChange={setShowSizeChart}

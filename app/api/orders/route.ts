@@ -154,20 +154,20 @@ export async function POST(request: Request) {
           size: String(raw.size || ""),
           color: raw.color ? String(raw.color) : undefined,
           costBearer: (raw.costBearer === 'EMPLOYEE' ? 'EMPLOYEE' : 'COMPANY') as CostBearer,
-          quantity: typeof raw.quantity === 'number' ? raw.quantity : 1,
+          quantity: typeof raw.quantity === 'number' && raw.quantity > 0 ? Math.floor(raw.quantity) : 1,
         }
       })
       .filter((i) => i.productId && i.size)
     
     // Separate company and private items for validation
     const companyItems = requestedItems.filter(i => i.costBearer === 'COMPANY')
-    const privateItems = requestedItems.filter(i => i.costBearer === 'EMPLOYEE')
+    const requestedCompanyCount = companyItems.reduce((sum, item) => sum + item.quantity, 0)
 
     if (requestedItems.length === 0) {
       return NextResponse.json({ error: "Invalid items" }, { status: 400 })
     }
 
-    if (requestedItems.length > maxItemsPerOrder) {
+    if (requestedCompanyCount > maxItemsPerOrder) {
       return NextResponse.json(
         { error: `Maximal ${maxItemsPerOrder} Artikel pro Bestellung erlaubt` },
         { status: 400 },
@@ -193,6 +193,8 @@ export async function POST(request: Request) {
         sizes: true,
         yearlyLimit: true,
         stock: true,
+        price: true,
+        supplierId: true,
       },
     })) as ProductForOrder[]
 
@@ -216,17 +218,24 @@ export async function POST(request: Request) {
       }
     }
 
-    // Global yearly limit validation (count items since quotaStartDate)
-    const yearlyItemCount = await prisma.orderItem.count({
+    // Global yearly limit validation (count only company items since quotaStartDate)
+    const yearlyCompanyItems = await prisma.orderItem.findMany({
       where: {
         order: {
           employeeId: employee.id,
           createdAt: { gte: quotaStartDate },
         },
+        OR: [
+          { costBearer: 'COMPANY' },
+          { costBearer: null as never },
+        ],
       },
+      select: { quantity: true },
     })
 
-    if (yearlyItemCount + requestedItems.length > maxItemsPerOrder) {
+    const yearlyItemCount = yearlyCompanyItems.reduce((sum, item) => sum + (item.quantity || 1), 0)
+
+    if (yearlyItemCount + requestedCompanyCount > maxItemsPerOrder) {
       const remaining = Math.max(0, maxItemsPerOrder - yearlyItemCount)
       return NextResponse.json(
         { error: `Jahreslimit erreicht. Noch ${remaining} Artikel verfügbar.` },
@@ -234,26 +243,30 @@ export async function POST(request: Request) {
       )
     }
 
-    // Per-product yearly limit validation
+    // Per-product yearly limit validation (company items only)
     const yearlyItemsForProducts = await prisma.orderItem.findMany({
       where: {
-        productId: { in: productIds },
+        productId: { in: companyItems.map((item) => item.productId) },
         order: {
           employeeId: employee.id,
           createdAt: { gte: quotaStartDate },
         },
+        OR: [
+          { costBearer: 'COMPANY' },
+          { costBearer: null as never },
+        ],
       },
-      select: { productId: true },
+      select: { productId: true, quantity: true },
     })
 
     const alreadyOrderedByProduct = new Map<string, number>()
     for (const row of yearlyItemsForProducts) {
-      alreadyOrderedByProduct.set(row.productId, (alreadyOrderedByProduct.get(row.productId) || 0) + 1)
+      alreadyOrderedByProduct.set(row.productId, (alreadyOrderedByProduct.get(row.productId) || 0) + (row.quantity || 1))
     }
 
     const requestedByProduct = new Map<string, number>()
-    for (const item of requestedItems) {
-      requestedByProduct.set(item.productId, (requestedByProduct.get(item.productId) || 0) + 1)
+    for (const item of companyItems) {
+      requestedByProduct.set(item.productId, (requestedByProduct.get(item.productId) || 0) + item.quantity)
     }
 
     for (const [productId, requestedCount] of requestedByProduct.entries()) {
@@ -273,7 +286,7 @@ export async function POST(request: Request) {
     const requestedByProductSize = new Map<string, number>()
     for (const item of requestedItems) {
       const key = `${item.productId}::${item.size}`
-      requestedByProductSize.set(key, (requestedByProductSize.get(key) || 0) + 1)
+      requestedByProductSize.set(key, (requestedByProductSize.get(key) || 0) + item.quantity)
     }
 
     type TxProduct = {

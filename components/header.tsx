@@ -16,9 +16,11 @@ export function Header() {
   const [mounted, setMounted] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false)
   const cart = useShopStore((state) => state.cart)
   const pathname = usePathname()
   const isAdminPage = pathname?.startsWith("/admin")
+  const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0)
 
   useEffect(() => {
     setMounted(true)
@@ -29,6 +31,13 @@ export function Header() {
 
     window.addEventListener("scroll", handleScroll)
     return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
+
+  useEffect(() => {
+    fetch("/api/admin/me")
+      .then((res) => res.json())
+      .then((data) => setIsAdminAuthenticated(Boolean(data?.authenticated)))
+      .catch(() => setIsAdminAuthenticated(false))
   }, [])
 
   // On admin pages, always use dark header style
@@ -123,17 +132,19 @@ export function Header() {
           >
             Feedback
           </Link>
-          <Link
-            href="/admin"
-            className={cn(
-              "rounded-full px-4 py-2 text-sm font-medium transition-colors",
-              useDarkHeader && !isAdminPage
-                ? "text-muted-foreground hover:bg-muted hover:text-foreground"
-                : "text-white/70 hover:bg-white/10 hover:text-white",
-            )}
-          >
-            <Settings className="h-4 w-4" />
-          </Link>
+          {isAdminAuthenticated && (
+            <Link
+              href="/admin"
+              className={cn(
+                "rounded-full px-4 py-2 text-sm font-medium transition-colors",
+                useDarkHeader && !isAdminPage
+                  ? "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  : "text-white/70 hover:bg-white/10 hover:text-white",
+              )}
+            >
+              <Settings className="h-4 w-4" />
+            </Link>
+          )}
         </nav>
 
         <div className="flex items-center gap-2">
@@ -148,9 +159,9 @@ export function Header() {
               className={cn("relative rounded-full", useDarkHeader && !isAdminPage ? "hover:bg-muted" : "text-white hover:bg-white/10")}
             >
               <ShoppingBag className="h-5 w-5" />
-              {mounted && cart.length > 0 && (
+              {mounted && cartItemCount > 0 && (
                 <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-xs font-bold text-accent-foreground shadow-lg">
-                  {cart.length}
+                  {cartItemCount}
                 </span>
               )}
               <span className="sr-only">Warenkorb</span>
@@ -221,13 +232,15 @@ export function Header() {
                   >
                     Feedback
                   </Link>
-                  <Link
-                    href="/admin"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="rounded-lg px-4 py-3 text-lg font-medium hover:bg-muted"
-                  >
-                    Admin Dashboard
-                  </Link>
+                  {isAdminAuthenticated && (
+                    <Link
+                      href="/admin"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="rounded-lg px-4 py-3 text-lg font-medium hover:bg-muted"
+                    >
+                      Admin Dashboard
+                    </Link>
+                  )}
                 </nav>
               </div>
             </SheetContent>
