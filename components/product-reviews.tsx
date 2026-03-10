@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Star, Loader2, MessageSquare } from "lucide-react"
+import { useAppTexts } from "@/components/app-text-provider"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import {
@@ -38,6 +39,7 @@ export function ProductReviews({ productId, productName }: ProductReviewsProps) 
   const [newComment, setNewComment] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [hasReviewed, setHasReviewed] = useState(false)
+  const { text, textf } = useAppTexts()
 
   useEffect(() => {
     fetchReviews()
@@ -89,19 +91,19 @@ export function ProductReviews({ productId, productName }: ProductReviewsProps) 
         const newAvg = [...reviews, newReview].reduce((sum, r) => sum + r.rating, 0) / (reviews.length + 1)
         setAverageRating(Math.round(newAvg * 10) / 10)
         setHasReviewed(true)
-        setSuccessMessage("Danke für deine Bewertung!")
+        setSuccessMessage(text("reviews.success"))
         setNewRating(0)
         setNewComment("")
       } else if (res.status === 401) {
-        setErrorMessage("Bitte melde dich an, um zu bewerten")
+        setErrorMessage(text("reviews.authRequired"))
         setCanReview(false)
       } else {
         const data = await res.json()
-        setErrorMessage(data.error || "Fehler beim Absenden")
+        setErrorMessage(data.error || text("reviews.submitError"))
       }
     } catch (error) {
       console.error("Error submitting review:", error)
-      setErrorMessage("Netzwerkfehler")
+      setErrorMessage(text("reviews.networkError"))
     } finally {
       setSubmitting(false)
     }
@@ -143,14 +145,14 @@ export function ProductReviews({ productId, productName }: ProductReviewsProps) 
           ) : (
             <>
               <MessageSquare className="h-3 w-3" />
-              <span>Bewerten</span>
+              <span>{text("reviews.trigger")}</span>
             </>
           )}
         </button>
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Bewertungen für {productName}</DialogTitle>
+          <DialogTitle>{textf("reviews.dialogTitle", { productName })}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -161,7 +163,7 @@ export function ProductReviews({ productId, productName }: ProductReviewsProps) 
               <div>
                 {renderStars(Math.round(averageRating), "md")}
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  {reviews.length} {reviews.length === 1 ? "Bewertung" : "Bewertungen"}
+                  {textf("reviews.summary", { count: reviews.length })}
                 </p>
               </div>
             </div>
@@ -170,7 +172,7 @@ export function ProductReviews({ productId, productName }: ProductReviewsProps) 
           {/* Add review form */}
           {!hasReviewed && canReview && (
             <div className="space-y-3 border-t pt-4">
-              <p className="text-sm font-medium">Deine Bewertung</p>
+              <p className="text-sm font-medium">{text("reviews.yourReview")}</p>
               {errorMessage && (
                 <div className="rounded-md bg-destructive/10 p-2 text-sm text-destructive">
                   {errorMessage}
@@ -197,7 +199,7 @@ export function ProductReviews({ productId, productName }: ProductReviewsProps) 
                 ))}
               </div>
               <Textarea
-                placeholder="Optionaler Kommentar..."
+                placeholder={text("reviews.commentPlaceholder")}
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 rows={2}
@@ -211,10 +213,10 @@ export function ProductReviews({ productId, productName }: ProductReviewsProps) 
                 {submitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Wird gesendet...
+                    {text("reviews.submitLoading")}
                   </>
                 ) : (
-                  "Bewertung abgeben"
+                  text("reviews.submit")
                 )}
               </Button>
             </div>
@@ -242,14 +244,14 @@ export function ProductReviews({ productId, productName }: ProductReviewsProps) 
           {/* Success message after submitting */}
           {hasReviewed && (
             <div className="rounded-md bg-green-100 dark:bg-green-900/20 p-3 text-sm text-green-700 dark:text-green-400 text-center">
-              Danke für deine Bewertung!
+              {successMessage || text("reviews.success")}
             </div>
           )}
 
           {/* Only show "no reviews" message if there are truly no reviews AND user hasn't just submitted one */}
           {reviews.length === 0 && !hasReviewed && (
             <p className="text-center text-sm text-muted-foreground py-4">
-              Noch keine Bewertungen. Sei der Erste!
+              {text("reviews.none")}
             </p>
           )}
         </div>

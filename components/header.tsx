@@ -4,6 +4,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { ShoppingBag, Menu, Settings, X, Heart, User } from "lucide-react"
+import { useAppTexts } from "@/components/app-text-provider"
 import { Button } from "@/components/ui/button"
 import { useShopStore } from "@/lib/store"
 import { useState, useEffect } from "react"
@@ -17,6 +18,7 @@ export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false)
+  const { text } = useAppTexts()
   const cart = useShopStore((state) => state.cart)
   const pathname = usePathname()
   const isAdminPage = pathname?.startsWith("/admin")
@@ -75,7 +77,7 @@ export function Header() {
                 : "text-white/70 hover:bg-white/10 hover:text-white",
             )}
           >
-            Kollektion
+            {text("header.nav.collection")}
           </Link>
           <Link
             href="/checkout"
@@ -86,7 +88,7 @@ export function Header() {
                 : "text-white/70 hover:bg-white/10 hover:text-white",
             )}
           >
-            Bestellung
+            {text("header.nav.order")}
           </Link>
           <Link
             href="/favorites"
@@ -97,7 +99,7 @@ export function Header() {
                 : "text-white/70 hover:bg-white/10 hover:text-white",
             )}
           >
-            Favoriten
+            {text("header.nav.favorites")}
           </Link>
           <Link
             href="/my-orders"
@@ -108,7 +110,7 @@ export function Header() {
                 : "text-white/70 hover:bg-white/10 hover:text-white",
             )}
           >
-            Bestellungen
+            {text("header.nav.orders")}
           </Link>
           <Link
             href="/profile"
@@ -130,7 +132,7 @@ export function Header() {
                 : "text-white/70 hover:bg-white/10 hover:text-white",
             )}
           >
-            Feedback
+            {text("header.nav.feedback")}
           </Link>
           {isAdminAuthenticated && (
             <Link
@@ -164,7 +166,7 @@ export function Header() {
                   {cartItemCount}
                 </span>
               )}
-              <span className="sr-only">Warenkorb</span>
+              <span className="sr-only">{text("header.cart.srOnly")}</span>
             </Button>
           </Link>
 
@@ -176,13 +178,13 @@ export function Header() {
                 className={cn("rounded-full", useDarkHeader && !isAdminPage ? "hover:bg-muted" : "text-white hover:bg-white/10")}
               >
                 <Menu className="h-5 w-5" />
-                <span className="sr-only">Menü öffnen</span>
+                <span className="sr-only">{text("header.menu.open")}</span>
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="w-80 bg-background p-0">
               <div className="flex h-full flex-col">
                 <div className="flex items-center justify-between border-b border-border p-4">
-                  <span className="text-lg font-semibold">Menü</span>
+                  <span className="text-lg font-semibold">{text("header.mobile.menuTitle")}</span>
                   <SheetClose asChild>
                     <Button variant="ghost" size="icon" className="rounded-full">
                       <X className="h-5 w-5" />
@@ -195,42 +197,42 @@ export function Header() {
                     onClick={() => setMobileMenuOpen(false)}
                     className="rounded-lg px-4 py-3 text-lg font-medium hover:bg-muted"
                   >
-                    Kollektion
+                    {text("header.nav.collection")}
                   </Link>
                   <Link
                     href="/checkout"
                     onClick={() => setMobileMenuOpen(false)}
                     className="rounded-lg px-4 py-3 text-lg font-medium hover:bg-muted"
                   >
-                    Bestellung
+                    {text("header.nav.order")}
                   </Link>
                   <Link
                     href="/favorites"
                     onClick={() => setMobileMenuOpen(false)}
                     className="rounded-lg px-4 py-3 text-lg font-medium hover:bg-muted"
                   >
-                    Favoriten
+                    {text("header.nav.favorites")}
                   </Link>
                   <Link
                     href="/my-orders"
                     onClick={() => setMobileMenuOpen(false)}
                     className="rounded-lg px-4 py-3 text-lg font-medium hover:bg-muted"
                   >
-                    Meine Bestellungen
+                    {text("header.nav.orders")}
                   </Link>
                   <Link
                     href="/profile"
                     onClick={() => setMobileMenuOpen(false)}
                     className="rounded-lg px-4 py-3 text-lg font-medium hover:bg-muted"
                   >
-                    Mein Profil
+                    {text("header.mobile.profile")}
                   </Link>
                   <Link
                     href="/feedback"
                     onClick={() => setMobileMenuOpen(false)}
                     className="rounded-lg px-4 py-3 text-lg font-medium hover:bg-muted"
                   >
-                    Feedback
+                    {text("header.nav.feedback")}
                   </Link>
                   {isAdminAuthenticated && (
                     <Link
@@ -238,7 +240,7 @@ export function Header() {
                       onClick={() => setMobileMenuOpen(false)}
                       className="rounded-lg px-4 py-3 text-lg font-medium hover:bg-muted"
                     >
-                      Admin Dashboard
+                      {text("header.mobile.admin")}
                     </Link>
                   )}
                 </nav>

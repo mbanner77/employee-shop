@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Image from "next/image"
 import { Lock, User, Eye, EyeOff } from "lucide-react"
+import { useAppTexts } from "@/components/app-text-provider"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -18,6 +19,7 @@ export function SupplierLogin({ onLogin }: SupplierLoginProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const { text } = useAppTexts()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -35,10 +37,10 @@ export function SupplierLogin({ onLogin }: SupplierLoginProps) {
         onLogin(true)
       } else {
         const data = await response.json()
-        setError(data.error || "Ungültige Anmeldedaten. Bitte versuchen Sie es erneut.")
+        setError(data.error || text("supplier.login.error"))
       }
     } catch {
-      setError("Verbindungsfehler. Bitte versuchen Sie es erneut.")
+      setError(text("supplier.login.networkError"))
     } finally {
       setIsLoading(false)
     }
@@ -58,22 +60,22 @@ export function SupplierLogin({ onLogin }: SupplierLoginProps) {
             />
           </div>
           <div>
-            <CardTitle className="text-2xl font-bold text-slate-900">Lieferant Portal</CardTitle>
+            <CardTitle className="text-2xl font-bold text-slate-900">{text("supplier.login.title")}</CardTitle>
             <CardDescription className="text-slate-600 mt-1">
-              Melden Sie sich an, um Bestellungen zu verwalten
+              {text("supplier.login.description")}
             </CardDescription>
           </div>
         </CardHeader>
         <CardContent className="pt-4">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username" className="text-slate-700">Benutzername</Label>
+              <Label htmlFor="username" className="text-slate-700">{text("supplier.login.username")}</Label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input
                   id="username"
                   type="text"
-                  placeholder="Benutzername eingeben"
+                  placeholder={text("supplier.login.usernamePlaceholder")}
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   className="pl-10 h-11 border-slate-200 focus:border-primary focus:ring-primary"
@@ -82,13 +84,13 @@ export function SupplierLogin({ onLogin }: SupplierLoginProps) {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-slate-700">Passwort</Label>
+              <Label htmlFor="password" className="text-slate-700">{text("supplier.login.password")}</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Passwort eingeben"
+                  placeholder={text("supplier.login.passwordPlaceholder")}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="pl-10 pr-10 h-11 border-slate-200 focus:border-primary focus:ring-primary"
@@ -115,13 +117,13 @@ export function SupplierLogin({ onLogin }: SupplierLoginProps) {
               className="w-full h-11 text-base font-medium"
               disabled={isLoading}
             >
-              {isLoading ? "Anmelden..." : "Anmelden"}
+              {isLoading ? text("supplier.login.loadingSubmit") : text("supplier.login.submit")}
             </Button>
           </form>
 
           <div className="mt-6 pt-4 border-t border-slate-100">
             <p className="text-xs text-center text-slate-500">
-              Bei Problemen wenden Sie sich an die IT-Abteilung
+              {text("supplier.login.help")}
             </p>
           </div>
         </CardContent>

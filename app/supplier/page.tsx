@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useAppTexts } from "@/components/app-text-provider"
 import { Header } from "@/components/header"
 import { SupplierLogin } from "@/components/supplier/supplier-login"
 import { SupplierOrders } from "@/components/supplier/supplier-orders"
@@ -8,6 +9,7 @@ import { SupplierOrders } from "@/components/supplier/supplier-orders"
 export default function SupplierPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const { text } = useAppTexts()
 
   useEffect(() => {
     fetch("/api/supplier/me")
@@ -31,7 +33,7 @@ export default function SupplierPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-muted/30 flex items-center justify-center">
-        <div className="animate-pulse text-muted-foreground">Laden...</div>
+        <div className="animate-pulse text-muted-foreground">{text("supplier.loading")}</div>
       </div>
     )
   }

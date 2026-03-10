@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useAppTexts } from "@/components/app-text-provider"
 import { Header } from "@/components/header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -34,13 +35,6 @@ interface Order {
   items: OrderItem[]
 }
 
-const statusLabels: Record<string, string> = {
-  PENDING: "Ausstehend",
-  PROCESSING: "In Bearbeitung",
-  SHIPPED: "Versendet",
-  DELIVERED: "Zugestellt",
-}
-
 const statusColors: Record<string, string> = {
   PENDING: "bg-yellow-100 text-yellow-800",
   PROCESSING: "bg-blue-100 text-blue-800",
@@ -53,10 +47,26 @@ export default function MyOrdersPage() {
   const [loading, setLoading] = useState(true)
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null)
   const [yearlyCount, setYearlyCount] = useState(0)
+  const { text, textf } = useAppTexts()
 
   useEffect(() => {
     fetchOrders()
   }, [])
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "PENDING":
+        return text("orders.status.pending")
+      case "PROCESSING":
+        return text("orders.status.processing")
+      case "SHIPPED":
+        return text("orders.status.shipped")
+      case "DELIVERED":
+        return text("orders.status.delivered")
+      default:
+        return status
+    }
+  }
 
   const fetchOrders = async () => {
     try {
@@ -84,11 +94,11 @@ export default function MyOrdersPage() {
           <Link href="/">
             <Button variant="ghost" size="sm" className="mb-4">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Zurück zum Shop
+              {text("orders.back")}
             </Button>
           </Link>
-          <h1 className="text-3xl font-bold">Meine Bestellungen</h1>
-          <p className="text-muted-foreground">Übersicht deiner bisherigen Bestellungen</p>
+          <h1 className="text-3xl font-bold">{text("orders.title")}</h1>
+          <p className="text-muted-foreground">{text("orders.description")}</p>
         </div>
 
         {/* Stats */}
@@ -99,7 +109,7 @@ export default function MyOrdersPage() {
                 <Package className="h-8 w-8 text-primary" />
                 <div>
                   <div className="text-2xl font-bold">{orders.length}</div>
-                  <div className="text-sm text-muted-foreground">Gesamte Bestellungen</div>
+                  <div className="text-sm text-muted-foreground">{text("orders.total")}</div>
                 </div>
               </div>
             </CardContent>
@@ -110,7 +120,7 @@ export default function MyOrdersPage() {
                 <Package className="h-8 w-8 text-green-600" />
                 <div>
                   <div className="text-2xl font-bold">{yearlyCount}</div>
-                  <div className="text-sm text-muted-foreground">Artikel dieses Jahr</div>
+                  <div className="text-sm text-muted-foreground">{text("orders.thisYear")}</div>
                 </div>
               </div>
             </CardContent>
@@ -121,7 +131,7 @@ export default function MyOrdersPage() {
                 <Package className="h-8 w-8 text-blue-600" />
                 <div>
                   <div className="text-2xl font-bold">{Math.max(0, 4 - yearlyCount)}</div>
-                  <div className="text-sm text-muted-foreground">Noch verfügbar</div>
+                  <div className="text-sm text-muted-foreground">{text("orders.remaining")}</div>
                 </div>
               </div>
             </CardContent>
@@ -136,10 +146,10 @@ export default function MyOrdersPage() {
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
               <Package className="h-12 w-12 text-muted-foreground mb-4" />
-              <p className="text-lg font-medium">Noch keine Bestellungen</p>
-              <p className="text-muted-foreground mb-4">Du hast noch keine Artikel bestellt.</p>
+              <p className="text-lg font-medium">{text("orders.emptyTitle")}</p>
+              <p className="text-muted-foreground mb-4">{text("orders.emptyDescription")}</p>
               <Link href="/">
-                <Button>Jetzt shoppen</Button>
+                <Button>{text("orders.shopNow")}</Button>
               </Link>
             </CardContent>
           </Card>
@@ -157,10 +167,10 @@ export default function MyOrdersPage() {
                         #{order.id.slice(-8).toUpperCase()}
                       </CardTitle>
                       <Badge className={statusColors[order.status]}>
-                        {statusLabels[order.status]}
+                        {getStatusLabel(order.status)}
                       </Badge>
                       <Badge variant="outline">
-                        {order.items.length} Artikel
+                        {textf("orders.itemCount", { count: order.items.length })}
                       </Badge>
                     </div>
                     <div className="flex items-center gap-4">
@@ -184,7 +194,7 @@ export default function MyOrdersPage() {
                   <CardContent className="border-t pt-4">
                     <div className="grid gap-6 md:grid-cols-2">
                       <div>
-                        <h4 className="font-semibold mb-3">Bestellte Artikel</h4>
+                        <h4 className="font-semibold mb-3">{text("orders.items")}</h4>
                         <div className="space-y-3">
                           {order.items.map((item) => (
                             <div key={item.id} className="flex items-center gap-3 bg-muted p-3 rounded-lg">
@@ -207,7 +217,7 @@ export default function MyOrdersPage() {
                       </div>
 
                       <div>
-                        <h4 className="font-semibold mb-3">Lieferadresse</h4>
+                        <h4 className="font-semibold mb-3">{text("orders.address")}</h4>
                         <div className="bg-muted p-4 rounded-lg">
                           <p className="font-medium">{order.customerName}</p>
                           <p className="text-muted-foreground">{order.street}</p>
@@ -217,12 +227,12 @@ export default function MyOrdersPage() {
                         {/* Tracking Info */}
                         {order.trackingNumber && (
                           <div className="mt-4">
-                            <h4 className="font-semibold mb-3">Sendungsverfolgung</h4>
+                            <h4 className="font-semibold mb-3">{text("orders.tracking")}</h4>
                             <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
                               <div className="flex items-center gap-3">
                                 <Truck className="h-5 w-5 text-blue-600" />
                                 <div className="flex-1">
-                                  <p className="text-sm text-blue-800">Tracking-Nummer</p>
+                                  <p className="text-sm text-blue-800">{text("orders.trackingNumber")}</p>
                                   <p className="font-mono font-medium text-blue-900">{order.trackingNumber}</p>
                                 </div>
                                 {order.trackingUrl && (
@@ -232,7 +242,7 @@ export default function MyOrdersPage() {
                                     rel="noopener noreferrer"
                                     className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800"
                                   >
-                                    Verfolgen
+                                    {text("orders.trackingLink")}
                                     <ExternalLink className="h-4 w-4" />
                                   </a>
                                 )}
@@ -241,7 +251,7 @@ export default function MyOrdersPage() {
                           </div>
                         )}
 
-                        <h4 className="font-semibold mt-4 mb-3">Bestellfortschritt</h4>
+                        <h4 className="font-semibold mt-4 mb-3">{text("orders.progress")}</h4>
                         <div className="relative">
                           {/* Progress bar background */}
                           <div className="absolute top-3 left-3 right-3 h-1 bg-muted rounded" />
@@ -260,25 +270,25 @@ export default function MyOrdersPage() {
                               <div className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${
                                 true ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
                               }`}>✓</div>
-                              <span className="text-xs mt-2 text-center">Bestellt</span>
+                              <span className="text-xs mt-2 text-center">{text("orders.stepOrdered")}</span>
                             </div>
                             <div className="flex flex-col items-center">
                               <div className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${
                                 order.status !== "PENDING" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
                               }`}>{order.status !== "PENDING" ? "✓" : "2"}</div>
-                              <span className="text-xs mt-2 text-center">Bearbeitung</span>
+                              <span className="text-xs mt-2 text-center">{text("orders.stepProcessing")}</span>
                             </div>
                             <div className="flex flex-col items-center">
                               <div className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${
                                 order.status === "SHIPPED" || order.status === "DELIVERED" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
                               }`}>{order.status === "SHIPPED" || order.status === "DELIVERED" ? "✓" : "3"}</div>
-                              <span className="text-xs mt-2 text-center">Versendet</span>
+                              <span className="text-xs mt-2 text-center">{text("orders.stepShipped")}</span>
                             </div>
                             <div className="flex flex-col items-center">
                               <div className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${
                                 order.status === "DELIVERED" ? "bg-green-600 text-white" : "bg-muted text-muted-foreground"
                               }`}>{order.status === "DELIVERED" ? "✓" : "4"}</div>
-                              <span className="text-xs mt-2 text-center">Zugestellt</span>
+                              <span className="text-xs mt-2 text-center">{text("orders.stepDelivered")}</span>
                             </div>
                           </div>
                         </div>

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useAppTexts } from "@/components/app-text-provider"
 import { type Order } from "@/lib/store"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -44,13 +45,6 @@ interface SupplierOrder {
   items: SupplierOrderItem[]
 }
 
-const statusLabels: Record<OrderStatus, string> = {
-  PENDING: "Ausstehend",
-  PROCESSING: "In Bearbeitung",
-  SHIPPED: "Versendet",
-  DELIVERED: "Zugestellt",
-}
-
 const statusColors: Record<OrderStatus, string> = {
   PENDING: "bg-yellow-100 text-yellow-800",
   PROCESSING: "bg-blue-100 text-blue-800",
@@ -65,6 +59,22 @@ export function SupplierOrders() {
   const [searchTerm, setSearchTerm] = useState("")
   const [filterStatus, setFilterStatus] = useState<string>("all")
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null)
+  const { text, textf } = useAppTexts()
+
+  const getStatusLabel = (status: OrderStatus) => {
+    switch (status) {
+      case "PENDING":
+        return text("supplier.orders.status.pending")
+      case "PROCESSING":
+        return text("supplier.orders.status.processing")
+      case "SHIPPED":
+        return text("supplier.orders.status.shipped")
+      case "DELIVERED":
+        return text("supplier.orders.status.delivered")
+      default:
+        return status
+    }
+  }
 
   const fetchOrders = async () => {
     try {
@@ -149,17 +159,17 @@ export function SupplierOrders() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Bestellungen</h1>
-          <p className="text-muted-foreground">Verwalte alle Mitarbeiterbestellungen</p>
+          <h1 className="text-2xl font-bold text-foreground">{text("supplier.orders.title")}</h1>
+          <p className="text-muted-foreground">{text("supplier.orders.description")}</p>
         </div>
-        <Button variant="outline" onClick={logout}>Abmelden</Button>
+        <Button variant="outline" onClick={logout}>{text("supplier.orders.logout")}</Button>
       </div>
 
       <div className="flex flex-col gap-4 sm:flex-row">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Suche nach Name, E-Mail oder Bestellnummer..."
+            placeholder={text("supplier.orders.searchPlaceholder")}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-9"
@@ -167,14 +177,14 @@ export function SupplierOrders() {
         </div>
         <Select value={filterStatus} onValueChange={setFilterStatus}>
           <SelectTrigger className="w-full sm:w-48">
-            <SelectValue placeholder="Status filtern" />
+            <SelectValue placeholder={text("supplier.orders.filterPlaceholder")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Alle Status</SelectItem>
-            <SelectItem value="PENDING">Ausstehend</SelectItem>
-            <SelectItem value="PROCESSING">In Bearbeitung</SelectItem>
-            <SelectItem value="SHIPPED">Versendet</SelectItem>
-            <SelectItem value="DELIVERED">Zugestellt</SelectItem>
+            <SelectItem value="all">{text("supplier.orders.filterAll")}</SelectItem>
+            <SelectItem value="PENDING">{text("supplier.orders.status.pending")}</SelectItem>
+            <SelectItem value="PROCESSING">{text("supplier.orders.status.processing")}</SelectItem>
+            <SelectItem value="SHIPPED">{text("supplier.orders.status.shipped")}</SelectItem>
+            <SelectItem value="DELIVERED">{text("supplier.orders.status.delivered")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -183,7 +193,7 @@ export function SupplierOrders() {
         <Card>
           <CardContent className="flex h-48 items-center justify-center">
             <p className="text-muted-foreground">
-              {orders.length === 0 ? "Noch keine Bestellungen eingegangen" : "Keine Bestellungen gefunden"}
+              {orders.length === 0 ? text("supplier.orders.empty") : text("supplier.orders.emptyFiltered")}
             </p>
           </CardContent>
         </Card>
@@ -199,7 +209,7 @@ export function SupplierOrders() {
                   <div className="flex items-center gap-4">
                     <CardTitle className="text-base font-mono">{order.orderNumber || order.id}</CardTitle>
                     <Badge className={cn("font-normal", statusColors[order.status])}>
-                      {statusLabels[order.status]}
+                      {getStatusLabel(order.status)}
                     </Badge>
                   </div>
                   <div className="flex items-center gap-4">
@@ -226,15 +236,15 @@ export function SupplierOrders() {
                 <CardContent className="border-t pt-4">
                   <div className="grid gap-6 lg:grid-cols-2">
                     <div>
-                      <h4 className="mb-3 font-semibold">Bestellte Artikel</h4>
+                      <h4 className="mb-3 font-semibold">{text("supplier.orders.items")}</h4>
                       <div className="space-y-2">
                         {order.items.map((item, index) => (
                           <div key={index} className="flex items-center justify-between rounded-lg bg-muted p-3">
                             <div>
                               <span>{item.productName}</span>
                               <div className="mt-1 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                                {item.color && <span>Farbe: {item.color}</span>}
-                                {item.articleNumber && <span>Art.-Nr.: {item.articleNumber}</span>}
+                                {item.color && <span>{textf("supplier.orders.color", { color: item.color })}</span>}
+                                {item.articleNumber && <span>{textf("supplier.orders.articleNumber", { articleNumber: item.articleNumber })}</span>}
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
@@ -247,7 +257,7 @@ export function SupplierOrders() {
                     </div>
 
                     <div>
-                      <h4 className="mb-3 font-semibold">Lieferadresse</h4>
+                      <h4 className="mb-3 font-semibold">{text("supplier.orders.address")}</h4>
                       <div className="rounded-lg bg-muted p-3 text-sm">
                         <p className="font-medium">{order.customerName}</p>
                         <p>{order.street}</p>
@@ -256,7 +266,7 @@ export function SupplierOrders() {
                         </p>
                       </div>
 
-                      <h4 className="mb-3 mt-4 font-semibold">Status ändern</h4>
+                      <h4 className="mb-3 mt-4 font-semibold">{text("supplier.orders.changeStatus")}</h4>
                       <div className="relative">
                         <Select
                           value={order.status}
@@ -267,17 +277,17 @@ export function SupplierOrders() {
                             {updatingOrderId === order.id ? (
                               <span className="flex items-center gap-2">
                                 <Loader2 className="h-4 w-4 animate-spin" />
-                                Wird aktualisiert...
+                                {text("supplier.orders.updating")}
                               </span>
                             ) : (
                               <SelectValue />
                             )}
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="PENDING">Ausstehend</SelectItem>
-                            <SelectItem value="PROCESSING">In Bearbeitung</SelectItem>
-                            <SelectItem value="SHIPPED">Versendet</SelectItem>
-                            <SelectItem value="DELIVERED">Zugestellt</SelectItem>
+                            <SelectItem value="PENDING">{text("supplier.orders.status.pending")}</SelectItem>
+                            <SelectItem value="PROCESSING">{text("supplier.orders.status.processing")}</SelectItem>
+                            <SelectItem value="SHIPPED">{text("supplier.orders.status.shipped")}</SelectItem>
+                            <SelectItem value="DELIVERED">{text("supplier.orders.status.delivered")}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
+import { useAppTexts } from "@/components/app-text-provider"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -13,6 +14,7 @@ function ResetPasswordForm() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const token = searchParams.get("token")
+  const { text } = useAppTexts()
   
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
@@ -22,21 +24,21 @@ function ResetPasswordForm() {
 
   useEffect(() => {
     if (!token) {
-      setError("Ungültiger Link. Bitte fordere einen neuen Link an.")
+      setError(text("resetPassword.invalidLinkRequestNew"))
     }
-  }, [token])
+  }, [text, token])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
 
     if (password.length < 6) {
-      setError("Passwort muss mindestens 6 Zeichen lang sein")
+      setError(text("resetPassword.passwordMinLength"))
       return
     }
 
     if (password !== confirmPassword) {
-      setError("Passwörter stimmen nicht überein")
+      setError(text("resetPassword.passwordMismatch"))
       return
     }
 
@@ -55,10 +57,10 @@ function ResetPasswordForm() {
         setSuccess(true)
         setTimeout(() => router.push("/"), 3000)
       } else {
-        setError(data.error || "Fehler beim Zurücksetzen des Passworts")
+        setError(data.error || text("resetPassword.error"))
       }
     } catch {
-      setError("Ein Fehler ist aufgetreten")
+      setError(text("resetPassword.genericError"))
     } finally {
       setLoading(false)
     }
@@ -71,12 +73,12 @@ function ResetPasswordForm() {
           <CardContent className="pt-6">
             <div className="flex flex-col items-center text-center">
               <CheckCircle className="h-16 w-16 text-green-600 mb-4" />
-              <h2 className="text-xl font-semibold mb-2">Passwort geändert!</h2>
+              <h2 className="text-xl font-semibold mb-2">{text("resetPassword.successTitle")}</h2>
               <p className="text-muted-foreground mb-4">
-                Dein Passwort wurde erfolgreich geändert. Du wirst zur Startseite weitergeleitet...
+                {text("resetPassword.successDescription")}
               </p>
               <Link href="/">
-                <Button>Zur Startseite</Button>
+                <Button>{text("resetPassword.backHome")}</Button>
               </Link>
             </div>
           </CardContent>
@@ -92,12 +94,12 @@ function ResetPasswordForm() {
           <CardContent className="pt-6">
             <div className="flex flex-col items-center text-center">
               <XCircle className="h-16 w-16 text-red-600 mb-4" />
-              <h2 className="text-xl font-semibold mb-2">Ungültiger Link</h2>
+              <h2 className="text-xl font-semibold mb-2">{text("resetPassword.invalidTitle")}</h2>
               <p className="text-muted-foreground mb-4">
-                Dieser Link ist ungültig oder abgelaufen.
+                {text("resetPassword.invalidDescription")}
               </p>
               <Link href="/">
-                <Button>Zur Startseite</Button>
+                <Button>{text("resetPassword.backHome")}</Button>
               </Link>
             </div>
           </CardContent>
@@ -113,9 +115,9 @@ function ResetPasswordForm() {
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
             <Lock className="h-6 w-6 text-primary" />
           </div>
-          <CardTitle>Neues Passwort festlegen</CardTitle>
+          <CardTitle>{text("resetPassword.title")}</CardTitle>
           <CardDescription>
-            Gib dein neues Passwort ein
+            {text("resetPassword.description")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -127,25 +129,25 @@ function ResetPasswordForm() {
             )}
             
             <div className="space-y-2">
-              <Label htmlFor="password">Neues Passwort</Label>
+              <Label htmlFor="password">{text("resetPassword.newPassword")}</Label>
               <Input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Mindestens 6 Zeichen"
+                placeholder={text("resetPassword.newPasswordPlaceholder")}
                 required
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Passwort bestätigen</Label>
+              <Label htmlFor="confirmPassword">{text("resetPassword.confirmPassword")}</Label>
               <Input
                 id="confirmPassword"
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Passwort wiederholen"
+                placeholder={text("resetPassword.confirmPasswordPlaceholder")}
                 required
               />
             </div>
@@ -154,16 +156,16 @@ function ResetPasswordForm() {
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Wird gespeichert...
+                  {text("resetPassword.saving")}
                 </>
               ) : (
-                "Passwort speichern"
+                text("resetPassword.save")
               )}
             </Button>
             
             <div className="text-center">
               <Link href="/" className="text-sm text-muted-foreground hover:text-primary">
-                Zurück zur Startseite
+                {text("resetPassword.backLink")}
               </Link>
             </div>
           </form>

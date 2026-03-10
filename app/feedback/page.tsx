@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { MessageSquare, Star, Send, Loader2, CheckCircle } from "lucide-react"
+import { useAppTexts } from "@/components/app-text-provider"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
@@ -16,12 +17,13 @@ export default function FeedbackPage() {
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
+  const { text } = useAppTexts()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
     if (!message.trim()) {
-      setError("Bitte gib eine Nachricht ein")
+      setError(text("feedback.validationMessage"))
       return
     }
 
@@ -46,7 +48,7 @@ export default function FeedbackPage() {
 
       setSubmitted(true)
     } catch (err) {
-      setError("Feedback konnte nicht gesendet werden. Bitte versuche es erneut.")
+      setError(text("feedback.submitError"))
     } finally {
       setLoading(false)
     }
@@ -59,11 +61,11 @@ export default function FeedbackPage() {
           <Card>
             <CardContent className="flex flex-col items-center py-12 text-center">
               <CheckCircle className="mb-4 h-16 w-16 text-green-500" />
-              <h2 className="mb-2 text-2xl font-bold">Vielen Dank!</h2>
+              <h2 className="mb-2 text-2xl font-bold">{text("feedback.successTitle")}</h2>
               <p className="mb-6 text-muted-foreground">
-                Dein Feedback wurde erfolgreich übermittelt.
+                {text("feedback.successDescription")}
               </p>
-              <Button onClick={() => router.push("/")}>Zurück zur Kollektion</Button>
+              <Button onClick={() => router.push("/")}>{text("feedback.backToCollection")}</Button>
             </CardContent>
           </Card>
         </div>
@@ -79,9 +81,9 @@ export default function FeedbackPage() {
             <div className="flex items-center gap-3">
               <MessageSquare className="h-8 w-8 text-primary" />
               <div>
-                <CardTitle>Feedback geben</CardTitle>
+                <CardTitle>{text("feedback.title")}</CardTitle>
                 <CardDescription>
-                  Wir freuen uns über dein Feedback zum Mitarbeiter-Shop
+                  {text("feedback.description")}
                 </CardDescription>
               </div>
             </div>
@@ -90,7 +92,7 @@ export default function FeedbackPage() {
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Rating */}
               <div className="space-y-2">
-                <Label>Wie zufrieden bist du? (optional)</Label>
+                <Label>{text("feedback.ratingLabel")}</Label>
                 <div className="flex gap-1">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
@@ -113,21 +115,21 @@ export default function FeedbackPage() {
                 </div>
                 {rating && (
                   <p className="text-sm text-muted-foreground">
-                    {rating === 1 && "Sehr unzufrieden"}
-                    {rating === 2 && "Unzufrieden"}
-                    {rating === 3 && "Neutral"}
-                    {rating === 4 && "Zufrieden"}
-                    {rating === 5 && "Sehr zufrieden"}
+                    {rating === 1 && text("feedback.rating.1")}
+                    {rating === 2 && text("feedback.rating.2")}
+                    {rating === 3 && text("feedback.rating.3")}
+                    {rating === 4 && text("feedback.rating.4")}
+                    {rating === 5 && text("feedback.rating.5")}
                   </p>
                 )}
               </div>
 
               {/* Message */}
               <div className="space-y-2">
-                <Label htmlFor="message">Deine Nachricht *</Label>
+                <Label htmlFor="message">{text("feedback.messageLabel")}</Label>
                 <Textarea
                   id="message"
-                  placeholder="Was gefällt dir? Was können wir verbessern?"
+                  placeholder={text("feedback.messagePlaceholder")}
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   rows={5}
@@ -145,12 +147,12 @@ export default function FeedbackPage() {
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Wird gesendet...
+                    {text("feedback.submitLoading")}
                   </>
                 ) : (
                   <>
                     <Send className="mr-2 h-4 w-4" />
-                    Feedback senden
+                    {text("feedback.submit")}
                   </>
                 )}
               </Button>

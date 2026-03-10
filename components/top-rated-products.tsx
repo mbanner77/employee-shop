@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Star, Loader2 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
+import { useAppTexts } from "@/components/app-text-provider"
 
 interface ProductWithRating {
   id: string
@@ -17,6 +18,7 @@ interface ProductWithRating {
 export function TopRatedProducts() {
   const [products, setProducts] = useState<ProductWithRating[]>([])
   const [loading, setLoading] = useState(true)
+  const { text } = useAppTexts()
 
   useEffect(() => {
     fetchTopRated()
@@ -56,12 +58,8 @@ export function TopRatedProducts() {
     <section className="py-12 bg-gradient-to-b from-background to-muted/30">
       <div className="container mx-auto px-4">
         <div className="text-center mb-8">
-          <h2 className="text-2xl font-serif font-bold text-foreground mb-2">
-            Top bewertete Produkte
-          </h2>
-          <p className="text-muted-foreground">
-            Von unseren Mitarbeitern empfohlen
-          </p>
+          <h2 className="text-2xl font-serif font-bold text-foreground mb-2">{text("topRated.title")}</h2>
+          <p className="text-muted-foreground">{text("topRated.description")}</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

@@ -316,6 +316,15 @@ model Settings {
   // Shop Settings
   shopName          String  @default("RealCore Mitarbeiter-Shop")
   maxItemsPerOrder  Int     @default(4)
+  microsoftSsoEnabled Boolean @default(false)
+  microsoftTenantId String @default("")
+  microsoftClientId String @default("")
+  microsoftClientSecret String @default("")
+  microsoftRedirectUri String @default("")
+  microsoftAllowedDomains String @default("")
+  microsoftAutoCreateEmployees Boolean @default(false)
+  microsoftDefaultDepartment String @default("Microsoft 365")
+  appTextOverrides  Json?
   
   updatedAt DateTime @updatedAt
 }

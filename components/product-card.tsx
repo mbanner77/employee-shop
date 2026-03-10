@@ -4,6 +4,7 @@ import React from "react"
 import Image from "next/image"
 import { useState, useEffect } from "react"
 import { Plus, Check, ChevronLeft, ChevronRight, Heart, Ruler } from "lucide-react"
+import { useAppTexts } from "@/components/app-text-provider"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -24,6 +25,7 @@ export function ProductCard({ product }: ProductCardProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [favoriteLoading, setFavoriteLoading] = useState(false)
   const [showSizeChart, setShowSizeChart] = useState(false)
+  const { text, textf } = useAppTexts()
   const { cart, addToCart, favoriteProductIds, addFavoriteLocal, removeFavoriteLocal } = useShopStore()
 
   const isFavorite = favoriteProductIds.includes(product.id)
@@ -119,15 +121,15 @@ export function ProductCard({ product }: ProductCardProps) {
 
   const handleAddToCart = () => {
     if (!selectedSize) {
-      setMessage("Bitte wähle eine Größe aus")
+      setMessage(text("productCard.selectSize"))
       return
     }
     if (availableColors.length > 0 && !selectedColor) {
-      setMessage("Bitte wähle eine Farbe aus")
+      setMessage(text("productCard.selectColor"))
       return
     }
     if (cartFull) {
-      setMessage(`Maximal ${maxQuantityForProduct}x pro Artikel`) 
+      setMessage(textf("productCard.maxQuantity", { count: maxQuantityForProduct }))
       return
     }
     const success = addToCart(product, selectedSize, {
@@ -135,9 +137,9 @@ export function ProductCard({ product }: ProductCardProps) {
       costBearer: selectedCostBearer,
     })
     if (success) {
-      setMessage(selectedVariantQuantity > 0 ? "Menge erhöht!" : "Hinzugefügt!")
+      setMessage(selectedVariantQuantity > 0 ? text("productCard.quantityIncreased") : text("productCard.added"))
     } else {
-      setMessage(`Maximal ${maxQuantityForProduct}x pro Artikel`) 
+      setMessage(textf("productCard.maxQuantity", { count: maxQuantityForProduct }))
     }
   }
 
@@ -146,7 +148,7 @@ export function ProductCard({ product }: ProductCardProps) {
       <div className="relative aspect-square overflow-hidden bg-muted">
         <Image
           src={allImages[currentImageIndex] || "/placeholder.svg"}
-          alt={`${product.name} - Bild ${currentImageIndex + 1}`}
+          alt={`${product.name} - ${textf("productCard.imageLabel", { index: currentImageIndex + 1 })}`}
           fill
           className="object-cover transition-transform duration-500 group-hover:scale-105"
         />
@@ -157,7 +159,7 @@ export function ProductCard({ product }: ProductCardProps) {
           }}
           disabled={favoriteLoading}
           className="absolute left-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-background/80 text-foreground transition-all hover:bg-background hover:scale-110"
-          aria-label={isFavorite ? "Von Favoriten entfernen" : "Zu Favoriten hinzufügen"}
+          aria-label={isFavorite ? text("productCard.favoriteRemove") : text("productCard.favoriteAdd")}
         >
           <Heart className={`h-4 w-4 ${isFavorite ? "fill-red-500 text-red-500" : ""}`} />
         </button>
@@ -172,14 +174,14 @@ export function ProductCard({ product }: ProductCardProps) {
             <button
               onClick={handlePrevImage}
               className="absolute left-2 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-background/80 text-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:bg-background"
-              aria-label="Vorheriges Bild"
+              aria-label={text("productCard.prevImage")}
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
             <button
               onClick={handleNextImage}
               className="absolute right-2 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-background/80 text-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:bg-background"
-              aria-label="Nächstes Bild"
+              aria-label={text("productCard.nextImage")}
             >
               <ChevronRight className="h-4 w-4" />
             </button>
@@ -196,7 +198,7 @@ export function ProductCard({ product }: ProductCardProps) {
                       ? "bg-primary scale-110"
                       : "bg-background/60 hover:bg-background/80"
                   }`}
-                  aria-label={`Bild ${index + 1} anzeigen`}
+                  aria-label={textf("productCard.imageLabel", { index: index + 1 })}
                 />
               ))}
             </div>
@@ -220,21 +222,25 @@ export function ProductCard({ product }: ProductCardProps) {
           className="mb-3 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
           <Ruler className="h-3 w-3" />
-          Größentabelle
+          {text("productCard.sizeChart")}
         </button>
         {selectedSize && getStock(selectedSize) !== null && (
           <div className={`mb-2 text-xs ${getStock(selectedSize)! > 5 ? "text-green-600" : getStock(selectedSize)! > 0 ? "text-orange-500" : "text-red-500"}`}>
-            {getStock(selectedSize)! > 5 ? "Auf Lager" : getStock(selectedSize)! > 0 ? `Nur noch ${getStock(selectedSize)} verfügbar` : "Nicht verfügbar"}
+            {getStock(selectedSize)! > 5
+              ? text("productCard.inStock")
+              : getStock(selectedSize)! > 0
+                ? textf("productCard.lowStock", { count: getStock(selectedSize)! })
+                : text("productCard.outOfStock")}
           </div>
         )}
         {parsedPrice !== null && Number.isFinite(parsedPrice) && (
-          <p className="mb-2 text-sm font-medium text-foreground">Privatpreis: {parsedPrice.toFixed(2)} €</p>
+          <p className="mb-2 text-sm font-medium text-foreground">{textf("productCard.privatePrice", { price: parsedPrice.toFixed(2) })}</p>
         )}
         {availableColors.length > 1 ? (
           <div className="mb-3">
             <Select value={selectedColor} onValueChange={setSelectedColor}>
               <SelectTrigger>
-                <SelectValue placeholder="Farbe wählen" />
+                <SelectValue placeholder={text("productCard.selectColor")} />
               </SelectTrigger>
               <SelectContent>
                 {availableColors.map((color) => (
@@ -246,16 +252,16 @@ export function ProductCard({ product }: ProductCardProps) {
             </Select>
           </div>
         ) : availableColors.length === 1 ? (
-          <p className="mb-3 text-sm text-muted-foreground">Farbe: {availableColors[0]}</p>
+          <p className="mb-3 text-sm text-muted-foreground">{textf("productCard.color", { color: availableColors[0] })}</p>
         ) : null}
         <div className="mb-3">
           <Select value={selectedCostBearer} onValueChange={(value) => setSelectedCostBearer(value as "COMPANY" | "EMPLOYEE")}>
             <SelectTrigger>
-              <SelectValue placeholder="Bestellart wählen" />
+              <SelectValue placeholder={text("productCard.orderTypePlaceholder")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="COMPANY">Firma</SelectItem>
-              <SelectItem value="EMPLOYEE">Privat</SelectItem>
+              <SelectItem value="COMPANY">{text("productCard.orderTypeCompany")}</SelectItem>
+              <SelectItem value="EMPLOYEE">{text("productCard.orderTypePrivate")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -265,7 +271,7 @@ export function ProductCard({ product }: ProductCardProps) {
             onValueChange={(value) => setSelectedSize(value as Size)}
           >
             <SelectTrigger className="flex-1">
-              <SelectValue placeholder="Größe wählen" />
+              <SelectValue placeholder={text("productCard.selectSize")} />
             </SelectTrigger>
             <SelectContent>
               {product.sizes.map((size) => (
@@ -280,12 +286,13 @@ export function ProductCard({ product }: ProductCardProps) {
             onClick={handleAddToCart}
             disabled={cartFull}
             className={isInCart ? "bg-accent hover:bg-accent" : ""}
+            aria-label={text("productCard.addToCart")}
           >
             {isInCart ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
           </Button>
         </div>
         <p className="mt-2 text-xs text-muted-foreground">
-          {productQuantityInCart} von {maxQuantityForProduct} dieses Artikels im Warenkorb
+          {textf("productCard.inCartSummary", { count: productQuantityInCart, max: maxQuantityForProduct })}
         </p>
       </CardContent>
       

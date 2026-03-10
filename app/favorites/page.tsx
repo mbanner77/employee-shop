@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { Heart, Trash2, ShoppingBag, Loader2 } from "lucide-react"
+import { useAppTexts } from "@/components/app-text-provider"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { useShopStore } from "@/lib/store"
@@ -27,6 +28,7 @@ export default function FavoritesPage() {
   const [loading, setLoading] = useState(true)
   const [removing, setRemoving] = useState<string | null>(null)
   const router = useRouter()
+  const { text } = useAppTexts()
   const { addToCart } = useShopStore()
 
   useEffect(() => {
@@ -71,7 +73,7 @@ export default function FavoritesPage() {
     const defaultSize = product.sizes[0]
     const success = addToCart(product as any, defaultSize as any)
     if (!success) {
-      alert("Dieser Artikel hat bereits die maximale Menge im Warenkorb erreicht")
+      alert(text("favorites.maxReached"))
     }
   }
 
@@ -88,17 +90,17 @@ export default function FavoritesPage() {
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8 flex items-center gap-3">
           <Heart className="h-8 w-8 text-red-500" />
-          <h1 className="text-3xl font-bold">Meine Favoriten</h1>
+          <h1 className="text-3xl font-bold">{text("favorites.title")}</h1>
         </div>
 
         {favorites.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <Heart className="mb-4 h-16 w-16 text-muted-foreground/30" />
-            <h2 className="mb-2 text-xl font-semibold">Keine Favoriten</h2>
+            <h2 className="mb-2 text-xl font-semibold">{text("favorites.emptyTitle")}</h2>
             <p className="mb-6 text-muted-foreground">
-              Du hast noch keine Artikel zu deinen Favoriten hinzugefügt.
+              {text("favorites.emptyDescription")}
             </p>
-            <Button onClick={() => router.push("/")}>Zur Kollektion</Button>
+            <Button onClick={() => router.push("/")}>{text("favorites.backToCollection")}</Button>
           </div>
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -138,7 +140,7 @@ export default function FavoritesPage() {
                     onClick={() => handleAddToCart(favorite.product)}
                   >
                     <ShoppingBag className="mr-2 h-4 w-4" />
-                    In den Warenkorb
+                    {text("favorites.addToCart")}
                   </Button>
                 </CardContent>
               </Card>

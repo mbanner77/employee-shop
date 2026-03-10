@@ -4,6 +4,7 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { useAppTexts } from "@/components/app-text-provider"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -44,6 +45,7 @@ export function CheckoutForm() {
     zip: "",
     city: "",
   })
+  const { text, textf } = useAppTexts()
 
   useEffect(() => {
     fetchEmployeeData()
@@ -123,7 +125,7 @@ export function CheckoutForm() {
     e.preventDefault()
 
     if (totalCartCount === 0) {
-      toast.error("Bitte wähle mindestens einen Artikel aus")
+      toast.error(text("checkoutForm.selectItemError"))
       return
     }
 
@@ -135,17 +137,17 @@ export function CheckoutForm() {
       !formData.zip ||
       !formData.city
     ) {
-      toast.error("Bitte fülle alle Felder aus")
+      toast.error(text("checkoutForm.completeFieldsError"))
       return
     }
 
     if (!canOrder) {
-      toast.error(`Du hast nur noch ${remainingItems} Firmenartikel verfügbar. Private Artikel sind weiterhin möglich.`)
+      toast.error(textf("checkoutForm.remainingCompanyError", { count: remainingItems }))
       return
     }
 
     if (!disclaimerAccepted) {
-      toast.error("Bitte bestätige die Hinweise zur Bestellung")
+      toast.error(text("checkoutForm.disclaimerError"))
       return
     }
 
@@ -160,14 +162,14 @@ export function CheckoutForm() {
       const order = await submitOrder(orderData)
 
       if (order) {
-        toast.success("Bestellung erfolgreich aufgegeben!")
+        toast.success(text("checkoutForm.success"))
         router.push(`/order-confirmation?id=${order.id}`)
       } else {
-        toast.error("Bestellung konnte nicht aufgegeben werden. Bitte versuche es erneut.")
+        toast.error(text("checkoutForm.submitError"))
         setIsSubmitting(false)
       }
     } catch {
-      toast.error("Ein Fehler ist aufgetreten. Bitte versuche es erneut.")
+      toast.error(text("checkoutForm.genericError"))
       setIsSubmitting(false)
     }
   }
@@ -190,15 +192,22 @@ export function CheckoutForm() {
             <div>
               <p className={`font-medium ${canOrder ? "text-green-800" : "text-red-800"}`}>
                 {remainingItems > 0 
-                  ? `Noch ${remainingItems} von ${maxItems} Firmenartikeln kostenlos verfügbar`
-                  : "Jahreslimit erreicht"}
+                  ? textf("checkoutForm.remainingCompanyInfo", { remaining: remainingItems, max: maxItems })
+                  : text("checkoutForm.limitReached")}
               </p>
               <p className="text-sm text-muted-foreground">
-                Bereits bestellt: {yearlyOrderCount} Firmenartikel | Im Warenkorb: {companyCartCount} Firma / {privateCartCount} Privat
+                {textf("checkoutForm.orderedItemsInfo", {
+                  ordered: yearlyOrderCount,
+                  company: companyCartCount,
+                  private: privateCartCount,
+                })}
               </p>
               {privateCartCount > 0 && (
                 <p className="text-sm text-muted-foreground">
-                  Private Artikel im Warenkorb: {privateCartCount} | Zwischensumme: {privateSubtotal.toFixed(2)} €
+                  {textf("checkoutForm.privateItemsInfo", {
+                    count: privateCartCount,
+                    subtotal: privateSubtotal.toFixed(2),
+                  })}
                 </p>
               )}
             </div>
@@ -208,10 +217,10 @@ export function CheckoutForm() {
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="name">Vollständiger Name *</Label>
+          <Label htmlFor="name">{text("checkoutForm.nameLabel")}</Label>
           <Input
             id="name"
-            placeholder="Max Mustermann"
+            placeholder={text("checkoutForm.namePlaceholder")}
             value={formData.customerName}
             onChange={(e) => handleChange("customerName", e.target.value)}
             disabled={!!employee}
@@ -220,11 +229,11 @@ export function CheckoutForm() {
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="email">E-Mail *</Label>
+          <Label htmlFor="email">{text("checkoutForm.emailLabel")}</Label>
           <Input
             id="email"
             type="email"
-            placeholder="max.mustermann@realcore.de"
+            placeholder={text("checkoutForm.emailPlaceholder")}
             value={formData.email}
             onChange={(e) => handleChange("email", e.target.value)}
             disabled={!!employee}
@@ -235,7 +244,7 @@ export function CheckoutForm() {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="department">Firmenbereich *</Label>
+        <Label htmlFor="department">{text("checkoutForm.departmentLabel")}</Label>
         {employee ? (
           <Input
             id="department"
@@ -246,7 +255,7 @@ export function CheckoutForm() {
         ) : (
           <Select value={formData.department} onValueChange={(value) => handleChange("department", value)}>
             <SelectTrigger>
-              <SelectValue placeholder="Firmenbereich wählen" />
+              <SelectValue placeholder={text("checkoutForm.departmentPlaceholder")} />
             </SelectTrigger>
             <SelectContent>
               {companyAreas.map((area) => (
@@ -260,10 +269,10 @@ export function CheckoutForm() {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="street">Straße & Hausnummer *</Label>
+        <Label htmlFor="street">{text("checkoutForm.streetLabel")}</Label>
         <Input
           id="street"
-          placeholder="Musterstraße 123"
+          placeholder={text("checkoutForm.streetPlaceholder")}
           value={formData.street}
           onChange={(e) => handleChange("street", e.target.value)}
           required
@@ -272,10 +281,10 @@ export function CheckoutForm() {
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="zip">PLZ *</Label>
+          <Label htmlFor="zip">{text("checkoutForm.zipLabel")}</Label>
           <Input
             id="zip"
-            placeholder="12345"
+            placeholder={text("checkoutForm.zipPlaceholder")}
             value={formData.zip}
             onChange={(e) => {
               const value = e.target.value.replace(/\D/g, "").slice(0, 5)
@@ -287,14 +296,14 @@ export function CheckoutForm() {
             required
           />
           {formData.zip && formData.zip.length !== 5 && (
-            <p className="text-xs text-amber-600">PLZ muss 5 Ziffern haben</p>
+            <p className="text-xs text-amber-600">{text("checkoutForm.zipValidation")}</p>
           )}
         </div>
         <div className="space-y-2">
-          <Label htmlFor="city">Stadt *</Label>
+          <Label htmlFor="city">{text("checkoutForm.cityLabel")}</Label>
           <Input
             id="city"
-            placeholder="Musterstadt"
+            placeholder={text("checkoutForm.cityPlaceholder")}
             value={formData.city}
             onChange={(e) => handleChange("city", e.target.value)}
             required
@@ -308,11 +317,11 @@ export function CheckoutForm() {
           <div className="flex items-start gap-3">
             <Info className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
             <div className="space-y-2">
-              <p className="font-medium text-amber-800">Wichtige Hinweise</p>
+              <p className="font-medium text-amber-800">{text("checkoutForm.disclaimerTitle")}</p>
               <ul className="text-sm text-amber-700 space-y-1">
-                <li>⚠️ Bestellungen sind <strong>verbindlich</strong></li>
-                <li>⚠️ Kein Umtausch oder Rückgabe möglich</li>
-                <li>⚠️ Bitte beachte die Größentabelle vor der Bestellung</li>
+                <li>{text("checkoutForm.disclaimerLine1")}</li>
+                <li>{text("checkoutForm.disclaimerLine2")}</li>
+                <li>{text("checkoutForm.disclaimerLine3")}</li>
               </ul>
               <div className="flex items-center space-x-2 pt-2">
                 <Checkbox 
@@ -321,7 +330,7 @@ export function CheckoutForm() {
                   onCheckedChange={(checked) => setDisclaimerAccepted(checked === true)}
                 />
                 <Label htmlFor="disclaimer" className="text-sm text-amber-800 cursor-pointer">
-                  Ich habe die Hinweise gelesen und akzeptiert
+                  {text("checkoutForm.disclaimerAccept")}
                 </Label>
               </div>
             </div>
@@ -333,17 +342,17 @@ export function CheckoutForm() {
         {isSubmitting ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Wird verarbeitet...
+            {text("checkoutForm.processing")}
           </>
         ) : !canOrder ? (
           <>
             <AlertTriangle className="mr-2 h-4 w-4" />
-            Jahreslimit erreicht
+            {text("checkoutForm.limitReached")}
           </>
         ) : (
           <>
             <Send className="mr-2 h-4 w-4" />
-            Bestellung abschicken
+            {text("checkoutForm.submit")}
           </>
         )}
       </Button>

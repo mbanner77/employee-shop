@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
+import { useAppTexts } from "@/components/app-text-provider"
 import { Ruler } from "lucide-react"
 import {
   Dialog,
@@ -74,6 +75,7 @@ export function SizeChartDialog({
   onOpenChange: controlledOnOpenChange 
 }: SizeChartDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false)
+  const { text, textf } = useAppTexts()
   
   // Use controlled or uncontrolled mode
   const isControlled = controlledOpen !== undefined
@@ -93,34 +95,34 @@ export function SizeChartDialog({
         <DialogTrigger asChild>
           <Button variant="ghost" size="sm" className="text-xs text-muted-foreground hover:text-primary">
             <Ruler className="h-3 w-3 mr-1" />
-            Größentabelle
+            {text("sizeChart.button")}
           </Button>
         </DialogTrigger>
       )}
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Größentabelle {category && `- ${category}`}</DialogTitle>
+          <DialogTitle>{textf("sizeChart.title", { category: category ? `- ${category}` : "" })}</DialogTitle>
         </DialogHeader>
         
         {isUrl ? (
           <div className="flex justify-center">
             <img 
               src={sizeChart!} 
-              alt="Größentabelle" 
+              alt={text("sizeChart.imageAlt")} 
               className="max-w-full h-auto rounded-lg"
             />
           </div>
         ) : (
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Alle Maße in Zentimetern. Bei Unsicherheit empfehlen wir die größere Größe.
+              {text("sizeChart.intro")}
             </p>
             
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="font-semibold">Maß</TableHead>
+                    <TableHead className="font-semibold">{text("sizeChart.measurement")}</TableHead>
                     {chartData.sizes.map((size) => (
                       <TableHead key={size} className="text-center font-semibold">
                         {size}
@@ -144,11 +146,11 @@ export function SizeChartDialog({
             </div>
 
             <div className="text-xs text-muted-foreground space-y-1">
-              <p><strong>So misst du richtig:</strong></p>
+              <p><strong>{text("sizeChart.instructionsTitle")}</strong></p>
               <ul className="list-disc list-inside space-y-0.5">
-                <li><strong>Brustweite:</strong> Miss den Umfang an der breitesten Stelle der Brust</li>
-                <li><strong>Länge:</strong> Miss vom höchsten Punkt der Schulter bis zum Saum</li>
-                <li><strong>Schulterbreite:</strong> Miss von Schulternaht zu Schulternaht</li>
+                <li>{text("sizeChart.instructionsChest")}</li>
+                <li>{text("sizeChart.instructionsLength")}</li>
+                <li>{text("sizeChart.instructionsShoulder")}</li>
               </ul>
             </div>
           </div>

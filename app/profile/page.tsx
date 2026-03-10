@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { useAppTexts } from "@/components/app-text-provider"
 import { Header } from "@/components/header"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -51,6 +52,7 @@ interface Employee {
 
 export default function ProfilePage() {
   const router = useRouter()
+  const { text } = useAppTexts()
   const [loading, setLoading] = useState(true)
   const [employee, setEmployee] = useState<Employee | null>(null)
   const [addresses, setAddresses] = useState<Address[]>([])
@@ -114,13 +116,13 @@ export default function ProfilePage() {
 
       if (res.ok) {
         setEmployee({ ...employee, [field]: value })
-        toast.success("Einstellungen gespeichert")
+        toast.success(text("profile.toast.saved"))
       } else {
-        toast.error("Fehler beim Speichern")
+        toast.error(text("profile.toast.saveError"))
       }
     } catch (error) {
       console.error("Failed to update notifications:", error)
-      toast.error("Fehler beim Speichern")
+      toast.error(text("profile.toast.saveError"))
     } finally {
       setSavingNotifications(false)
     }
@@ -170,24 +172,24 @@ export default function ProfilePage() {
       })
 
       if (res.ok) {
-        toast.success(editingAddress ? "Adresse aktualisiert" : "Adresse hinzugefügt")
+        toast.success(editingAddress ? text("profile.addresses.savedEdit") : text("profile.addresses.savedNew"))
         setAddressDialogOpen(false)
         resetAddressForm()
         fetchData()
       } else {
         const data = await res.json()
-        toast.error(data.error || "Fehler beim Speichern")
+        toast.error(data.error || text("profile.toast.saveError"))
       }
     } catch (error) {
       console.error("Failed to save address:", error)
-      toast.error("Fehler beim Speichern")
+      toast.error(text("profile.toast.saveError"))
     } finally {
       setSavingAddress(false)
     }
   }
 
   const handleDeleteAddress = async (id: string) => {
-    if (!confirm("Adresse wirklich löschen?")) return
+    if (!confirm(text("profile.addresses.deleteConfirm"))) return
 
     try {
       const res = await fetch("/api/employees/me/addresses", {
@@ -197,14 +199,14 @@ export default function ProfilePage() {
       })
 
       if (res.ok) {
-        toast.success("Adresse gelöscht")
+        toast.success(text("profile.addresses.deleted"))
         fetchData()
       } else {
-        toast.error("Fehler beim Löschen")
+        toast.error(text("profile.addresses.deleteError"))
       }
     } catch (error) {
       console.error("Failed to delete address:", error)
-      toast.error("Fehler beim Löschen")
+      toast.error(text("profile.addresses.deleteError"))
     }
   }
 
@@ -220,9 +222,9 @@ export default function ProfilePage() {
   }
 
   const addressTypeLabels: Record<string, string> = {
-    PRIVATE: "Privat",
-    COMPANY: "Firma",
-    OTHER: "Sonstige",
+    PRIVATE: text("profile.addresses.typePrivate"),
+    COMPANY: text("profile.addresses.typeCompany"),
+    OTHER: text("profile.addresses.typeOther"),
   }
 
   return (
@@ -233,11 +235,11 @@ export default function ProfilePage() {
           <Link href="/">
             <Button variant="ghost" size="sm" className="mb-4">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Zurück zum Shop
+              {text("profile.back")}
             </Button>
           </Link>
-          <h1 className="text-3xl font-bold">Mein Profil</h1>
-          <p className="text-muted-foreground">Verwalte deine Einstellungen und Adressen</p>
+          <h1 className="text-3xl font-bold">{text("profile.title")}</h1>
+          <p className="text-muted-foreground">{text("profile.description")}</p>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">
@@ -246,25 +248,25 @@ export default function ProfilePage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <User className="h-5 w-5" />
-                Persönliche Daten
+                {text("profile.personal.title")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <Label className="text-muted-foreground text-xs">Vorname</Label>
+                  <Label className="text-muted-foreground text-xs">{text("profile.firstName")}</Label>
                   <p className="font-medium">{employee?.firstName}</p>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground text-xs">Nachname</Label>
+                  <Label className="text-muted-foreground text-xs">{text("profile.lastName")}</Label>
                   <p className="font-medium">{employee?.lastName}</p>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground text-xs">E-Mail</Label>
+                  <Label className="text-muted-foreground text-xs">{text("profile.email")}</Label>
                   <p className="font-medium">{employee?.email}</p>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground text-xs">Abteilung</Label>
+                  <Label className="text-muted-foreground text-xs">{text("profile.department")}</Label>
                   <p className="font-medium">{employee?.department}</p>
                 </div>
               </div>
@@ -276,18 +278,18 @@ export default function ProfilePage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Bell className="h-5 w-5" />
-                Benachrichtigungen
+                {text("profile.notifications.title")}
               </CardTitle>
               <CardDescription>
-                Wähle aus, worüber du informiert werden möchtest
+                {text("profile.notifications.description")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium">Bestellstatus</p>
+                  <p className="font-medium">{text("profile.notifications.orderStatus.title")}</p>
                   <p className="text-sm text-muted-foreground">
-                    Updates zu deinen Bestellungen
+                    {text("profile.notifications.orderStatus.description")}
                   </p>
                 </div>
                 <Switch
@@ -298,9 +300,9 @@ export default function ProfilePage() {
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium">Wunschliste</p>
+                  <p className="font-medium">{text("profile.notifications.wishlist.title")}</p>
                   <p className="text-sm text-muted-foreground">
-                    Wenn Artikel wieder verfügbar sind
+                    {text("profile.notifications.wishlist.description")}
                   </p>
                 </div>
                 <Switch
@@ -311,9 +313,9 @@ export default function ProfilePage() {
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium">Newsletter</p>
+                  <p className="font-medium">{text("profile.notifications.newsletter.title")}</p>
                   <p className="text-sm text-muted-foreground">
-                    Neuigkeiten und Aktionen
+                    {text("profile.notifications.newsletter.description")}
                   </p>
                 </div>
                 <Switch
@@ -331,10 +333,10 @@ export default function ProfilePage() {
               <div>
                 <CardTitle className="flex items-center gap-2">
                   <MapPin className="h-5 w-5" />
-                  Meine Adressen
+                  {text("profile.addresses.title")}
                 </CardTitle>
                 <CardDescription>
-                  Verwalte deine Liefer- und Rechnungsadressen
+                  {text("profile.addresses.description")}
                 </CardDescription>
               </div>
               <Dialog open={addressDialogOpen} onOpenChange={(open) => {
@@ -344,19 +346,19 @@ export default function ProfilePage() {
                 <DialogTrigger asChild>
                   <Button size="sm">
                     <Plus className="h-4 w-4 mr-2" />
-                    Neue Adresse
+                    {text("profile.addresses.new")}
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>
-                      {editingAddress ? "Adresse bearbeiten" : "Neue Adresse"}
+                      {editingAddress ? text("profile.addresses.edit") : text("profile.addresses.new")}
                     </DialogTitle>
                   </DialogHeader>
                   <form onSubmit={handleAddressSubmit} className="space-y-4 mt-4">
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-2">
-                        <Label>Typ</Label>
+                        <Label>{text("profile.addresses.type")}</Label>
                         <Select
                           value={addressForm.type}
                           onValueChange={(value) => setAddressForm({ ...addressForm, type: value })}
@@ -365,23 +367,23 @@ export default function ProfilePage() {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="PRIVATE">Privat</SelectItem>
-                            <SelectItem value="COMPANY">Firma</SelectItem>
-                            <SelectItem value="OTHER">Sonstige</SelectItem>
+                            <SelectItem value="PRIVATE">{text("profile.addresses.typePrivate")}</SelectItem>
+                            <SelectItem value="COMPANY">{text("profile.addresses.typeCompany")}</SelectItem>
+                            <SelectItem value="OTHER">{text("profile.addresses.typeOther")}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                       <div className="space-y-2">
-                        <Label>Bezeichnung (optional)</Label>
+                        <Label>{text("profile.addresses.label")}</Label>
                         <Input
-                          placeholder="z.B. Zuhause, Büro"
+                          placeholder={text("profile.addresses.labelPlaceholder")}
                           value={addressForm.label}
                           onChange={(e) => setAddressForm({ ...addressForm, label: e.target.value })}
                         />
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label>Straße & Hausnummer *</Label>
+                      <Label>{text("profile.addresses.street")}</Label>
                       <Input
                         value={addressForm.street}
                         onChange={(e) => setAddressForm({ ...addressForm, street: e.target.value })}
@@ -390,7 +392,7 @@ export default function ProfilePage() {
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-2">
-                        <Label>PLZ *</Label>
+                        <Label>{text("profile.addresses.zip")}</Label>
                         <Input
                           value={addressForm.zip}
                           onChange={(e) => setAddressForm({ ...addressForm, zip: e.target.value })}
@@ -398,7 +400,7 @@ export default function ProfilePage() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label>Stadt *</Label>
+                        <Label>{text("profile.addresses.city")}</Label>
                         <Input
                           value={addressForm.city}
                           onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })}
@@ -407,7 +409,7 @@ export default function ProfilePage() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label>Land</Label>
+                      <Label>{text("profile.addresses.country")}</Label>
                       <Input
                         value={addressForm.country}
                         onChange={(e) => setAddressForm({ ...addressForm, country: e.target.value })}
@@ -418,15 +420,15 @@ export default function ProfilePage() {
                         checked={addressForm.isDefault}
                         onCheckedChange={(checked) => setAddressForm({ ...addressForm, isDefault: checked })}
                       />
-                      <Label>Als Standardadresse verwenden</Label>
+                      <Label>{text("profile.addresses.default")}</Label>
                     </div>
                     <div className="flex justify-end gap-2 pt-4">
                       <Button type="button" variant="outline" onClick={() => setAddressDialogOpen(false)}>
-                        Abbrechen
+                        {text("profile.addresses.cancel")}
                       </Button>
                       <Button type="submit" disabled={savingAddress}>
                         {savingAddress && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                        Speichern
+                        {text("profile.addresses.save")}
                       </Button>
                     </div>
                   </form>
@@ -436,7 +438,7 @@ export default function ProfilePage() {
             <CardContent>
               {addresses.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  Noch keine Adressen gespeichert
+                  {text("profile.addresses.empty")}
                 </div>
               ) : (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -453,7 +455,7 @@ export default function ProfilePage() {
                           {address.isDefault && (
                             <Badge className="bg-green-100 text-green-800">
                               <Check className="h-3 w-3 mr-1" />
-                              Standard
+                              {text("profile.addresses.defaultBadge")}
                             </Badge>
                           )}
                         </div>

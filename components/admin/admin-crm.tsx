@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import { AdminAppTexts } from "@/components/admin/admin-app-texts"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -917,18 +918,27 @@ export function AdminCRM() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">CRM</h1>
-          <p className="text-muted-foreground">Bearbeite Mitarbeiterdaten, Interaktionen und Kundenbeziehungen zentral im Admin-Bereich</p>
+      <Tabs defaultValue="contacts" className="space-y-6">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">CRM</h1>
+            <p className="text-muted-foreground">Bearbeite Mitarbeiterdaten und pflege zentrale App-Texte zentral im Admin-Bereich</p>
+          </div>
+          <TabsList className="grid w-full max-w-sm grid-cols-2">
+            <TabsTrigger value="contacts">Kontakte</TabsTrigger>
+            <TabsTrigger value="texts">App-Texte</TabsTrigger>
+          </TabsList>
         </div>
-        <Button onClick={() => setCreateDialogOpen(true)}>
-          <UserPlus className="mr-2 h-4 w-4" />
-          Neuer Kontakt
-        </Button>
-      </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <TabsContent value="contacts" className="space-y-6">
+          <div className="flex justify-end">
+            <Button onClick={() => setCreateDialogOpen(true)}>
+              <UserPlus className="mr-2 h-4 w-4" />
+              Neuer Kontakt
+            </Button>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
@@ -1716,6 +1726,13 @@ export function AdminCRM() {
           </Card>
         )}
       </div>
+
+        </TabsContent>
+
+        <TabsContent value="texts" className="space-y-6">
+          <AdminAppTexts />
+        </TabsContent>
+      </Tabs>
 
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
         <DialogContent className="max-w-2xl">

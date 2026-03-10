@@ -1,15 +1,17 @@
+"use client"
+
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import { Header } from "@/components/header"
+import { useAppTexts } from "@/components/app-text-provider"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { CheckCircle2, Package, ClipboardList, Home, Mail, Truck } from "lucide-react"
 
-export default async function OrderConfirmationPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ id?: string }>
-}) {
-  const { id } = await searchParams
+export default function OrderConfirmationPage() {
+  const searchParams = useSearchParams()
+  const { text } = useAppTexts()
+  const id = searchParams.get("id") || undefined
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -24,10 +26,10 @@ export default async function OrderConfirmationPage({
             </div>
 
             <h1 className="mb-2 text-2xl font-bold text-foreground sm:text-3xl">
-              Bestellung erfolgreich!
+              {text("orderConfirmation.title")}
             </h1>
 
-            <p className="mb-4 text-muted-foreground">Vielen Dank für deine Bestellung</p>
+            <p className="mb-4 text-muted-foreground">{text("orderConfirmation.description")}</p>
 
             {id && (
               <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-muted px-4 py-2">
@@ -40,18 +42,18 @@ export default async function OrderConfirmationPage({
               <div className="flex items-start gap-3">
                 <Mail className="h-5 w-5 text-muted-foreground mt-0.5" />
                 <div>
-                  <p className="font-medium">Bestätigung per E-Mail</p>
+                  <p className="font-medium">{text("orderConfirmation.emailTitle")}</p>
                   <p className="text-sm text-muted-foreground">
-                    Du erhältst in Kürze eine Bestätigung an deine E-Mail-Adresse.
+                    {text("orderConfirmation.emailDescription")}
                   </p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <Truck className="h-5 w-5 text-muted-foreground mt-0.5" />
                 <div>
-                  <p className="font-medium">Versand in 2-3 Werktagen</p>
+                  <p className="font-medium">{text("orderConfirmation.shippingTitle")}</p>
                   <p className="text-sm text-muted-foreground">
-                    Deine Artikel werden an deine angegebene Adresse versendet.
+                    {text("orderConfirmation.shippingDescription")}
                   </p>
                 </div>
               </div>
@@ -61,13 +63,13 @@ export default async function OrderConfirmationPage({
               <Link href="/my-orders">
                 <Button variant="outline" className="w-full sm:w-auto">
                   <ClipboardList className="h-4 w-4 mr-2" />
-                  Meine Bestellungen
+                  {text("orderConfirmation.orders")}
                 </Button>
               </Link>
               <Link href="/">
                 <Button className="w-full sm:w-auto">
                   <Home className="h-4 w-4 mr-2" />
-                  Zurück zum Shop
+                  {text("orderConfirmation.backHome")}
                 </Button>
               </Link>
             </div>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
+import { useAppTexts } from "@/components/app-text-provider"
 import { Header } from "@/components/header"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -55,6 +56,7 @@ export default function WishlistPage() {
   const [loading, setLoading] = useState(true)
   const [editingItem, setEditingItem] = useState<WishlistItem | null>(null)
   const [saving, setSaving] = useState(false)
+  const { text, textf } = useAppTexts()
   const { addToCart } = useShopStore()
 
   const [editForm, setEditForm] = useState({
@@ -111,15 +113,15 @@ export default function WishlistPage() {
       })
 
       if (res.ok) {
-        toast.success("Wunschliste aktualisiert")
+        toast.success(text("wishlist.updated"))
         setEditingItem(null)
         fetchWishlist()
       } else {
-        toast.error("Fehler beim Speichern")
+        toast.error(text("wishlist.saveError"))
       }
     } catch (error) {
       console.error("Failed to update wishlist item:", error)
-      toast.error("Fehler beim Speichern")
+      toast.error(text("wishlist.saveError"))
     } finally {
       setSaving(false)
     }
@@ -135,11 +137,11 @@ export default function WishlistPage() {
 
       if (res.ok) {
         setItems(items.filter((i) => i.id !== id))
-        toast.success("Von Wunschliste entfernt")
+        toast.success(text("wishlist.removed"))
       }
     } catch (error) {
       console.error("Failed to remove item:", error)
-      toast.error("Fehler beim Entfernen")
+      toast.error(text("wishlist.removeError"))
     }
   }
 
@@ -149,9 +151,9 @@ export default function WishlistPage() {
       color: item.preferredColor || item.product.colors?.[0],
     })
     if (success) {
-      toast.success("In den Warenkorb gelegt")
+      toast.success(text("wishlist.addedToCart"))
     } else {
-      toast.error("Dieser Artikel hat bereits die maximale Menge im Warenkorb erreicht")
+      toast.error(text("wishlist.maxReached"))
     }
   }
 
@@ -163,13 +165,13 @@ export default function WishlistPage() {
   }
 
   const getStockInfo = (item: WishlistItem): string => {
-    if (!item.product.stock) return "Verfügbar"
+    if (!item.product.stock) return text("wishlist.available")
     const size = item.preferredSize || item.product.sizes[0]
     const stock = item.product.stock[size]
-    if (stock === undefined) return "Unbekannt"
-    if (stock === 0) return "Nicht verfügbar"
-    if (stock <= 5) return `Nur noch ${stock}`
-    return "Auf Lager"
+    if (stock === undefined) return text("wishlist.unknown")
+    if (stock === 0) return text("wishlist.unavailable")
+    if (stock <= 5) return textf("wishlist.onlyLeft", { count: stock })
+    return text("wishlist.inStock")
   }
 
   if (loading) {
@@ -191,15 +193,15 @@ export default function WishlistPage() {
           <Link href="/">
             <Button variant="ghost" size="sm" className="mb-4">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Zurück zum Shop
+              {text("wishlist.back")}
             </Button>
           </Link>
           <div className="flex items-center gap-3">
             <Heart className="h-8 w-8 text-red-500" />
             <div>
-              <h1 className="text-3xl font-bold">Meine Wunschliste</h1>
+              <h1 className="text-3xl font-bold">{text("wishlist.title")}</h1>
               <p className="text-muted-foreground">
-                Speichere Artikel mit deinen bevorzugten Größen und Farben
+                {text("wishlist.description")}
               </p>
             </div>
           </div>
@@ -209,12 +211,12 @@ export default function WishlistPage() {
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-16">
               <Heart className="h-16 w-16 text-muted-foreground/30 mb-4" />
-              <h2 className="text-xl font-semibold mb-2">Wunschliste ist leer</h2>
+              <h2 className="text-xl font-semibold mb-2">{text("wishlist.emptyTitle")}</h2>
               <p className="text-muted-foreground mb-6">
-                Füge Artikel zu deiner Wunschliste hinzu, um sie später zu bestellen.
+                {text("wishlist.emptyDescription")}
               </p>
               <Link href="/">
-                <Button>Zur Kollektion</Button>
+                <Button>{text("wishlist.backToCollection")}</Button>
               </Link>
             </CardContent>
           </Card>
@@ -251,7 +253,7 @@ export default function WishlistPage() {
                     <div className="absolute top-2 left-2">
                       <Badge className="bg-blue-100 text-blue-800">
                         <Bell className="h-3 w-3 mr-1" />
-                        Benachrichtigung
+                        {text("wishlist.notifyBadge")}
                       </Badge>
                     </div>
                   )}
@@ -264,10 +266,10 @@ export default function WishlistPage() {
 
                   <div className="flex flex-wrap gap-2 mb-3">
                     {item.preferredSize && (
-                      <Badge variant="outline">Größe: {item.preferredSize}</Badge>
+                      <Badge variant="outline">{textf("wishlist.size", { size: item.preferredSize })}</Badge>
                     )}
                     {item.preferredColor && (
-                      <Badge variant="outline">Farbe: {item.preferredColor}</Badge>
+                      <Badge variant="outline">{textf("wishlist.color", { color: item.preferredColor })}</Badge>
                     )}
                   </div>
 
@@ -289,7 +291,7 @@ export default function WishlistPage() {
                     disabled={!isInStock(item)}
                   >
                     <ShoppingBag className="mr-2 h-4 w-4" />
-                    In den Warenkorb
+                    {text("wishlist.addToCart")}
                   </Button>
                 </CardContent>
               </Card>
@@ -301,7 +303,7 @@ export default function WishlistPage() {
         <Dialog open={!!editingItem} onOpenChange={(open) => !open && setEditingItem(null)}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Wunschlisten-Eintrag bearbeiten</DialogTitle>
+              <DialogTitle>{text("wishlist.editTitle")}</DialogTitle>
             </DialogHeader>
             {editingItem && (
               <div className="space-y-4 mt-4">
@@ -322,13 +324,13 @@ export default function WishlistPage() {
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label>Bevorzugte Größe</Label>
+                    <Label>{text("wishlist.preferredSize")}</Label>
                     <Select
                       value={editForm.preferredSize}
                       onValueChange={(value) => setEditForm({ ...editForm, preferredSize: value })}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Größe wählen" />
+                        <SelectValue placeholder={text("wishlist.sizePlaceholder")} />
                       </SelectTrigger>
                       <SelectContent>
                         {editingItem.product.sizes.map((size) => (
@@ -340,14 +342,14 @@ export default function WishlistPage() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>Bevorzugte Farbe</Label>
+                    <Label>{text("wishlist.preferredColor")}</Label>
                     {editingItem.product.colors && editingItem.product.colors.length > 0 ? (
                       <Select
                         value={editForm.preferredColor}
                         onValueChange={(value) => setEditForm({ ...editForm, preferredColor: value })}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Farbe wählen" />
+                          <SelectValue placeholder={text("wishlist.colorPlaceholder")} />
                         </SelectTrigger>
                         <SelectContent>
                           {editingItem.product.colors.map((color) => (
@@ -359,7 +361,7 @@ export default function WishlistPage() {
                       </Select>
                     ) : (
                       <Input
-                        placeholder="z.B. Navy, Schwarz"
+                        placeholder={text("wishlist.colorInputPlaceholder")}
                         value={editForm.preferredColor}
                         onChange={(e) => setEditForm({ ...editForm, preferredColor: e.target.value })}
                       />
@@ -368,9 +370,9 @@ export default function WishlistPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Notizen</Label>
+                  <Label>{text("wishlist.notes")}</Label>
                   <Textarea
-                    placeholder="z.B. für Kollegin als Geschenk"
+                    placeholder={text("wishlist.notesPlaceholder")}
                     value={editForm.notes}
                     onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
                     rows={3}
@@ -379,9 +381,9 @@ export default function WishlistPage() {
 
                 <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
                   <div>
-                    <p className="font-medium">Benachrichtigen</p>
+                    <p className="font-medium">{text("wishlist.notifyTitle")}</p>
                     <p className="text-sm text-muted-foreground">
-                      Wenn Artikel wieder verfügbar ist
+                      {text("wishlist.notifyDescription")}
                     </p>
                   </div>
                   <Switch
@@ -394,11 +396,11 @@ export default function WishlistPage() {
 
                 <div className="flex justify-end gap-2 pt-4">
                   <Button variant="outline" onClick={() => setEditingItem(null)}>
-                    Abbrechen
+                    {text("wishlist.cancel")}
                   </Button>
                   <Button onClick={handleSaveEdit} disabled={saving}>
                     {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                    Speichern
+                    {text("wishlist.save")}
                   </Button>
                 </div>
               </div>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
+import { useAppTexts } from "@/components/app-text-provider"
 import { Globe } from "lucide-react"
 import {
   DropdownMenu,
@@ -13,6 +14,7 @@ import { type Language, setLanguageCookie, getLanguageFromCookie } from "@/lib/i
 
 export function LanguageSwitcher() {
   const [language, setLanguage] = useState<Language>("de")
+  const { text } = useAppTexts()
 
   useEffect(() => {
     setLanguage(getLanguageFromCookie())
@@ -42,7 +44,7 @@ export function LanguageSwitcher() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon">
           <Globe className="h-5 w-5" />
-          <span className="sr-only">Sprache wechseln</span>
+          <span className="sr-only">{text("header.language.switch")}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
@@ -50,13 +52,13 @@ export function LanguageSwitcher() {
           onClick={() => handleLanguageChange("de")}
           className={language === "de" ? "bg-accent" : ""}
         >
-          🇩🇪 Deutsch
+          {text("header.language.de")}
         </DropdownMenuItem>
         <DropdownMenuItem 
           onClick={() => handleLanguageChange("en")}
           className={language === "en" ? "bg-accent" : ""}
         >
-          🇬🇧 English
+          {text("header.language.en")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -1,10 +1,13 @@
 "use client"
 
+import { useAppTexts } from "@/components/app-text-provider"
 import { CartIndicator } from "./cart-indicator"
 import { ChevronDown, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 export function HeroSection() {
+  const { text } = useAppTexts()
+
   const scrollToProducts = () => {
     document.getElementById("products")?.scrollIntoView({ behavior: "smooth" })
   }
@@ -31,26 +34,24 @@ export function HeroSection() {
         {/* Badge */}
         <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 py-2 backdrop-blur-sm">
           <Sparkles className="h-4 w-4 text-accent" />
-          <span className="text-sm font-medium text-white/90">Kollektion 2025</span>
+          <span className="text-sm font-medium text-white/90">{text("hero.badge")}</span>
         </div>
 
         {/* Main heading */}
         <h1 className="mb-6 max-w-4xl text-5xl font-bold leading-[1.1] tracking-tight text-white sm:text-6xl md:text-7xl lg:text-8xl text-balance">
-          Deine{" "}
+          {text("hero.title.prefix")}{" "}
           <span className="relative">
             <span className="relative z-10 bg-gradient-to-r from-accent to-emerald-400 bg-clip-text text-transparent">
-              Mitarbeiter
+              {text("hero.title.highlight")}
             </span>
           </span>
           <br />
-          kollektion
+          {text("hero.title.suffix")}
         </h1>
 
         {/* Subheading */}
-        <p className="mb-10 max-w-xl text-lg text-white/60 sm:text-xl leading-relaxed">
-          Wähle <span className="font-semibold text-white">4 Teile</span> aus unserer exklusiven Kollektion.
-          <br className="hidden sm:block" />
-          Kostenlos für alle RealCore Mitarbeiter.
+        <p className="mb-10 max-w-xl whitespace-pre-line text-lg leading-relaxed text-white/60 sm:text-xl">
+          {text("hero.subtitle")}
         </p>
 
         {/* Cart indicator */}
@@ -64,7 +65,7 @@ export function HeroSection() {
           size="lg"
           className="group gap-2 rounded-full bg-white px-8 py-6 text-base font-semibold text-primary hover:bg-white/90"
         >
-          Kollektion entdecken
+          {text("hero.cta")}
           <ChevronDown className="h-4 w-4 transition-transform group-hover:translate-y-0.5" />
         </Button>
       </div>

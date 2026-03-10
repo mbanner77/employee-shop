@@ -3,12 +3,14 @@
 import Link from "next/link"
 import Image from "next/image"
 import { Trash2, ShoppingBag, Minus, Plus } from "lucide-react"
+import { useAppTexts } from "@/components/app-text-provider"
 import { Button } from "@/components/ui/button"
 import { useShopStore } from "@/lib/store"
 import { Badge } from "@/components/ui/badge"
 
 export function CartSummary() {
   const { cart, removeFromCart, updateCartItemQuantity } = useShopStore()
+  const { text, textf } = useAppTexts()
   const maxItems = 4
   const companyCount = cart
     .filter((item) => item.costBearer === "COMPANY")
@@ -23,10 +25,10 @@ export function CartSummary() {
     return (
       <div className="rounded-xl border border-dashed border-border bg-muted/30 p-8 text-center">
         <ShoppingBag className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
-        <p className="font-medium text-foreground">Dein Warenkorb ist leer</p>
-        <p className="mt-1 text-sm text-muted-foreground">Wähle bis zu {maxItems} Firmenartikel oder beliebig viele Privatartikel aus der Kollektion</p>
+        <p className="font-medium text-foreground">{text("cartSummary.emptyTitle")}</p>
+        <p className="mt-1 text-sm text-muted-foreground">{textf("cartSummary.emptyDescription", { maxItems })}</p>
         <Link href="/" className="mt-4 inline-flex">
-          <Button variant="outline">Weiter einkaufen</Button>
+          <Button variant="outline">{text("cartSummary.continue")}</Button>
         </Link>
       </div>
     )
@@ -36,7 +38,7 @@ export function CartSummary() {
     <div className="space-y-4">
       <div className="flex justify-start">
         <Link href="/">
-          <Button variant="outline" size="sm">Weiter einkaufen</Button>
+          <Button variant="outline" size="sm">{text("cartSummary.continue")}</Button>
         </Link>
       </div>
 
@@ -44,14 +46,14 @@ export function CartSummary() {
       <div className="flex items-center justify-between rounded-lg bg-muted p-3">
         <div>
           <span className="text-sm font-medium">
-            {totalCount} Artikel im Warenkorb
+            {textf("cartSummary.count", { count: totalCount })}
           </span>
           <p className="text-xs text-muted-foreground">
-            Firma: {companyCount} von {maxItems} | Privat: {privateCount}
+            {textf("cartSummary.breakdown", { companyCount, maxItems, privateCount })}
           </p>
         </div>
         <Badge variant={remaining > 0 ? "secondary" : "destructive"}>
-          {remaining > 0 ? `Noch ${remaining} Firmenartikel frei` : "Firmenlimit erreicht"}
+          {remaining > 0 ? textf("cartSummary.remaining", { count: remaining }) : text("cartSummary.limitReached")}
         </Badge>
       </div>
 
@@ -68,12 +70,12 @@ export function CartSummary() {
           <div className="flex-1 min-w-0">
             <h4 className="font-medium text-foreground truncate">{item.product.name}</h4>
             <p className="text-sm text-muted-foreground">
-              Größe: <span className="font-medium">{item.size}</span>
+              {textf("cartSummary.size", { size: item.size })}
             </p>
-            {item.color && <p className="text-sm text-muted-foreground">Farbe: {item.color}</p>}
+            {item.color && <p className="text-sm text-muted-foreground">{textf("cartSummary.color", { color: item.color })}</p>}
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <Badge variant={item.costBearer === "COMPANY" ? "secondary" : "outline"}>
-                {item.costBearer === "COMPANY" ? "FIRMA" : "PRIVAT"}
+                {item.costBearer === "COMPANY" ? text("cartSummary.costCompany") : text("cartSummary.costPrivate")}
               </Badge>
               <div className="flex items-center gap-1 rounded-md border px-1 py-0.5">
                 <Button

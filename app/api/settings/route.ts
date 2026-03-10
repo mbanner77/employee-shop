@@ -1,49 +1,51 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
-import { cookies } from "next/headers"
+import { isAdminAuthenticated } from "@/lib/admin-auth"
+import {
+  MICROSOFT_SECRET_MASK,
+  maskMicrosoftClientSecret,
+  resolveMicrosoftSsoConfiguration,
+} from "@/lib/microsoft-365"
 
-async function isAdminAuthenticated() {
-  const cookieStore = await cookies()
-  const adminSession = cookieStore.get("admin-session")
-  if (!adminSession) return false
+async function getOrCreateSettings() {
+  let settings = await prisma.settings.findUnique({
+    where: { id: "settings" },
+  })
 
-  const admin = await prisma.adminUser.findUnique({ where: { id: adminSession.value } })
-  return !!admin
+  if (!settings) {
+    settings = await prisma.settings.create({
+      data: { id: "settings" },
+    })
+  }
+
+  return settings
 }
 
 // GET settings
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    let settings = await prisma.settings.findUnique({
-      where: { id: "settings" },
-    })
-
-    // Create default settings if not exists
-    if (!settings) {
-      settings = await prisma.settings.create({
-        data: { id: "settings" },
-      })
-    }
+    const settings = await getOrCreateSettings()
+    const { appTextOverrides: _appTextOverrides, ...settingsResponse } = settings
 
     const isAdmin = await isAdminAuthenticated()
-    const microsoftSsoEnabled = Boolean(
-      process.env.MICROSOFT_CLIENT_ID &&
-      process.env.MICROSOFT_CLIENT_SECRET &&
-      process.env.MICROSOFT_TENANT_ID,
-    )
+    const microsoftConfiguration = resolveMicrosoftSsoConfiguration(settings, request)
 
     if (!isAdmin) {
       return NextResponse.json({
         shopName: settings.shopName,
         maxItemsPerOrder: settings.maxItemsPerOrder,
-        microsoftSsoEnabled,
+        microsoftSsoEnabled: microsoftConfiguration.active,
       })
     }
 
     return NextResponse.json({
-      ...settings,
+      ...settingsResponse,
       smtpPassword: settings.smtpPassword ? "••••••••" : "",
-      microsoftSsoEnabled,
+      microsoftClientSecret: maskMicrosoftClientSecret(settings.microsoftClientSecret),
+      microsoftSsoConfigured: microsoftConfiguration.configured,
+      microsoftSsoActive: microsoftConfiguration.active,
+      microsoftComputedRedirectUri: microsoftConfiguration.redirectUri,
+      microsoftConfigSource: microsoftConfiguration.source,
     })
   } catch (error) {
     console.error("Failed to fetch settings:", error)
@@ -62,9 +64,37 @@ export async function PUT(request: Request) {
 
     // Don't update password if it's masked
     const updateData: Record<string, unknown> = { ...data }
-    delete updateData.microsoftSsoEnabled
     if (updateData.smtpPassword === "••••••••") {
       delete updateData.smtpPassword
+    }
+    if (updateData.microsoftClientSecret === MICROSOFT_SECRET_MASK) {
+      delete updateData.microsoftClientSecret
+    }
+
+    delete updateData.microsoftSsoConfigured
+    delete updateData.microsoftSsoActive
+    delete updateData.microsoftComputedRedirectUri
+    delete updateData.microsoftConfigSource
+    delete updateData.appTextOverrides
+
+    if (typeof updateData.microsoftTenantId === "string") {
+      updateData.microsoftTenantId = updateData.microsoftTenantId.trim()
+    }
+    if (typeof updateData.microsoftClientId === "string") {
+      updateData.microsoftClientId = updateData.microsoftClientId.trim()
+    }
+    if (typeof updateData.microsoftRedirectUri === "string") {
+      updateData.microsoftRedirectUri = updateData.microsoftRedirectUri.trim()
+    }
+    if (typeof updateData.microsoftAllowedDomains === "string") {
+      updateData.microsoftAllowedDomains = updateData.microsoftAllowedDomains
+        .split(",")
+        .map((domain: string) => domain.trim().toLowerCase())
+        .filter(Boolean)
+        .join(", ")
+    }
+    if (typeof updateData.microsoftDefaultDepartment === "string") {
+      updateData.microsoftDefaultDepartment = updateData.microsoftDefaultDepartment.trim() || "Microsoft 365"
     }
 
     const settings = await prisma.settings.upsert({
@@ -72,10 +102,18 @@ export async function PUT(request: Request) {
       update: updateData,
       create: { id: "settings", ...updateData },
     })
+    const { appTextOverrides: _appTextOverrides, ...settingsResponse } = settings
+
+    const microsoftConfiguration = resolveMicrosoftSsoConfiguration(settings, request)
 
     return NextResponse.json({
-      ...settings,
+      ...settingsResponse,
       smtpPassword: settings.smtpPassword ? "••••••••" : "",
+      microsoftClientSecret: maskMicrosoftClientSecret(settings.microsoftClientSecret),
+      microsoftSsoConfigured: microsoftConfiguration.configured,
+      microsoftSsoActive: microsoftConfiguration.active,
+      microsoftComputedRedirectUri: microsoftConfiguration.redirectUri,
+      microsoftConfigSource: microsoftConfiguration.source,
     })
   } catch (error) {
     console.error("Failed to update settings:", error)

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import Image from "next/image"
 import { Lock, Mail, User, Eye, EyeOff, UserPlus, LogIn, Building, Loader2, CheckCircle } from "lucide-react"
+import { useAppTexts } from "@/components/app-text-provider"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -35,6 +36,8 @@ export function EmployeeLogin({ onLogin }: EmployeeLoginProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [companyAreas, setCompanyAreas] = useState<CompanyArea[]>([])
   const [microsoftSsoEnabled, setMicrosoftSsoEnabled] = useState(false)
+  const [ssoMessage, setSsoMessage] = useState<{ type: "error" | "success"; text: string } | null>(null)
+  const { text } = useAppTexts()
   
   // Passwort vergessen
   const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false)
@@ -72,7 +75,19 @@ export function EmployeeLogin({ onLogin }: EmployeeLoginProps) {
       .then((res) => res.json())
       .then((data) => setMicrosoftSsoEnabled(Boolean(data?.microsoftSsoEnabled)))
       .catch(console.error)
+
+    const url = new URL(window.location.href)
+    const ssoError = url.searchParams.get("sso_error")
+    if (ssoError) {
+      setSsoMessage({ type: "error", text: ssoError })
+      url.searchParams.delete("sso_error")
+      window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`)
+    }
   }, [])
+
+  const handleMicrosoftLogin = () => {
+    window.location.href = "/api/auth/microsoft/login?returnTo=/"
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -91,10 +106,10 @@ export function EmployeeLogin({ onLogin }: EmployeeLoginProps) {
       if (response.ok) {
         onLogin(data.employee)
       } else {
-        setError(data.error || "Anmeldung fehlgeschlagen")
+        setError(data.error || text("auth.login.error"))
       }
     } catch {
-      setError("Verbindungsfehler. Bitte versuchen Sie es erneut.")
+      setError(text("auth.login.networkError"))
     } finally {
       setIsLoading(false)
     }
@@ -105,12 +120,12 @@ export function EmployeeLogin({ onLogin }: EmployeeLoginProps) {
     setError("")
 
     if (registerData.password !== registerData.confirmPassword) {
-      setError("Passwörter stimmen nicht überein")
+      setError(text("auth.register.passwordMismatch"))
       return
     }
 
     if (registerData.password.length < 6) {
-      setError("Passwort muss mindestens 6 Zeichen haben")
+      setError(text("auth.register.passwordMinLength"))
       return
     }
 
@@ -135,10 +150,10 @@ export function EmployeeLogin({ onLogin }: EmployeeLoginProps) {
         // Auto-login after registration
         onLogin(data.employee)
       } else {
-        setError(data.error || "Registrierung fehlgeschlagen")
+        setError(data.error || text("auth.register.error"))
       }
     } catch {
-      setError("Verbindungsfehler. Bitte versuchen Sie es erneut.")
+      setError(text("auth.register.networkError"))
     } finally {
       setIsLoading(false)
     }
@@ -161,10 +176,10 @@ export function EmployeeLogin({ onLogin }: EmployeeLoginProps) {
       if (response.ok) {
         setForgotPasswordSuccess(true)
       } else {
-        setForgotPasswordError(data.error || "Fehler beim Senden der E-Mail")
+        setForgotPasswordError(data.error || text("auth.forgot.error"))
       }
     } catch {
-      setForgotPasswordError("Verbindungsfehler. Bitte versuchen Sie es erneut.")
+      setForgotPasswordError(text("auth.forgot.networkError"))
     } finally {
       setForgotPasswordLoading(false)
     }
@@ -184,41 +199,52 @@ export function EmployeeLogin({ onLogin }: EmployeeLoginProps) {
             />
           </div>
           <div>
-            <CardTitle className="text-2xl font-bold">Mitarbeiter-Shop</CardTitle>
-            <CardDescription>Melden Sie sich an oder registrieren Sie sich</CardDescription>
+            <CardTitle className="text-2xl font-bold">{text("auth.title")}</CardTitle>
+            <CardDescription>{text("auth.description")}</CardDescription>
           </div>
         </CardHeader>
         <CardContent>
+          {ssoMessage && (
+            <div className={`mb-4 rounded-lg p-3 text-sm ${ssoMessage.type === "success" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
+              {ssoMessage.text}
+            </div>
+          )}
           {microsoftSsoEnabled && (
-            <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
-              <p className="font-medium">Microsoft SSO ist vorbereitet</p>
-              <p className="mt-1 text-blue-800">
-                Der Mitarbeiterzugang kann serverseitig per Microsoft Entra / Azure AD erweitert werden. Bis zur finalen Aktivierung bleibt der Login per E-Mail und Passwort verfügbar.
-              </p>
+            <div className="mb-4 space-y-3">
+              <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
+                <p className="font-medium">{text("auth.microsoft.title")}</p>
+                <p className="mt-1 text-blue-800">
+                  {text("auth.microsoft.description")}
+                </p>
+              </div>
+              <Button type="button" variant="outline" className="w-full" onClick={handleMicrosoftLogin}>
+                <Building className="mr-2 h-4 w-4" />
+                {text("auth.microsoft.button")}
+              </Button>
             </div>
           )}
           <Tabs defaultValue="login" className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-4">
               <TabsTrigger value="login">
                 <LogIn className="h-4 w-4 mr-2" />
-                Anmelden
+                {text("auth.tab.login")}
               </TabsTrigger>
               <TabsTrigger value="register">
                 <UserPlus className="h-4 w-4 mr-2" />
-                Registrieren
+                {text("auth.tab.register")}
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="login">
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="login-email">E-Mail</Label>
+                  <Label htmlFor="login-email">{text("auth.login.email")}</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="login-email"
                       type="email"
-                      placeholder="max.mustermann@firma.de"
+                      placeholder={text("auth.login.emailPlaceholder")}
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
                       className="pl-10"
@@ -228,13 +254,13 @@ export function EmployeeLogin({ onLogin }: EmployeeLoginProps) {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="login-password">Passwort</Label>
+                  <Label htmlFor="login-password">{text("auth.login.password")}</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="login-password"
                       type={showPassword ? "text" : "password"}
-                      placeholder="••••••••"
+                      placeholder={text("auth.passwordPlaceholder")}
                       value={loginPassword}
                       onChange={(e) => setLoginPassword(e.target.value)}
                       className="pl-10 pr-10"
@@ -257,7 +283,7 @@ export function EmployeeLogin({ onLogin }: EmployeeLoginProps) {
                 )}
 
                 <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Wird angemeldet..." : "Anmelden"}
+                  {isLoading ? text("auth.login.loading") : text("auth.login.submit")}
                 </Button>
 
                 <Dialog open={forgotPasswordOpen} onOpenChange={(open) => {
@@ -270,21 +296,21 @@ export function EmployeeLogin({ onLogin }: EmployeeLoginProps) {
                 }}>
                   <DialogTrigger asChild>
                     <button type="button" className="w-full text-center text-sm text-muted-foreground hover:text-primary mt-2">
-                      Passwort vergessen?
+                      {text("auth.forgot.trigger")}
                     </button>
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle>Passwort zurücksetzen</DialogTitle>
+                      <DialogTitle>{text("auth.forgot.title")}</DialogTitle>
                       <DialogDescription>
-                        Gib deine E-Mail-Adresse ein und wir senden dir einen Link zum Zurücksetzen deines Passworts.
+                        {text("auth.forgot.description")}
                       </DialogDescription>
                     </DialogHeader>
                     {forgotPasswordSuccess ? (
                       <div className="flex flex-col items-center py-4">
                         <CheckCircle className="h-12 w-12 text-green-600 mb-3" />
                         <p className="text-center text-sm">
-                          Falls ein Konto mit dieser E-Mail existiert, wurde eine E-Mail zum Zurücksetzen des Passworts gesendet.
+                          {text("auth.forgot.success")}
                         </p>
                       </div>
                     ) : (
@@ -295,11 +321,11 @@ export function EmployeeLogin({ onLogin }: EmployeeLoginProps) {
                           </div>
                         )}
                         <div className="space-y-2">
-                          <Label htmlFor="forgot-email">E-Mail</Label>
+                          <Label htmlFor="forgot-email">{text("auth.forgot.email")}</Label>
                           <Input
                             id="forgot-email"
                             type="email"
-                            placeholder="max.mustermann@firma.de"
+                            placeholder={text("auth.forgot.emailPlaceholder")}
                             value={forgotPasswordEmail}
                             onChange={(e) => setForgotPasswordEmail(e.target.value)}
                             required
@@ -309,10 +335,10 @@ export function EmployeeLogin({ onLogin }: EmployeeLoginProps) {
                           {forgotPasswordLoading ? (
                             <>
                               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Wird gesendet...
+                              {text("auth.forgot.loading")}
                             </>
                           ) : (
-                            "Link senden"
+                            text("auth.forgot.submit")
                           )}
                         </Button>
                       </form>
@@ -326,12 +352,12 @@ export function EmployeeLogin({ onLogin }: EmployeeLoginProps) {
               <form onSubmit={handleRegister} className="space-y-4">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
-                    <Label htmlFor="firstName">Vorname</Label>
+                    <Label htmlFor="firstName">{text("auth.register.firstName")}</Label>
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="firstName"
-                        placeholder="Max"
+                        placeholder={text("auth.register.firstNamePlaceholder")}
                         value={registerData.firstName}
                         onChange={(e) => setRegisterData({ ...registerData, firstName: e.target.value })}
                         className="pl-10"
@@ -340,10 +366,10 @@ export function EmployeeLogin({ onLogin }: EmployeeLoginProps) {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="lastName">Nachname</Label>
+                    <Label htmlFor="lastName">{text("auth.register.lastName")}</Label>
                     <Input
                       id="lastName"
-                      placeholder="Mustermann"
+                      placeholder={text("auth.register.lastNamePlaceholder")}
                       value={registerData.lastName}
                       onChange={(e) => setRegisterData({ ...registerData, lastName: e.target.value })}
                       required
@@ -352,13 +378,13 @@ export function EmployeeLogin({ onLogin }: EmployeeLoginProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="reg-email">E-Mail</Label>
+                  <Label htmlFor="reg-email">{text("auth.register.email")}</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="reg-email"
                       type="email"
-                      placeholder="max.mustermann@firma.de"
+                      placeholder={text("auth.register.emailPlaceholder")}
                       value={registerData.email}
                       onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
                       className="pl-10"
@@ -368,7 +394,7 @@ export function EmployeeLogin({ onLogin }: EmployeeLoginProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="companyArea">Firmenbereich</Label>
+                  <Label htmlFor="companyArea">{text("auth.register.companyArea")}</Label>
                   <div className="relative">
                     <Building className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
                     <Select 
@@ -376,7 +402,7 @@ export function EmployeeLogin({ onLogin }: EmployeeLoginProps) {
                       onValueChange={(value) => setRegisterData({ ...registerData, companyArea: value })}
                     >
                       <SelectTrigger className="pl-10">
-                        <SelectValue placeholder="Firmenbereich wählen" />
+                        <SelectValue placeholder={text("auth.register.companyAreaPlaceholder")} />
                       </SelectTrigger>
                       <SelectContent>
                         {companyAreas.map((area) => (
@@ -389,22 +415,22 @@ export function EmployeeLogin({ onLogin }: EmployeeLoginProps) {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
-                    <Label htmlFor="reg-password">Passwort</Label>
+                    <Label htmlFor="reg-password">{text("auth.register.password")}</Label>
                     <Input
                       id="reg-password"
                       type="password"
-                      placeholder="••••••••"
+                      placeholder={text("auth.passwordPlaceholder")}
                       value={registerData.password}
                       onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
                       required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">Bestätigen</Label>
+                    <Label htmlFor="confirmPassword">{text("auth.register.confirmPassword")}</Label>
                     <Input
                       id="confirmPassword"
                       type="password"
-                      placeholder="••••••••"
+                      placeholder={text("auth.passwordPlaceholder")}
                       value={registerData.confirmPassword}
                       onChange={(e) => setRegisterData({ ...registerData, confirmPassword: e.target.value })}
                       required
@@ -419,7 +445,7 @@ export function EmployeeLogin({ onLogin }: EmployeeLoginProps) {
                 )}
 
                 <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Wird registriert..." : "Registrieren"}
+                  {isLoading ? text("auth.register.loading") : text("auth.register.submit")}
                 </Button>
               </form>
             </TabsContent>

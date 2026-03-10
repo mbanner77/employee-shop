@@ -1,5 +1,6 @@
 "use client"
 
+import { useAppTexts } from "@/components/app-text-provider"
 import { useShopStore } from "@/lib/store"
 import { cn } from "@/lib/utils"
 import { useState, useEffect } from "react"
@@ -7,6 +8,7 @@ import { Check } from "lucide-react"
 
 export function CartIndicator() {
   const [mounted, setMounted] = useState(false)
+  const { text, textf } = useAppTexts()
   const cart = useShopStore((state) => state.cart)
 
   useEffect(() => {
@@ -37,9 +39,9 @@ export function CartIndicator() {
         ))}
       </div>
       <div className="flex items-center gap-2">
-        <span className="text-sm font-medium text-white/80">{cartLength} von 4 ausgewählt</span>
+        <span className="text-sm font-medium text-white/80">{textf("cartIndicator.selected", { count: cartLength })}</span>
         {cartLength === 4 && (
-          <span className="rounded-full bg-accent/20 px-2 py-0.5 text-xs font-medium text-accent">Komplett</span>
+          <span className="rounded-full bg-accent/20 px-2 py-0.5 text-xs font-medium text-accent">{text("cartIndicator.complete")}</span>
         )}
       </div>
     </div>
