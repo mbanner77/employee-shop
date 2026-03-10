@@ -1,8 +1,21 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
+import { cookies } from "next/headers"
+
+async function isAdminAuthenticated() {
+  const cookieStore = await cookies()
+  const adminSession = cookieStore.get("admin-session")
+  if (!adminSession) return false
+  const admin = await prisma.adminUser.findUnique({ where: { id: adminSession.value } })
+  return !!admin
+}
 
 export async function GET(request: Request) {
   try {
+    if (!(await isAdminAuthenticated())) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
+    }
+
     const { searchParams } = new URL(request.url)
     const year = parseInt(searchParams.get("year") || new Date().getFullYear().toString())
     

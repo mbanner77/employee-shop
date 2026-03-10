@@ -10,16 +10,20 @@ export default function SupplierPage() {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const auth = sessionStorage.getItem("supplier-auth")
-    if (auth === "true") {
-      setIsAuthenticated(true)
-    }
-    setIsLoading(false)
+    fetch("/api/supplier/me")
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error("Unauthorized")
+        }
+        return res.json()
+      })
+      .then((data) => setIsAuthenticated(Boolean(data?.authenticated)))
+      .catch(() => setIsAuthenticated(false))
+      .finally(() => setIsLoading(false))
   }, [])
 
   const handleLogin = (success: boolean) => {
     if (success) {
-      sessionStorage.setItem("supplier-auth", "true")
       setIsAuthenticated(true)
     }
   }

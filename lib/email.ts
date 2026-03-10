@@ -161,6 +161,128 @@ export async function sendOrderStatusChangedEmail(args: {
   })
 }
 
+export async function sendReviewRequestEmail(args: {
+  employeeId: string
+  orderId: string
+}) {
+  const [employee, order] = await Promise.all([
+    prisma.employee.findUnique({ where: { id: args.employeeId } }),
+    prisma.order.findUnique({
+      where: { id: args.orderId },
+      include: {
+        items: {
+          include: {
+            product: {
+              select: {
+                name: true,
+                nameEn: true,
+              },
+            },
+          },
+        },
+      },
+    }),
+  ])
+
+  if (!employee || !employee.notifyStatusUpdates || !order) return
+
+  const lang = order.language || employee.language || "de"
+  const baseUrl = (process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000").replace(/\/$/, "")
+  const shopUrl = `${baseUrl}/`
+  const orderNumber = order.orderNumber || args.orderId
+  const orderedItems = order.items.map((item) =>
+    lang === "en" ? item.product.nameEn || item.product.name : item.product.name,
+  )
+
+  const texts = {
+    de: {
+      subject: "⭐ Wie gefallen dir deine Artikel?",
+      greeting: `Hallo ${employee.firstName},`,
+      intro: "deine Bestellung wurde erfolgreich zugestellt. Wir freuen uns, wenn du deine bestellten Artikel im Shop bewertest.",
+      orderLabel: "Bestellnummer",
+      itemsLabel: "Bestellte Artikel",
+      cta: "Jetzt bewerten",
+      note: "Dein Feedback hilft anderen Kolleginnen und Kollegen bei der Auswahl.",
+      closing: "Viele Grüße",
+      team: "Dein RealCore Mitarbeiter-Shop Team",
+    },
+    en: {
+      subject: "⭐ How do you like your items?",
+      greeting: `Hello ${employee.firstName},`,
+      intro: "your order has been delivered successfully. We'd love for you to review your ordered items in the shop.",
+      orderLabel: "Order number",
+      itemsLabel: "Ordered items",
+      cta: "Leave a review",
+      note: "Your feedback helps other colleagues choose the right products.",
+      closing: "Best regards",
+      team: "Your RealCore Employee Shop Team",
+    },
+  }
+
+  const t = texts[lang as keyof typeof texts] || texts.de
+
+  const itemsHtml = orderedItems.length
+    ? `
+      <p style="margin: 0 0 12px 0; color: #71717a; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">${t.itemsLabel}</p>
+      <ul style="margin: 0 0 24px 18px; padding: 0; color: #18181b; font-size: 14px; line-height: 1.8;">
+        ${orderedItems.map((item) => `<li>${item}</li>`).join("")}
+      </ul>
+    `
+    : ""
+
+  const htmlContent = `
+    <h2 style="margin: 0 0 16px 0; color: #18181b; font-size: 20px;">${t.greeting}</h2>
+    <p style="margin: 0 0 24px 0; color: #3f3f46; font-size: 16px; line-height: 1.6;">
+      ${t.intro}
+    </p>
+
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f5; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+      <tr>
+        <td>
+          <p style="margin: 0 0 8px 0; color: #71717a; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">${t.orderLabel}</p>
+          <p style="margin: 0; color: #18181b; font-size: 14px; font-family: monospace;">${orderNumber}</p>
+        </td>
+      </tr>
+    </table>
+
+    ${itemsHtml}
+
+    <div style="margin-bottom: 24px;">
+      <a href="${shopUrl}" style="display: inline-block; background-color: #166534; color: #ffffff; text-decoration: none; padding: 12px 18px; border-radius: 8px; font-weight: 600;">${t.cta}</a>
+    </div>
+
+    <p style="margin: 0 0 24px 0; color: #71717a; font-size: 14px;">
+      ${t.note}
+    </p>
+
+    <p style="margin: 0; color: #71717a; font-size: 14px;">
+      ${t.closing}<br/>
+      ${t.team}
+    </p>
+  `
+
+  await sendEmail({
+    to: employee.email,
+    subject: t.subject,
+    text: [
+      t.greeting,
+      "",
+      t.intro,
+      "",
+      `${t.orderLabel}: ${orderNumber}`,
+      ...(orderedItems.length > 0 ? ["", `${t.itemsLabel}:`, ...orderedItems.map((item) => `- ${item}`)] : []),
+      "",
+      shopUrl,
+      "",
+      t.note,
+      "",
+      t.closing,
+      t.team,
+    ].join("\n"),
+    html: emailTemplate(htmlContent),
+  })
+}
+
 export async function sendOrderCreatedEmailToAdmin(args: {
   orderId: string
   customerName: string

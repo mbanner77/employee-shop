@@ -10,23 +10,48 @@ import { Button } from "@/components/ui/button"
 import { ChevronDown, ChevronUp, Search, Loader2, User } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-interface OrderWithEmployee extends Order {
+type OrderStatus = Order["status"]
+
+interface SupplierOrderItem {
+  id: string
+  productId: string
+  productName: string
+  articleNumber?: string | null
+  size: string
+  color?: string | null
+  quantity: number
+  status: OrderStatus
+}
+
+interface SupplierOrder {
+  id: string
+  orderNumber?: string | null
+  customerName: string
+  email: string
+  street: string
+  city: string
+  zip: string
+  country: string
+  department: string
+  status: OrderStatus
+  createdAt: string
   employee?: {
     id: string
     firstName: string
     lastName: string
     employeeId: string
   } | null
+  items: SupplierOrderItem[]
 }
 
-const statusLabels: Record<Order["status"], string> = {
+const statusLabels: Record<OrderStatus, string> = {
   PENDING: "Ausstehend",
   PROCESSING: "In Bearbeitung",
   SHIPPED: "Versendet",
   DELIVERED: "Zugestellt",
 }
 
-const statusColors: Record<Order["status"], string> = {
+const statusColors: Record<OrderStatus, string> = {
   PENDING: "bg-yellow-100 text-yellow-800",
   PROCESSING: "bg-blue-100 text-blue-800",
   SHIPPED: "bg-purple-100 text-purple-800",
@@ -34,7 +59,7 @@ const statusColors: Record<Order["status"], string> = {
 }
 
 export function SupplierOrders() {
-  const [orders, setOrders] = useState<OrderWithEmployee[]>([])
+  const [orders, setOrders] = useState<SupplierOrder[]>([])
   const [loading, setLoading] = useState(true)
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
@@ -43,10 +68,10 @@ export function SupplierOrders() {
 
   const fetchOrders = async () => {
     try {
-      const response = await fetch("/api/orders")
+      const response = await fetch("/api/supplier/orders")
       if (response.ok) {
         const data = await response.json()
-        setOrders(data)
+        setOrders(Array.isArray(data?.orders) ? data.orders : [])
       }
     } catch (error) {
       console.error("Failed to fetch orders:", error)
@@ -59,16 +84,27 @@ export function SupplierOrders() {
     fetchOrders()
   }, [])
 
-  const updateOrderStatus = async (orderId: string, status: Order["status"]) => {
+  const updateOrderStatus = async (orderId: string, status: OrderStatus) => {
     setUpdatingOrderId(orderId)
     try {
-      const response = await fetch(`/api/orders/${orderId}`, {
-        method: "PATCH",
+      const response = await fetch(`/api/supplier/orders/${orderId}`, {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ action: "status", status }),
       })
       if (response.ok) {
-        setOrders(orders.map((order) => (order.id === orderId ? { ...order, status } : order)))
+        const data = await response.json()
+        setOrders((currentOrders) =>
+          currentOrders.map((order) =>
+            order.id === orderId
+              ? {
+                  ...order,
+                  status: data.status || status,
+                  items: order.items.map((item) => ({ ...item, status })),
+                }
+              : order,
+          ),
+        )
       }
     } catch (error) {
       console.error("Failed to update order:", error)
@@ -81,7 +117,6 @@ export function SupplierOrders() {
     try {
       await fetch("/api/supplier/logout", { method: "POST" })
     } finally {
-      sessionStorage.removeItem("supplier-auth")
       window.location.reload()
     }
   }
@@ -90,6 +125,7 @@ export function SupplierOrders() {
     const matchesSearch =
       order.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (order.orderNumber || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.email.toLowerCase().includes(searchTerm.toLowerCase())
 
     const matchesStatus = filterStatus === "all" || order.status === filterStatus
@@ -161,7 +197,7 @@ export function SupplierOrders() {
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <CardTitle className="text-base font-mono">{order.id}</CardTitle>
+                    <CardTitle className="text-base font-mono">{order.orderNumber || order.id}</CardTitle>
                     <Badge className={cn("font-normal", statusColors[order.status])}>
                       {statusLabels[order.status]}
                     </Badge>
@@ -194,8 +230,17 @@ export function SupplierOrders() {
                       <div className="space-y-2">
                         {order.items.map((item, index) => (
                           <div key={index} className="flex items-center justify-between rounded-lg bg-muted p-3">
-                            <span>{item.product.name}</span>
-                            <Badge variant="outline">{item.size}</Badge>
+                            <div>
+                              <span>{item.productName}</span>
+                              <div className="mt-1 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                                {item.color && <span>Farbe: {item.color}</span>}
+                                {item.articleNumber && <span>Art.-Nr.: {item.articleNumber}</span>}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline">{item.size}</Badge>
+                              <Badge variant="secondary">x{item.quantity}</Badge>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -215,7 +260,7 @@ export function SupplierOrders() {
                       <div className="relative">
                         <Select
                           value={order.status}
-                          onValueChange={(value) => updateOrderStatus(order.id, value as Order["status"])}
+                          onValueChange={(value) => updateOrderStatus(order.id, value as OrderStatus)}
                           disabled={updatingOrderId === order.id}
                         >
                           <SelectTrigger>

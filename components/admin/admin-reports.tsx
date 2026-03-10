@@ -55,7 +55,7 @@ export function AdminReports() {
         const url = window.URL.createObjectURL(blob)
         const a = document.createElement("a")
         a.href = url
-        a.download = `mitarbeiter-bestellungen-${yearFilter}.xlsx`
+        a.download = `mitarbeiter-bestellungen-${yearFilter}.csv`
         document.body.appendChild(a)
         a.click()
         window.URL.revokeObjectURL(url)
@@ -151,7 +151,7 @@ export function AdminReports() {
               ) : (
                 <FileSpreadsheet className="mr-2 h-4 w-4" />
               )}
-              Excel Export
+              CSV Export
             </Button>
           </div>
         </CardContent>

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
-import { sendOrderStatusChangedEmail } from "@/lib/email"
+import { sendOrderStatusChangedEmail, sendReviewRequestEmail } from "@/lib/email"
 import { cookies } from "next/headers"
 
 export async function GET(
@@ -10,24 +10,14 @@ export async function GET(
   try {
     const cookieStore = await cookies()
     const adminSession = cookieStore.get("admin-session")
-    const supplierSession = cookieStore.get("supplier-session")
 
-    if (!adminSession && !supplierSession) {
+    if (!adminSession) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
     }
 
-    if (adminSession) {
-      const admin = await prisma.adminUser.findUnique({ where: { id: adminSession.value } })
-      if (!admin) {
-        return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
-      }
-    }
-
-    if (supplierSession) {
-      const supplier = await prisma.supplierUser.findUnique({ where: { id: supplierSession.value } })
-      if (!supplier) {
-        return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
-      }
+    const admin = await prisma.adminUser.findUnique({ where: { id: adminSession.value } })
+    if (!admin) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
     }
 
     const { id } = await params
@@ -58,24 +48,14 @@ export async function PATCH(
   try {
     const cookieStore = await cookies()
     const adminSession = cookieStore.get("admin-session")
-    const supplierSession = cookieStore.get("supplier-session")
 
-    if (!adminSession && !supplierSession) {
+    if (!adminSession) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
     }
 
-    if (adminSession) {
-      const admin = await prisma.adminUser.findUnique({ where: { id: adminSession.value } })
-      if (!admin) {
-        return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
-      }
-    }
-
-    if (supplierSession) {
-      const supplier = await prisma.supplierUser.findUnique({ where: { id: supplierSession.value } })
-      if (!supplier) {
-        return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
-      }
+    const admin = await prisma.adminUser.findUnique({ where: { id: adminSession.value } })
+    if (!admin) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
     }
 
     const { id } = await params
@@ -114,6 +94,13 @@ export async function PATCH(
           oldStatus,
           newStatus: order.status,
         })
+
+        if (oldStatus !== "DELIVERED" && order.status === "DELIVERED") {
+          await sendReviewRequestEmail({
+            employeeId: existingOrder.employeeId,
+            orderId: order.id,
+          })
+        }
       }
     } catch (error) {
       console.error("Failed to send order status changed email:", error)

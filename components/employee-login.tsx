@@ -34,6 +34,7 @@ export function EmployeeLogin({ onLogin }: EmployeeLoginProps) {
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [companyAreas, setCompanyAreas] = useState<CompanyArea[]>([])
+  const [microsoftSsoEnabled, setMicrosoftSsoEnabled] = useState(false)
   
   // Passwort vergessen
   const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false)
@@ -65,6 +66,11 @@ export function EmployeeLogin({ onLogin }: EmployeeLoginProps) {
           setCompanyAreas(data)
         }
       })
+      .catch(console.error)
+
+    fetch("/api/settings")
+      .then((res) => res.json())
+      .then((data) => setMicrosoftSsoEnabled(Boolean(data?.microsoftSsoEnabled)))
       .catch(console.error)
   }, [])
 
@@ -183,6 +189,14 @@ export function EmployeeLogin({ onLogin }: EmployeeLoginProps) {
           </div>
         </CardHeader>
         <CardContent>
+          {microsoftSsoEnabled && (
+            <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
+              <p className="font-medium">Microsoft SSO ist vorbereitet</p>
+              <p className="mt-1 text-blue-800">
+                Der Mitarbeiterzugang kann serverseitig per Microsoft Entra / Azure AD erweitert werden. Bis zur finalen Aktivierung bleibt der Login per E-Mail und Passwort verfügbar.
+              </p>
+            </div>
+          )}
           <Tabs defaultValue="login" className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-4">
               <TabsTrigger value="login">

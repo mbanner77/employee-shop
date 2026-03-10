@@ -1,27 +1,76 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
-import { headers } from "next/headers"
+import { sendOrderStatusChangedEmail, sendReviewRequestEmail } from "@/lib/email"
+import { getAuthenticatedSupplier } from "@/lib/supplier-auth"
 
 // Authentifiziere Lieferanten via API-Key
 async function authenticateSupplier() {
-  const headersList = await headers()
-  const authHeader = headersList.get("authorization")
-  
-  if (!authHeader?.startsWith("Bearer ")) {
-    return null
+  return getAuthenticatedSupplier()
+}
+
+function deriveOrderStatus(itemStatuses: string[]) {
+  if (itemStatuses.length === 0) {
+    return "PENDING"
   }
-  
-  const apiKey = authHeader.substring(7)
-  const supplier = await prisma.supplier.findUnique({
-    where: { apiKey },
-    select: { id: true, companyName: true, apiActive: true, isActive: true },
+
+  if (itemStatuses.every((status) => status === "DELIVERED")) {
+    return "DELIVERED"
+  }
+
+  if (itemStatuses.every((status) => status === "SHIPPED" || status === "DELIVERED")) {
+    return "SHIPPED"
+  }
+
+  if (itemStatuses.some((status) => status === "PROCESSING" || status === "SHIPPED" || status === "DELIVERED")) {
+    return "PROCESSING"
+  }
+
+  return "PENDING"
+}
+
+async function updateOrderState(orderId: string, oldStatus: string, employeeId: string | null, data?: { trackingNumber?: string; trackingUrl?: string | null }) {
+  const allItems = await prisma.orderItem.findMany({
+    where: { orderId },
+    select: { itemStatus: true },
   })
-  
-  if (!supplier || !supplier.apiActive || !supplier.isActive) {
-    return null
+
+  const nextStatus = deriveOrderStatus(allItems.map((item) => item.itemStatus))
+  const order = await prisma.order.update({
+    where: { id: orderId },
+    data: {
+      status: nextStatus,
+      ...(data || {}),
+    },
+    include: {
+      items: {
+        include: {
+          product: true,
+        },
+      },
+    },
+  })
+
+  try {
+    if (employeeId && oldStatus !== order.status) {
+      await sendOrderStatusChangedEmail({
+        employeeId,
+        orderId: order.id,
+        oldStatus,
+        newStatus: order.status,
+      })
+
+      if (oldStatus !== "DELIVERED" && order.status === "DELIVERED") {
+        await sendReviewRequestEmail({
+          employeeId,
+          orderId: order.id,
+        })
+      }
+    }
+  } catch (error) {
+    console.error("Supplier order notification error:", error)
   }
-  
-  return supplier
+
+  return order
 }
 
 // POST /api/supplier/orders/{id}/bestaetigen - Bestellung bestätigen
@@ -38,6 +87,14 @@ export async function POST(
     const { id: orderId } = await params
     const body = await request.json()
     const action = body.action || "confirm"
+    const existingOrder = await prisma.order.findUnique({
+      where: { id: orderId },
+      select: { status: true, employeeId: true },
+    })
+
+    if (!existingOrder) {
+      return NextResponse.json({ error: "Order not found" }, { status: 404 })
+    }
     
     // Prüfe ob Bestellung diesem Lieferanten gehört
     const orderItems = await prisma.orderItem.findMany({
@@ -59,26 +116,13 @@ export async function POST(
         where: { orderId, supplierId: supplier.id },
         data: { itemStatus: "PROCESSING" },
       })
-      
-      // Prüfe ob alle Items in Bearbeitung sind
-      const allItems = await prisma.orderItem.findMany({
-        where: { orderId },
-        select: { itemStatus: true },
-      })
-      
-      const allProcessing = allItems.every((i: { itemStatus: string }) => i.itemStatus === "PROCESSING" || i.itemStatus === "SHIPPED" || i.itemStatus === "DELIVERED")
-      
-      if (allProcessing) {
-        await prisma.order.update({
-          where: { id: orderId },
-          data: { status: "PROCESSING" },
-        })
-      }
+      const order = await updateOrderState(orderId, existingOrder.status, existingOrder.employeeId)
       
       return NextResponse.json({ 
         success: true, 
         message: "Bestellung bestätigt",
         expectedDelivery,
+        status: order.status,
       })
     }
     
@@ -93,22 +137,9 @@ export async function POST(
         where: { orderId, supplierId: supplier.id },
         data: { itemStatus: newStatus },
       })
+      const order = await updateOrderState(orderId, existingOrder.status, existingOrder.employeeId)
       
-      // Aktualisiere Hauptbestellung wenn alle Items gleichen Status haben
-      const allItems = await prisma.orderItem.findMany({
-        where: { orderId },
-        select: { itemStatus: true },
-      })
-      
-      const allSameStatus = allItems.every((i: { itemStatus: string }) => i.itemStatus === newStatus)
-      if (allSameStatus) {
-        await prisma.order.update({
-          where: { id: orderId },
-          data: { status: newStatus },
-        })
-      }
-      
-      return NextResponse.json({ success: true, status: newStatus })
+      return NextResponse.json({ success: true, status: order.status })
     }
     
     if (action === "tracking") {
@@ -119,24 +150,20 @@ export async function POST(
         return NextResponse.json({ error: "Tracking number required" }, { status: 400 })
       }
       
-      await prisma.order.update({
-        where: { id: orderId },
-        data: { 
-          trackingNumber,
-          trackingUrl,
-          status: "SHIPPED",
-        },
-      })
-      
       await prisma.orderItem.updateMany({
         where: { orderId, supplierId: supplier.id },
         data: { itemStatus: "SHIPPED" },
+      })
+      const order = await updateOrderState(orderId, existingOrder.status, existingOrder.employeeId, {
+        trackingNumber,
+        trackingUrl: trackingUrl || null,
       })
       
       return NextResponse.json({ 
         success: true, 
         message: "Tracking hinzugefügt",
         trackingNumber,
+        status: order.status,
       })
     }
     
@@ -160,6 +187,18 @@ export async function PATCH(
     
     const { id: orderId } = await params
     const body = await request.json()
+
+    const orderItems = await prisma.orderItem.findMany({
+      where: {
+        orderId,
+        supplierId: supplier.id,
+      },
+      select: { id: true },
+    })
+
+    if (orderItems.length === 0) {
+      return NextResponse.json({ error: "Order not found" }, { status: 404 })
+    }
     
     await prisma.order.update({
       where: { id: orderId },
