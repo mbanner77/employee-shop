@@ -5,7 +5,7 @@ import { cookies } from "next/headers"
 export async function PUT(request: Request) {
   try {
     const cookieStore = await cookies()
-    const session = cookieStore.get("employee-session")
+    const session = cookieStore.get("employee_session")
     
     if (!session) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 })

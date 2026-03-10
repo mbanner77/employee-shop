@@ -4,7 +4,7 @@ import { cookies } from "next/headers"
 
 async function getEmployeeId(): Promise<string | null> {
   const cookieStore = await cookies()
-  const session = cookieStore.get("employee-session")
+  const session = cookieStore.get("employee_session")
   if (!session) return null
   
   const employee = await prisma.employee.findUnique({ 

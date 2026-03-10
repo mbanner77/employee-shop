@@ -9,8 +9,9 @@ import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Loader2, Save, Mail, Settings, Store, Send } from "lucide-react"
 import { AdminCompanyAreas } from "./admin-company-areas"
+import { AdminMicrosoft365Settings, type Microsoft365SettingsValue } from "./microsoft-365-settings"
 
-interface Settings {
+interface Settings extends Microsoft365SettingsValue {
   smtpHost: string
   smtpPort: number
   smtpUser: string
@@ -23,7 +24,6 @@ interface Settings {
   adminEmail: string
   shopName: string
   maxItemsPerOrder: number
-  microsoftSsoEnabled?: boolean
 }
 
 export function AdminSettings() {
@@ -181,22 +181,10 @@ export function AdminSettings() {
               <Settings className="h-5 w-5" />
               Integrationen
             </CardTitle>
-            <CardDescription>SSO-Status und aktuelle CMS-Basis des Shops</CardDescription>
+            <CardDescription>SSO-Status, Microsoft-365-Konfiguration und aktuelle CMS-Basis des Shops</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-start justify-between gap-4 rounded-lg border p-4">
-              <div className="space-y-1">
-                <p className="font-medium">Microsoft SSO</p>
-                <p className="text-sm text-muted-foreground">
-                  {settings.microsoftSsoEnabled
-                    ? "Microsoft Entra / Azure AD ist serverseitig konfiguriert und kann für den Mitarbeiter-Login genutzt werden."
-                    : "Nicht konfiguriert. Für die Aktivierung werden MICROSOFT_CLIENT_ID, MICROSOFT_CLIENT_SECRET und MICROSOFT_TENANT_ID benötigt."}
-                </p>
-              </div>
-              <Badge variant={settings.microsoftSsoEnabled ? "secondary" : "outline"}>
-                {settings.microsoftSsoEnabled ? "Vorbereitet" : "Nicht aktiv"}
-              </Badge>
-            </div>
+            <AdminMicrosoft365Settings settings={settings} onRefresh={fetchSettings} />
             <div className="flex items-start justify-between gap-4 rounded-lg border p-4">
               <div className="space-y-1">
                 <p className="font-medium">CMS-Basis</p>
