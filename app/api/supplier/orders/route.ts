@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { getAuthenticatedSupplier } from "@/lib/supplier-auth"
+import { getSupplierOrderNote } from "@/lib/supplier-order-notes"
 
 // Lieferanten-API: Bestellungen abrufen (mit API-Key Authentifizierung)
 export async function GET(request: Request) {
@@ -36,6 +37,7 @@ export async function GET(request: Request) {
             status: true,
             createdAt: true,
             language: true,
+            supplierNotes: true,
             employee: {
               select: {
                 id: true,
@@ -65,6 +67,7 @@ export async function GET(request: Request) {
       if (!orderMap.has(orderId)) {
         orderMap.set(orderId, {
           ...item.order,
+          supplierNotes: getSupplierOrderNote(item.order.supplierNotes, supplier.id),
           items: [],
         })
       }

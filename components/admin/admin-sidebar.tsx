@@ -15,7 +15,7 @@ const menuItems = [
   { id: "products", label: "Produkte", icon: Package },
   { id: "employees", label: "Mitarbeiter", icon: Users },
   { id: "suppliers", label: "Lieferanten", icon: Truck },
-  { id: "users", label: "Benutzer", icon: UserCog },
+  { id: "users", label: "Administratoren", icon: UserCog },
   { id: "reports", label: "Auswertungen", icon: FileBarChart },
   { id: "settings", label: "Einstellungen", icon: Settings },
 ] as const

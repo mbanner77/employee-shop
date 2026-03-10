@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client"
+import crypto from "crypto"
 
 const prisma = new PrismaClient()
 
@@ -243,13 +244,18 @@ async function main() {
   }
 
   // Create Supplier User for portal access
-  const existingSupplier = await prisma.supplierUser.count()
+  const existingSupplier = await prisma.supplier.count()
   if (existingSupplier === 0) {
     console.log("Creating supplier user...")
-    await prisma.supplierUser.create({
+    await prisma.supplier.create({
       data: {
-        username: "supplier",
-        password: process.env.SUPPLIER_PASSWORD || "supplier2025",
+        companyName: "Default Supplier",
+        email: "supplier@realcore.de",
+        portalActive: true,
+        portalUsername: "supplier",
+        portalPassword: crypto.createHash("sha256").update(process.env.SUPPLIER_PASSWORD || "supplier2025").digest("hex"),
+        apiActive: false,
+        isActive: true,
       },
     })
     console.log("Created supplier user")

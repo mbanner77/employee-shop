@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
+import crypto from "crypto"
 
 const defaultProducts = [
   {
@@ -149,7 +150,7 @@ export async function GET() {
   try {
     const existingProducts = await prisma.product.count()
     const existingAdmin = await prisma.adminUser.count()
-    const existingSupplier = await prisma.supplierUser.count()
+    const existingSupplier = await prisma.supplier.count()
 
     // Only allow GET seeding if database is completely empty
     if (existingProducts > 0 || existingAdmin > 0 || existingSupplier > 0) {
@@ -176,10 +177,15 @@ export async function GET() {
     })
 
     // Create default supplier user
-    await prisma.supplierUser.create({
+    await prisma.supplier.create({
       data: {
-        username: "supplier",
-        password: process.env.SUPPLIER_PASSWORD || "supplier2025",
+        companyName: "Default Supplier",
+        email: "supplier@realcore.de",
+        portalActive: true,
+        portalUsername: "supplier",
+        portalPassword: crypto.createHash("sha256").update(process.env.SUPPLIER_PASSWORD || "supplier2025").digest("hex"),
+        apiActive: false,
+        isActive: true,
       },
     })
 
@@ -209,7 +215,7 @@ export async function POST(request: Request) {
     // Check if already seeded
     const existingProducts = await prisma.product.count()
     const existingAdmin = await prisma.adminUser.count()
-    const existingSupplier = await prisma.supplierUser.count()
+    const existingSupplier = await prisma.supplier.count()
 
     if (existingProducts === 0) {
       // Seed products
@@ -230,10 +236,15 @@ export async function POST(request: Request) {
 
     if (existingSupplier === 0) {
       // Create default supplier user
-      await prisma.supplierUser.create({
+      await prisma.supplier.create({
         data: {
-          username: "supplier",
-          password: process.env.SUPPLIER_PASSWORD || "supplier2025",
+          companyName: "Default Supplier",
+          email: "supplier@realcore.de",
+          portalActive: true,
+          portalUsername: "supplier",
+          portalPassword: crypto.createHash("sha256").update(process.env.SUPPLIER_PASSWORD || "supplier2025").digest("hex"),
+          apiActive: false,
+          isActive: true,
         },
       })
     }

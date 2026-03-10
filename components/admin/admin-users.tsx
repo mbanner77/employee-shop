@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Loader2, Plus, Pencil, Trash2, Truck, Eye, EyeOff, Shield } from "lucide-react"
+import { Loader2, Plus, Pencil, Trash2, Eye, EyeOff, Shield } from "lucide-react"
 
 interface User {
   id: string
@@ -15,20 +15,18 @@ interface User {
   createdAt: string
 }
 
-type UserType = "supplier" | "admin"
+type UserType = "admin"
 
 export function AdminUsers() {
-  const [supplierUsers, setSupplierUsers] = useState<User[]>([])
   const [adminUsers, setAdminUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<User | null>(null)
-  const [editingType, setEditingType] = useState<UserType>("supplier")
   const [formData, setFormData] = useState({ username: "", password: "" })
   const [showPassword, setShowPassword] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
-  const [activeTab, setActiveTab] = useState<UserType>("supplier")
+  const [activeTab, setActiveTab] = useState<UserType>("admin")
 
   useEffect(() => {
     fetchAllUsers()
@@ -36,14 +34,7 @@ export function AdminUsers() {
 
   const fetchAllUsers = async () => {
     try {
-      const [supplierRes, adminRes] = await Promise.all([
-        fetch("/api/admin/users"),
-        fetch("/api/admin/admins"),
-      ])
-      if (supplierRes.ok) {
-        const data = await supplierRes.json()
-        setSupplierUsers(data)
-      }
+      const adminRes = await fetch("/api/admin/admins")
       if (adminRes.ok) {
         const data = await adminRes.json()
         setAdminUsers(data)
@@ -55,29 +46,23 @@ export function AdminUsers() {
     }
   }
 
-  const openCreateDialog = (type: UserType) => {
+  const openCreateDialog = () => {
     setEditingUser(null)
-    setEditingType(type)
     setFormData({ username: "", password: "" })
     setError("")
     setDialogOpen(true)
   }
 
-  const openEditDialog = (user: User, type: UserType) => {
+  const openEditDialog = (user: User) => {
     setEditingUser(user)
-    setEditingType(type)
     setFormData({ username: user.username, password: "" })
     setError("")
     setDialogOpen(true)
   }
 
-  const getApiPath = (type: UserType) => type === "admin" ? "/api/admin/admins" : "/api/admin/users"
-
   const handleSave = async () => {
     setError("")
     setSaving(true)
-
-    const apiPath = getApiPath(editingType)
 
     try {
       if (editingUser) {
@@ -90,7 +75,7 @@ export function AdminUsers() {
           updateData.password = formData.password
         }
 
-        const response = await fetch(`${apiPath}/${editingUser.id}`, {
+        const response = await fetch(`/api/admin/admins/${editingUser.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(updateData),
@@ -108,7 +93,7 @@ export function AdminUsers() {
           return
         }
 
-        const response = await fetch(apiPath, {
+        const response = await fetch("/api/admin/admins", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(formData),
@@ -130,13 +115,11 @@ export function AdminUsers() {
     }
   }
 
-  const handleDelete = async (user: User, type: UserType) => {
-    const label = type === "admin" ? "Administrator" : "Lieferant"
-    if (!confirm(`${label} "${user.username}" wirklich löschen?`)) return
+  const handleDelete = async (user: User) => {
+    if (!confirm(`Administrator "${user.username}" wirklich löschen?`)) return
 
     try {
-      const apiPath = getApiPath(type)
-      const response = await fetch(`${apiPath}/${user.id}`, {
+      const response = await fetch(`/api/admin/admins/${user.id}`, {
         method: "DELETE",
       })
       if (response.ok) {
@@ -150,10 +133,8 @@ export function AdminUsers() {
     }
   }
 
-  const renderUserList = (users: User[], type: UserType) => {
-    const Icon = type === "admin" ? Shield : Truck
-    const label = type === "admin" ? "Administrator" : "Lieferant"
-    const emptyText = type === "admin" ? "Keine Administratoren angelegt" : "Keine Lieferanten angelegt"
+  const renderUserList = (users: User[]) => {
+    const emptyText = "Keine Administratoren angelegt"
 
     return (
       <div className="space-y-3">
@@ -170,7 +151,7 @@ export function AdminUsers() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Icon className="h-5 w-5 text-primary" />
+                      <Shield className="h-5 w-5 text-primary" />
                     </div>
                     <div>
                       <div className="font-medium">{user.username}</div>
@@ -180,10 +161,10 @@ export function AdminUsers() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" onClick={() => openEditDialog(user, type)}>
+                    <Button variant="ghost" size="icon" onClick={() => openEditDialog(user)}>
                       <Pencil className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(user, type)}>
+                    <Button variant="ghost" size="icon" onClick={() => handleDelete(user)}>
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </div>
@@ -207,12 +188,12 @@ export function AdminUsers() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Benutzerverwaltung</h1>
-        <p className="text-muted-foreground">Verwalte Admin- und Lieferanten-Zugänge</p>
+        <h1 className="text-2xl font-bold text-foreground">Administratoren</h1>
+        <p className="text-muted-foreground">Verwalte die Zugänge für das Admin-Backend</p>
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-1">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
@@ -224,44 +205,25 @@ export function AdminUsers() {
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <Truck className="h-8 w-8 text-primary" />
-              <div>
-                <div className="text-2xl font-bold">{supplierUsers.length}</div>
-                <div className="text-sm text-muted-foreground">Lieferanten-Accounts</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Tabs for User Types */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as UserType)}>
         <div className="flex items-center justify-between">
           <TabsList>
-            <TabsTrigger value="supplier" className="gap-2">
-              <Truck className="h-4 w-4" />
-              Lieferanten
-            </TabsTrigger>
             <TabsTrigger value="admin" className="gap-2">
               <Shield className="h-4 w-4" />
               Administratoren
             </TabsTrigger>
           </TabsList>
-          <Button onClick={() => openCreateDialog(activeTab)}>
+          <Button onClick={() => openCreateDialog()}>
             <Plus className="h-4 w-4 mr-2" />
-            {activeTab === "admin" ? "Neuer Admin" : "Neuer Lieferant"}
+            Neuer Admin
           </Button>
         </div>
 
-        <TabsContent value="supplier" className="mt-4">
-          {renderUserList(supplierUsers, "supplier")}
-        </TabsContent>
-
         <TabsContent value="admin" className="mt-4">
-          {renderUserList(adminUsers, "admin")}
+          {renderUserList(adminUsers)}
         </TabsContent>
       </Tabs>
 
@@ -270,10 +232,7 @@ export function AdminUsers() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {editingUser 
-                ? (editingType === "admin" ? "Administrator bearbeiten" : "Lieferant bearbeiten")
-                : (editingType === "admin" ? "Neuer Administrator" : "Neuer Lieferant")
-              }
+              {editingUser ? "Administrator bearbeiten" : "Neuer Administrator"}
             </DialogTitle>
           </DialogHeader>
 

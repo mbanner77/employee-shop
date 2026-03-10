@@ -20,17 +20,12 @@ export async function GET(
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
     }
 
-    const { id } = await params
-    const supplier = await prisma.supplierUser.findUnique({
-      where: { id },
-      select: { id: true, username: true, createdAt: true },
-    })
+    await params
 
-    if (!supplier) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
-    }
-
-    return NextResponse.json(supplier)
+    return NextResponse.json(
+      { error: "Deprecated endpoint. Use /api/admin/suppliers for supplier access management." },
+      { status: 410 },
+    )
   } catch (error) {
     console.error("Failed to fetch supplier user:", error)
     return NextResponse.json({ error: "Failed to fetch user" }, { status: 500 })
@@ -47,32 +42,13 @@ export async function PATCH(
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
     }
 
-    const { id } = await params
-    const body = await request.json()
+    await params
+    await request.json()
 
-    const updateData: { username?: string; password?: string } = {}
-
-    if (body.username) {
-      const existing = await prisma.supplierUser.findFirst({
-        where: { username: body.username, NOT: { id } },
-      })
-      if (existing) {
-        return NextResponse.json({ error: "Username already exists" }, { status: 400 })
-      }
-      updateData.username = body.username
-    }
-
-    if (body.password) {
-      updateData.password = body.password
-    }
-
-    const supplier = await prisma.supplierUser.update({
-      where: { id },
-      data: updateData,
-      select: { id: true, username: true, createdAt: true },
-    })
-
-    return NextResponse.json(supplier)
+    return NextResponse.json(
+      { error: "Deprecated endpoint. Use /api/admin/suppliers for supplier access management." },
+      { status: 410 },
+    )
   } catch (error) {
     console.error("Failed to update supplier user:", error)
     return NextResponse.json({ error: "Failed to update user" }, { status: 500 })
@@ -89,10 +65,12 @@ export async function DELETE(
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
     }
 
-    const { id } = await params
-    await prisma.supplierUser.delete({ where: { id } })
+    await params
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json(
+      { error: "Deprecated endpoint. Use /api/admin/suppliers for supplier access management." },
+      { status: 410 },
+    )
   } catch (error) {
     console.error("Failed to delete supplier user:", error)
     return NextResponse.json({ error: "Failed to delete user" }, { status: 500 })

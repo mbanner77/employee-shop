@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { sendOrderStatusChangedEmail, sendReviewRequestEmail } from "@/lib/email"
+import { upsertSupplierOrderNote } from "@/lib/supplier-order-notes"
 import { getAuthenticatedSupplier } from "@/lib/supplier-auth"
 
 // Authentifiziere Lieferanten via API-Key
@@ -199,13 +200,20 @@ export async function PATCH(
     if (orderItems.length === 0) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 })
     }
+
+    const existingOrder = await prisma.order.findUnique({
+      where: { id: orderId },
+      select: { supplierNotes: true },
+    })
     
     await prisma.order.update({
       where: { id: orderId },
-      data: { supplierNotes: body.notes },
+      data: {
+        supplierNotes: upsertSupplierOrderNote(existingOrder?.supplierNotes, supplier.id, body.notes),
+      },
     })
     
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true, notes: body.notes?.trim() || null })
   } catch (error) {
     console.error("Supplier notes error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })

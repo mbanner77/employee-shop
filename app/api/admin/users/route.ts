@@ -17,16 +17,10 @@ export async function GET() {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
     }
 
-    const suppliers = await prisma.supplierUser.findMany({
-      select: {
-        id: true,
-        username: true,
-        createdAt: true,
-      },
-      orderBy: { createdAt: "desc" },
-    })
-
-    return NextResponse.json(suppliers)
+    return NextResponse.json(
+      { error: "Deprecated endpoint. Use /api/admin/suppliers for supplier access management." },
+      { status: 410 },
+    )
   } catch (error) {
     console.error("Failed to fetch supplier users:", error)
     return NextResponse.json({ error: "Failed to fetch users" }, { status: 500 })
@@ -40,24 +34,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
     }
 
-    const body = await request.json()
-    const { username, password } = body
+    await request.json()
 
-    if (!username || !password) {
-      return NextResponse.json({ error: "Username and password required" }, { status: 400 })
-    }
-
-    const existing = await prisma.supplierUser.findUnique({ where: { username } })
-    if (existing) {
-      return NextResponse.json({ error: "Username already exists" }, { status: 400 })
-    }
-
-    const supplier = await prisma.supplierUser.create({
-      data: { username, password },
-      select: { id: true, username: true, createdAt: true },
-    })
-
-    return NextResponse.json(supplier, { status: 201 })
+    return NextResponse.json(
+      { error: "Deprecated endpoint. Use /api/admin/suppliers for supplier access management." },
+      { status: 410 },
+    )
   } catch (error) {
     console.error("Failed to create supplier user:", error)
     return NextResponse.json({ error: "Failed to create user" }, { status: 500 })
