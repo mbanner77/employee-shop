@@ -13,7 +13,7 @@ const menuItems = [
   { id: "stats", label: "Übersicht", icon: BarChart3 },
   { id: "orders", label: "Bestellungen", icon: ShoppingCart },
   { id: "products", label: "Produkte", icon: Package },
-  { id: "employees", label: "Mitarbeiter", icon: Users },
+  { id: "employees", label: "CRM", icon: Users },
   { id: "suppliers", label: "Lieferanten", icon: Truck },
   { id: "users", label: "Administratoren", icon: UserCog },
   { id: "reports", label: "Auswertungen", icon: FileBarChart },

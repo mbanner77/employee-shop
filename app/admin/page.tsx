@@ -7,7 +7,7 @@ import { AdminOrders } from "@/components/admin/admin-orders"
 import { AdminProducts } from "@/components/admin/admin-products"
 import { AdminStats } from "@/components/admin/admin-stats"
 import { AdminLogin } from "@/components/admin/admin-login"
-import { AdminEmployees } from "@/components/admin/admin-employees"
+import { AdminCRM } from "@/components/admin/admin-crm"
 import { AdminSettings } from "@/components/admin/admin-settings"
 import { AdminReports } from "@/components/admin/admin-reports"
 import { AdminUsers } from "@/components/admin/admin-users"
@@ -59,7 +59,7 @@ export default function AdminPage() {
           {activeView === "stats" && <AdminStats />}
           {activeView === "orders" && <AdminOrders />}
           {activeView === "products" && <AdminProducts />}
-          {activeView === "employees" && <AdminEmployees />}
+          {activeView === "employees" && <AdminCRM />}
           {activeView === "users" && <AdminUsers />}
           {activeView === "suppliers" && <AdminSuppliers />}
           {activeView === "reports" && <AdminReports />}
