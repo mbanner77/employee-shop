@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -27,8 +27,15 @@ interface Settings extends Microsoft365SettingsValue {
   maxItemsPerOrder: number
 }
 
+function cloneSettings(settings: Settings) {
+  return {
+    ...settings,
+  }
+}
+
 export function AdminSettings() {
   const [settings, setSettings] = useState<Settings | null>(null)
+  const [savedSettings, setSavedSettings] = useState<Settings | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [sendingTest, setSendingTest] = useState(false)
@@ -52,7 +59,8 @@ export function AdminSettings() {
         return
       }
       const data = await response.json()
-      setSettings(data)
+      setSettings(cloneSettings(data))
+      setSavedSettings(cloneSettings(data))
     } catch (error) {
       console.error("Failed to fetch settings:", error)
       setMessage({ type: "error", text: "Verbindungsfehler beim Laden der Einstellungen" })
@@ -60,6 +68,26 @@ export function AdminSettings() {
       setLoading(false)
     }
   }
+
+  const hasUnsavedChanges = useMemo(() => {
+    if (!settings || !savedSettings) {
+      return false
+    }
+
+    return JSON.stringify(settings) !== JSON.stringify(savedSettings)
+  }, [savedSettings, settings])
+
+  const settingsSummary = useMemo(() => {
+    if (!settings) {
+      return null
+    }
+
+    return {
+      emailConfigured: Boolean(settings.smtpHost && settings.smtpUser && settings.emailFrom),
+      microsoftConfigured: Boolean(settings.microsoftSsoConfigured),
+      notificationChannelsEnabled: [settings.notifyOnOrder, settings.notifyOnShipment].filter(Boolean).length,
+    }
+  }, [settings])
 
   const handleSave = async () => {
     if (!settings) return
@@ -93,6 +121,15 @@ export function AdminSettings() {
     if (settings) {
       setSettings({ ...settings, [key]: value })
     }
+  }
+
+  const handleDiscardChanges = () => {
+    if (!savedSettings) {
+      return
+    }
+
+    setSettings(cloneSettings(savedSettings))
+    setMessage(null)
   }
 
   const handleSendTestEmail = async () => {
@@ -140,14 +177,65 @@ export function AdminSettings() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Einstellungen</h1>
-        <p className="text-muted-foreground">Konfiguriere den Shop und E-Mail-Versand</p>
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-2xl font-bold text-foreground">Einstellungen</h1>
+            {hasUnsavedChanges ? <Badge>Ungespeicherte Änderungen</Badge> : <Badge variant="outline">Synchron</Badge>}
+          </div>
+          <p className="text-muted-foreground">Konfiguriere den Shop und E-Mail-Versand</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => void fetchSettings()} disabled={loading || saving || sendingTest}>
+            <Loader2 className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            Neu laden
+          </Button>
+          <Button variant="outline" onClick={handleDiscardChanges} disabled={!hasUnsavedChanges || saving}>
+            Änderungen verwerfen
+          </Button>
+        </div>
       </div>
 
       {message && (
         <div className={`p-4 rounded-lg ${message.type === "success" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
           {message.text}
+        </div>
+      )}
+
+      {settingsSummary && (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-2xl font-bold">{settings.shopName || "—"}</div>
+              <div className="text-sm text-muted-foreground">Aktueller Shop-Name</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-2xl font-bold">{settings.maxItemsPerOrder}</div>
+              <div className="text-sm text-muted-foreground">Max. Artikel pro Bestellung</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-2xl font-bold">{settingsSummary.notificationChannelsEnabled}</div>
+              <div className="text-sm text-muted-foreground">Aktive Benachrichtigungsregeln</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="flex items-center justify-between gap-3 pt-6">
+              <div>
+                <div className="font-medium">Systemstatus</div>
+                <div className="text-sm text-muted-foreground">
+                  {settingsSummary.emailConfigured ? "Mail konfiguriert" : "Mail offen"} ·{" "}
+                  {settingsSummary.microsoftConfigured ? "SSO bereit" : "SSO offen"}
+                </div>
+              </div>
+              <Badge variant={settingsSummary.emailConfigured && settingsSummary.microsoftConfigured ? "secondary" : "outline"}>
+                {settingsSummary.emailConfigured && settingsSummary.microsoftConfigured ? "Bereit" : "Prüfen"}
+              </Badge>
+            </CardContent>
+          </Card>
         </div>
       )}
 
@@ -369,7 +457,7 @@ export function AdminSettings() {
       </div>
 
       <div className="flex justify-end">
-        <Button onClick={handleSave} disabled={saving}>
+        <Button onClick={handleSave} disabled={saving || !hasUnsavedChanges}>
           {saving ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

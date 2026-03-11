@@ -1,5 +1,6 @@
 "use client"
 
+import { Suspense } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { Header } from "@/components/header"
@@ -8,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { CheckCircle2, Package, ClipboardList, Home, Mail, Truck } from "lucide-react"
 
-export default function OrderConfirmationPage() {
+function OrderConfirmationContent() {
   const searchParams = useSearchParams()
   const { text } = useAppTexts()
   const id = searchParams.get("id") || undefined
@@ -77,5 +78,28 @@ export default function OrderConfirmationPage() {
         </Card>
       </main>
     </div>
+  )
+}
+
+function OrderConfirmationFallback() {
+  return (
+    <div className="min-h-screen bg-muted/30">
+      <Header />
+      <main className="container mx-auto flex flex-col items-center justify-center px-4 py-24">
+        <Card className="w-full max-w-lg text-center">
+          <CardContent className="flex items-center justify-center py-12">
+            <CheckCircle2 className="h-8 w-8 animate-pulse text-muted-foreground" />
+          </CardContent>
+        </Card>
+      </main>
+    </div>
+  )
+}
+
+export default function OrderConfirmationPage() {
+  return (
+    <Suspense fallback={<OrderConfirmationFallback />}>
+      <OrderConfirmationContent />
+    </Suspense>
   )
 }

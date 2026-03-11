@@ -10,10 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { getAdminApiErrorMessage } from "@/lib/admin-client"
 import { appTextSections, type AppTextAdminEntry, type AppTextSection } from "@/lib/app-texts"
-import { Loader2, RefreshCcw, Save, Search } from "lucide-react"
+import { Copy, Loader2, RefreshCcw, Save, Search } from "lucide-react"
 import { toast } from "sonner"
 
 type SectionFilter = "all" | AppTextSection
+type StatusFilter = "all" | "customized" | "unsaved"
 
 type AdminTextResponse = {
   entries?: AppTextAdminEntry[]
@@ -23,6 +24,18 @@ function isCustomized(entry: AppTextAdminEntry) {
   return entry.values.de !== entry.defaults.de || entry.values.en !== entry.defaults.en
 }
 
+function cloneEntries(entries: AppTextAdminEntry[]) {
+  return entries.map((entry) => ({
+    ...entry,
+    defaults: {
+      ...entry.defaults,
+    },
+    values: {
+      ...entry.values,
+    },
+  }))
+}
+
 export function AdminAppTexts() {
   const [entries, setEntries] = useState<AppTextAdminEntry[]>([])
   const [savedEntries, setSavedEntries] = useState<AppTextAdminEntry[]>([])
@@ -30,6 +43,7 @@ export function AdminAppTexts() {
   const [saving, setSaving] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [section, setSection] = useState<SectionFilter>("all")
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
 
   const loadEntries = async () => {
     setLoading(true)
@@ -46,8 +60,8 @@ export function AdminAppTexts() {
 
       const data = (await response.json()) as AdminTextResponse
       const nextEntries = data.entries || []
-      setEntries(nextEntries)
-      setSavedEntries(nextEntries)
+      setEntries(cloneEntries(nextEntries))
+      setSavedEntries(cloneEntries(nextEntries))
     } catch (error) {
       console.error("Failed to load admin app texts:", error)
       toast.error("Verbindungsfehler beim Laden der App-Texte")
@@ -60,11 +74,29 @@ export function AdminAppTexts() {
     void loadEntries()
   }, [])
 
+  const savedEntriesByKey = useMemo(() => {
+    return new Map(savedEntries.map((entry) => [entry.key, entry]))
+  }, [savedEntries])
+
+  const unsavedCount = useMemo(() => {
+    return entries.filter((entry) => {
+      const savedEntry = savedEntriesByKey.get(entry.key)
+      return !savedEntry || entry.values.de !== savedEntry.values.de || entry.values.en !== savedEntry.values.en
+    }).length
+  }, [entries, savedEntriesByKey])
+
   const filteredEntries = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase()
 
     return entries.filter((entry) => {
       const matchesSection = section === "all" || entry.section === section
+      const matchesStatus =
+        statusFilter === "all" ||
+        (statusFilter === "customized" && isCustomized(entry)) ||
+        (statusFilter === "unsaved" && (() => {
+          const savedEntry = savedEntriesByKey.get(entry.key)
+          return !savedEntry || entry.values.de !== savedEntry.values.de || entry.values.en !== savedEntry.values.en
+        })())
       const matchesSearch =
         normalizedSearch.length === 0 ||
         entry.key.toLowerCase().includes(normalizedSearch) ||
@@ -72,22 +104,15 @@ export function AdminAppTexts() {
         entry.values.de.toLowerCase().includes(normalizedSearch) ||
         entry.values.en.toLowerCase().includes(normalizedSearch)
 
-      return matchesSection && matchesSearch
+      return matchesSection && matchesStatus && matchesSearch
     })
-  }, [entries, searchTerm, section])
+  }, [entries, savedEntriesByKey, searchTerm, section, statusFilter])
 
   const customizedCount = useMemo(() => entries.filter(isCustomized).length, [entries])
 
   const hasUnsavedChanges = useMemo(() => {
-    if (entries.length !== savedEntries.length) {
-      return true
-    }
-
-    return entries.some((entry, index) => {
-      const savedEntry = savedEntries[index]
-      return !savedEntry || entry.values.de !== savedEntry.values.de || entry.values.en !== savedEntry.values.en
-    })
-  }, [entries, savedEntries])
+    return unsavedCount > 0
+  }, [unsavedCount])
 
   const handleValueChange = (key: string, language: "de" | "en", value: string) => {
     setEntries((current) =>
@@ -103,6 +128,15 @@ export function AdminAppTexts() {
           : entry,
       ),
     )
+  }
+
+  const handleCopyKey = async (key: string) => {
+    try {
+      await navigator.clipboard.writeText(key)
+      toast.success("Text-Key kopiert")
+    } catch {
+      toast.error("Text-Key konnte nicht kopiert werden")
+    }
   }
 
   const handleResetEntry = (key: string) => {
@@ -133,6 +167,10 @@ export function AdminAppTexts() {
     )
   }
 
+  const handleDiscardChanges = () => {
+    setEntries(cloneEntries(savedEntries))
+  }
+
   const handleSave = async () => {
     setSaving(true)
 
@@ -155,8 +193,8 @@ export function AdminAppTexts() {
 
       const data = (await response.json()) as AdminTextResponse
       const nextEntries = data.entries || []
-      setEntries(nextEntries)
-      setSavedEntries(nextEntries)
+      setEntries(cloneEntries(nextEntries))
+      setSavedEntries(cloneEntries(nextEntries))
       toast.success("App-Texte gespeichert")
     } catch (error) {
       console.error("Failed to save admin app texts:", error)
@@ -174,6 +212,14 @@ export function AdminAppTexts() {
           <p className="text-muted-foreground">Pflege zentrale sichtbare Texte für Shop, Warenkorb und Bestellfluss in Deutsch und Englisch.</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => void loadEntries()} disabled={loading || saving}>
+            <RefreshCcw className="mr-2 h-4 w-4" />
+            Neu laden
+          </Button>
+          <Button variant="outline" onClick={handleDiscardChanges} disabled={loading || saving || !hasUnsavedChanges}>
+            <RefreshCcw className="mr-2 h-4 w-4" />
+            Änderungen verwerfen
+          </Button>
           <Button variant="outline" onClick={handleResetAll} disabled={loading || saving || entries.length === 0}>
             <RefreshCcw className="mr-2 h-4 w-4" />
             Alles auf Standard
@@ -200,8 +246,8 @@ export function AdminAppTexts() {
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold">{filteredEntries.length}</div>
-            <div className="text-sm text-muted-foreground">Aktuell gefiltert</div>
+            <div className="text-2xl font-bold">{unsavedCount}</div>
+            <div className="text-sm text-muted-foreground">Ungespeicherte Änderungen</div>
           </CardContent>
         </Card>
         <Card>
@@ -215,9 +261,9 @@ export function AdminAppTexts() {
       <Card>
         <CardHeader>
           <CardTitle>Filter</CardTitle>
-          <CardDescription>Suche nach Schlüssel, Bezeichnung oder aktuellem Textinhalt.</CardDescription>
+          <CardDescription>{filteredEntries.length} Treffer für die aktuelle Filterkombination.</CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-4 lg:grid-cols-[1fr_240px]">
+        <CardContent className="grid gap-4 lg:grid-cols-[1fr_240px_240px]">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="Suche nach Key oder Text..." className="pl-9" />
@@ -233,6 +279,16 @@ export function AdminAppTexts() {
                   {label}
                 </SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+          <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as StatusFilter)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Status wählen" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Alle Stati</SelectItem>
+              <SelectItem value="customized">Nur überschrieben</SelectItem>
+              <SelectItem value="unsaved">Nur ungespeichert</SelectItem>
             </SelectContent>
           </Select>
         </CardContent>
@@ -257,13 +313,24 @@ export function AdminAppTexts() {
                       <CardTitle className="text-base">{entry.label}</CardTitle>
                       <Badge variant="outline">{entry.sectionLabel}</Badge>
                       {isCustomized(entry) && <Badge>Überschrieben</Badge>}
+                      {(() => {
+                        const savedEntry = savedEntriesByKey.get(entry.key)
+                        const isUnsaved = !savedEntry || entry.values.de !== savedEntry.values.de || entry.values.en !== savedEntry.values.en
+                        return isUnsaved ? <Badge variant="secondary">Ungespeichert</Badge> : null
+                      })()}
                     </div>
                     <CardDescription className="font-mono text-xs">{entry.key}</CardDescription>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => handleResetEntry(entry.key)}>
-                    <RefreshCcw className="mr-2 h-4 w-4" />
-                    Auf Standard
-                  </Button>
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" size="sm" onClick={() => void handleCopyKey(entry.key)}>
+                      <Copy className="mr-2 h-4 w-4" />
+                      Key kopieren
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleResetEntry(entry.key)}>
+                      <RefreshCcw className="mr-2 h-4 w-4" />
+                      Auf Standard
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="grid gap-6 xl:grid-cols-2">
