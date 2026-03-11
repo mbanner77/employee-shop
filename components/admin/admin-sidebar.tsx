@@ -17,7 +17,7 @@ const menuItems = [
   { id: "suppliers", label: "Lieferanten", icon: Truck },
   { id: "users", label: "Administratoren", icon: UserCog },
   { id: "reports", label: "Auswertungen", icon: FileBarChart },
-  { id: "settings", label: "Einstellungen", icon: Settings },
+  { id: "settings", label: "CMS", icon: Settings },
 ] as const
 
 export function AdminSidebar({ activeView, onViewChange }: AdminSidebarProps) {

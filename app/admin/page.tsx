@@ -1,14 +1,14 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Header } from "@/components/header"
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
+import { AdminCms } from "@/components/admin/admin-cms"
 import { AdminOrders } from "@/components/admin/admin-orders"
 import { AdminProducts } from "@/components/admin/admin-products"
 import { AdminStats } from "@/components/admin/admin-stats"
 import { AdminLogin } from "@/components/admin/admin-login"
 import { AdminCRM } from "@/components/admin/admin-crm"
-import { AdminSettings } from "@/components/admin/admin-settings"
 import { AdminReports } from "@/components/admin/admin-reports"
 import { AdminUsers } from "@/components/admin/admin-users"
 import { AdminSuppliers } from "@/components/admin/admin-suppliers"
@@ -20,20 +20,32 @@ export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
-  useEffect(() => {
-    // Check if already authenticated (session storage)
-    const auth = sessionStorage.getItem("admin-auth")
-    if (auth === "true") {
-      setIsAuthenticated(true)
+  const checkAuth = useCallback(async () => {
+    setIsLoading(true)
+
+    try {
+      const response = await fetch("/api/admin/me", {
+        cache: "no-store",
+      })
+      const data = await response.json()
+      setIsAuthenticated(Boolean(data?.authenticated))
+    } catch {
+      setIsAuthenticated(false)
+    } finally {
+      setIsLoading(false)
     }
-    setIsLoading(false)
   }, [])
 
-  const handleLogin = (success: boolean) => {
-    if (success) {
-      sessionStorage.setItem("admin-auth", "true")
-      setIsAuthenticated(true)
+  useEffect(() => {
+    void checkAuth()
+  }, [checkAuth])
+
+  const handleLogin = async (success: boolean) => {
+    if (!success) {
+      return
     }
+
+    await checkAuth()
   }
 
   // Show loading state
@@ -63,7 +75,7 @@ export default function AdminPage() {
           {activeView === "users" && <AdminUsers />}
           {activeView === "suppliers" && <AdminSuppliers />}
           {activeView === "reports" && <AdminReports />}
-          {activeView === "settings" && <AdminSettings />}
+          {activeView === "settings" && <AdminCms />}
         </main>
       </div>
     </div>

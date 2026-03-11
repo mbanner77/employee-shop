@@ -15,6 +15,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
+import { getAdminApiErrorMessage } from "@/lib/admin-client"
 import { Loader2, Save, Settings, ShieldCheck } from "lucide-react"
 
 export interface Microsoft365SettingsValue {
@@ -136,14 +137,17 @@ export function AdminMicrosoft365Settings({ onRefresh, settings }: AdminMicrosof
       const response = await fetch("/api/admin/integrations/microsoft/test", {
         method: "POST",
       })
-      const data = (await response.json()) as MicrosoftCheckResult & { error?: string }
 
       if (!response.ok) {
         setCheckResult(null)
-        setMessage({ type: "error", text: data.error || "Microsoft-365-Prüfung fehlgeschlagen" })
+        setMessage({
+          type: "error",
+          text: await getAdminApiErrorMessage(response, "Microsoft-365-Prüfung fehlgeschlagen"),
+        })
         return
       }
 
+      const data = (await response.json()) as MicrosoftCheckResult
       setCheckResult(data)
     } catch {
       setCheckResult(null)
@@ -179,13 +183,15 @@ export function AdminMicrosoft365Settings({ onRefresh, settings }: AdminMicrosof
         }),
       })
 
-      const data = await response.json()
-
       if (!response.ok) {
-        setMessage({ type: "error", text: data.error || "Microsoft-365-Einstellungen konnten nicht gespeichert werden" })
+        setMessage({
+          type: "error",
+          text: await getAdminApiErrorMessage(response, "Microsoft-365-Einstellungen konnten nicht gespeichert werden"),
+        })
         return
       }
 
+      await response.json()
       setMessage({ type: "success", text: "Microsoft-365-Einstellungen gespeichert" })
       setConfigDialogOpen(false)
       await onRefresh()

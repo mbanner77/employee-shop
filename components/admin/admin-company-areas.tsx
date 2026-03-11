@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
+import { getAdminApiErrorMessage } from "@/lib/admin-client"
 import { Loader2, Plus, Trash2, GripVertical, Building, Save } from "lucide-react"
 
 interface CompanyArea {
@@ -29,13 +30,21 @@ export function AdminCompanyAreas() {
 
   const fetchCompanyAreas = async () => {
     try {
-      const response = await fetch("/api/company-areas?all=true")
-      if (response.ok) {
-        const data = await response.json()
-        setCompanyAreas(data)
+      const response = await fetch("/api/company-areas?all=true", {
+        cache: "no-store",
+      })
+      if (!response.ok) {
+        setMessage({
+          type: "error",
+          text: await getAdminApiErrorMessage(response, "Firmenbereiche konnten nicht geladen werden"),
+        })
+        return
       }
+      const data = await response.json()
+      setCompanyAreas(data)
     } catch (error) {
       console.error("Failed to fetch company areas:", error)
+      setMessage({ type: "error", text: "Verbindungsfehler beim Laden der Firmenbereiche" })
     } finally {
       setLoading(false)
     }
@@ -59,10 +68,12 @@ export function AdminCompanyAreas() {
       if (response.ok) {
         setNewAreaName("")
         setMessage({ type: "success", text: "Firmenbereich hinzugefügt" })
-        fetchCompanyAreas()
+        await fetchCompanyAreas()
       } else {
-        const data = await response.json()
-        setMessage({ type: "error", text: data.error || "Fehler beim Hinzufügen" })
+        setMessage({
+          type: "error",
+          text: await getAdminApiErrorMessage(response, "Fehler beim Hinzufügen"),
+        })
       }
     } catch {
       setMessage({ type: "error", text: "Verbindungsfehler" })
@@ -81,10 +92,12 @@ export function AdminCompanyAreas() {
 
       if (response.ok) {
         setMessage({ type: "success", text: "Firmenbereich aktualisiert" })
-        fetchCompanyAreas()
+        await fetchCompanyAreas()
       } else {
-        const data = await response.json()
-        setMessage({ type: "error", text: data.error || "Fehler beim Aktualisieren" })
+        setMessage({
+          type: "error",
+          text: await getAdminApiErrorMessage(response, "Fehler beim Aktualisieren"),
+        })
       }
     } catch {
       setMessage({ type: "error", text: "Verbindungsfehler" })
@@ -101,10 +114,12 @@ export function AdminCompanyAreas() {
 
       if (response.ok) {
         setMessage({ type: "success", text: "Firmenbereich gelöscht" })
-        fetchCompanyAreas()
+        await fetchCompanyAreas()
       } else {
-        const data = await response.json()
-        setMessage({ type: "error", text: data.error || "Fehler beim Löschen" })
+        setMessage({
+          type: "error",
+          text: await getAdminApiErrorMessage(response, "Fehler beim Löschen"),
+        })
       }
     } catch {
       setMessage({ type: "error", text: "Verbindungsfehler" })

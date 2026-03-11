@@ -26,9 +26,15 @@ export async function GET(request: Request) {
   try {
     const settings = await getOrCreateSettings()
     const { appTextOverrides: _appTextOverrides, ...settingsResponse } = settings
+    const { searchParams } = new URL(request.url)
+    const adminScope = searchParams.get("scope") === "admin"
 
     const isAdmin = await isAdminAuthenticated()
     const microsoftConfiguration = resolveMicrosoftSsoConfiguration(settings, request)
+
+    if (!isAdmin && adminScope) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
+    }
 
     if (!isAdmin) {
       return NextResponse.json({

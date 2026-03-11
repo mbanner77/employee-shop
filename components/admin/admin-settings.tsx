@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
+import { getAdminApiErrorMessage } from "@/lib/admin-client"
 import { Loader2, Save, Mail, Settings, Store, Send } from "lucide-react"
 import { AdminCompanyAreas } from "./admin-company-areas"
 import { AdminMicrosoft365Settings, type Microsoft365SettingsValue } from "./microsoft-365-settings"
@@ -40,13 +41,21 @@ export function AdminSettings() {
 
   const fetchSettings = async () => {
     try {
-      const response = await fetch("/api/settings")
-      if (response.ok) {
-        const data = await response.json()
-        setSettings(data)
+      const response = await fetch("/api/settings?scope=admin", {
+        cache: "no-store",
+      })
+      if (!response.ok) {
+        setMessage({
+          type: "error",
+          text: await getAdminApiErrorMessage(response, "Einstellungen konnten nicht geladen werden"),
+        })
+        return
       }
+      const data = await response.json()
+      setSettings(data)
     } catch (error) {
       console.error("Failed to fetch settings:", error)
+      setMessage({ type: "error", text: "Verbindungsfehler beim Laden der Einstellungen" })
     } finally {
       setLoading(false)
     }
@@ -66,9 +75,12 @@ export function AdminSettings() {
 
       if (response.ok) {
         setMessage({ type: "success", text: "Einstellungen gespeichert" })
-        fetchSettings()
+        await fetchSettings()
       } else {
-        setMessage({ type: "error", text: "Speichern fehlgeschlagen" })
+        setMessage({
+          type: "error",
+          text: await getAdminApiErrorMessage(response, "Speichern fehlgeschlagen"),
+        })
       }
     } catch {
       setMessage({ type: "error", text: "Verbindungsfehler" })
@@ -98,12 +110,14 @@ export function AdminSettings() {
         body: JSON.stringify({ email: testEmail }),
       })
 
-      const data = await response.json()
-
       if (response.ok) {
+        const data = await response.json()
         setMessage({ type: "success", text: data.message })
       } else {
-        setMessage({ type: "error", text: data.error || "Senden fehlgeschlagen" })
+        setMessage({
+          type: "error",
+          text: await getAdminApiErrorMessage(response, "Senden fehlgeschlagen"),
+        })
       }
     } catch {
       setMessage({ type: "error", text: "Verbindungsfehler" })

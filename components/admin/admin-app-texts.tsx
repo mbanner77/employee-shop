@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { getAdminApiErrorMessage } from "@/lib/admin-client"
 import { appTextSections, type AppTextAdminEntry, type AppTextSection } from "@/lib/app-texts"
 import { Loader2, RefreshCcw, Save, Search } from "lucide-react"
 import { toast } from "sonner"
@@ -37,13 +38,13 @@ export function AdminAppTexts() {
       const response = await fetch("/api/admin/crm/content/texts", {
         cache: "no-store",
       })
-      const data = (await response.json()) as AdminTextResponse & { error?: string }
 
       if (!response.ok) {
-        toast.error(data.error || "App-Texte konnten nicht geladen werden")
+        toast.error(await getAdminApiErrorMessage(response, "App-Texte konnten nicht geladen werden"))
         return
       }
 
+      const data = (await response.json()) as AdminTextResponse
       const nextEntries = data.entries || []
       setEntries(nextEntries)
       setSavedEntries(nextEntries)
@@ -146,13 +147,13 @@ export function AdminAppTexts() {
           })),
         }),
       })
-      const data = (await response.json()) as AdminTextResponse & { error?: string }
 
       if (!response.ok) {
-        toast.error(data.error || "App-Texte konnten nicht gespeichert werden")
+        toast.error(await getAdminApiErrorMessage(response, "App-Texte konnten nicht gespeichert werden"))
         return
       }
 
+      const data = (await response.json()) as AdminTextResponse
       const nextEntries = data.entries || []
       setEntries(nextEntries)
       setSavedEntries(nextEntries)

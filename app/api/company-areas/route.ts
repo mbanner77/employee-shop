@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
+import { isAdminAuthenticated } from "@/lib/admin-auth"
 
 // GET - Liste aller aktiven Firmenbereiche (für Registrierung)
 export async function GET(request: Request) {
@@ -25,6 +26,10 @@ export async function GET(request: Request) {
 // POST - Neuen Firmenbereich erstellen (Admin)
 export async function POST(request: Request) {
   try {
+    if (!(await isAdminAuthenticated())) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
+    }
+
     const { name, isActive = true, sortOrder = 0, costCenter } = await request.json()
     
     if (!name || name.trim() === "") {
@@ -58,6 +63,10 @@ export async function POST(request: Request) {
 // PUT - Firmenbereich aktualisieren (Admin)
 export async function PUT(request: Request) {
   try {
+    if (!(await isAdminAuthenticated())) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
+    }
+
     const { id, name, isActive, sortOrder, costCenter } = await request.json()
     
     if (!id) {
@@ -84,6 +93,10 @@ export async function PUT(request: Request) {
 // DELETE - Firmenbereich löschen (Admin)
 export async function DELETE(request: Request) {
   try {
+    if (!(await isAdminAuthenticated())) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
+    }
+
     const { searchParams } = new URL(request.url)
     const id = searchParams.get("id")
     
