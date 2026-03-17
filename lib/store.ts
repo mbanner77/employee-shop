@@ -168,33 +168,28 @@ export const useShopStore = create<ShopState>()(
       },
       submitOrder: async (customerInfo) => {
         const cart = get().cart
-        try {
-          const response = await fetch("/api/orders", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              ...customerInfo,
-              items: cart.map((item) => ({
-                productId: item.product.id,
-                size: item.size,
-                color: item.color,
-                costBearer: item.costBearer,
-                quantity: item.quantity,
-              })),
-            }),
-          })
-          if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}))
-            console.error("Order creation failed:", response.status, errorData)
-            throw new Error(errorData.error || "Failed to create order")
-          }
-          const order = await response.json()
-          set({ cart: [] })
-          return order
-        } catch (error) {
-          console.error("Failed to submit order:", error)
-          return null
+        const response = await fetch("/api/orders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...customerInfo,
+            items: cart.map((item) => ({
+              productId: item.product.id,
+              size: item.size,
+              color: item.color,
+              costBearer: item.costBearer,
+              quantity: item.quantity,
+            })),
+          }),
+        })
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}))
+          console.error("Order creation failed:", response.status, errorData)
+          throw new Error(errorData.error || "Bestellung konnte nicht erstellt werden")
         }
+        const order = await response.json()
+        set({ cart: [] })
+        return order
       },
       fetchProducts: async () => {
         try {

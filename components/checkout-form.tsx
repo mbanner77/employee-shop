@@ -30,7 +30,7 @@ interface Employee {
 
 export function CheckoutForm() {
   const router = useRouter()
-  const { cart, submitOrder } = useShopStore()
+  const { cart, removeFromCart, submitOrder } = useShopStore()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [employee, setEmployee] = useState<Employee | null>(null)
   const [yearlyOrderCount, setYearlyOrderCount] = useState<number>(0)
@@ -51,7 +51,29 @@ export function CheckoutForm() {
     fetchEmployeeData()
     fetchSettings()
     fetchCompanyAreas()
+    validateCartProducts()
   }, [])
+
+  const validateCartProducts = async () => {
+    if (cart.length === 0) return
+    try {
+      const response = await fetch("/api/products")
+      if (!response.ok) return
+      const products = await response.json()
+      const validIds = new Set(products.map((p: { id: string }) => p.id))
+      const invalidItems = cart.filter((item) => !validIds.has(item.product.id))
+      if (invalidItems.length > 0) {
+        for (const item of invalidItems) {
+          removeFromCart(item.id)
+        }
+        toast.error(
+          `${invalidItems.length} Artikel wurden aus dem Warenkorb entfernt, da sie nicht mehr verfügbar sind.`,
+        )
+      }
+    } catch (error) {
+      console.error("Failed to validate cart products:", error)
+    }
+  }
 
   const fetchEmployeeData = async () => {
     try {
@@ -168,8 +190,9 @@ export function CheckoutForm() {
         toast.error(text("checkoutForm.submitError"))
         setIsSubmitting(false)
       }
-    } catch {
-      toast.error(text("checkoutForm.genericError"))
+    } catch (error) {
+      const message = error instanceof Error ? error.message : text("checkoutForm.genericError")
+      toast.error(message)
       setIsSubmitting(false)
     }
   }
