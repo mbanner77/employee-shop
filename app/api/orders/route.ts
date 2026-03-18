@@ -215,10 +215,7 @@ export async function POST(request: Request) {
           employeeId: employee.id,
           createdAt: { gte: quotaStartDate },
         },
-        OR: [
-          { costBearer: 'COMPANY' },
-          { costBearer: null as never },
-        ],
+        costBearer: 'COMPANY',
       },
       select: { quantity: true },
     })
@@ -241,10 +238,7 @@ export async function POST(request: Request) {
           employeeId: employee.id,
           createdAt: { gte: quotaStartDate },
         },
-        OR: [
-          { costBearer: 'COMPANY' },
-          { costBearer: null as never },
-        ],
+        costBearer: 'COMPANY',
       },
       select: { productId: true, quantity: true },
     })
@@ -438,6 +432,6 @@ export async function POST(request: Request) {
     ) {
       return NextResponse.json({ error: message }, { status: 400 })
     }
-    return NextResponse.json({ error: "Failed to create order" }, { status: 500 })
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }
