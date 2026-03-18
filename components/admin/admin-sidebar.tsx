@@ -1,14 +1,14 @@
 "use client"
 
-import { BarChart3, FileBarChart, Loader2, LogOut, Package, Settings, ShieldCheck, ShoppingCart, Truck, UserCog, Users } from "lucide-react"
+import { BarChart3, FileBarChart, Loader2, LogOut, Mail, Package, Settings, ShieldCheck, ShoppingCart, Truck, UserCog, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
-type AdminView = "stats" | "orders" | "products" | "employees" | "users" | "suppliers" | "reports" | "settings"
+type AdminView = "stats" | "orders" | "products" | "employees" | "users" | "suppliers" | "reports" | "settings" | "emails"
 
 interface AdminSidebarProps {
-  activeView: AdminView
-  onViewChange: (view: AdminView) => void
+  activeView: string
+  onViewChange: (view: string) => void
   adminUsername: string | null
   onLogout: () => Promise<void>
   loggingOut: boolean
@@ -23,6 +23,7 @@ const menuItems = [
   { id: "users", label: "Administratoren", icon: UserCog },
   { id: "reports", label: "Auswertungen", icon: FileBarChart },
   { id: "settings", label: "CMS", icon: Settings },
+  { id: "emails", label: "E-Mails", icon: Mail },
 ] as const
 
 export function AdminSidebar({ activeView, onViewChange, adminUsername, onLogout, loggingOut }: AdminSidebarProps) {

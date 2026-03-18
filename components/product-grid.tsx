@@ -7,7 +7,8 @@ import { useShopStore } from "@/lib/store"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
-import { Loader2, Search, X } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Loader2, Search, X, ArrowUpDown } from "lucide-react"
 
 const categories = [
   { value: "Alle", labelKey: "productGrid.category.all" },
@@ -23,6 +24,7 @@ const categories = [
 export function ProductGrid() {
   const [activeCategory, setActiveCategory] = useState("Alle")
   const [searchQuery, setSearchQuery] = useState("")
+  const [sortBy, setSortBy] = useState("default")
   const { text, textf } = useAppTexts()
   const { products, productsLoading, fetchProducts, fetchFavoriteIds } = useShopStore()
 
@@ -54,8 +56,27 @@ export function ProductGrid() {
       )
     }
     
+    // Sort
+    switch (sortBy) {
+      case "name-asc":
+        result = [...result].sort((a, b) => a.name.localeCompare(b.name))
+        break
+      case "name-desc":
+        result = [...result].sort((a, b) => b.name.localeCompare(a.name))
+        break
+      case "price-asc":
+        result = [...result].sort((a, b) => (Number(a.price) || 0) - (Number(b.price) || 0))
+        break
+      case "price-desc":
+        result = [...result].sort((a, b) => (Number(b.price) || 0) - (Number(a.price) || 0))
+        break
+      case "newest":
+        result = [...result].reverse()
+        break
+    }
+
     return result
-  }, [products, activeCategory, searchQuery])
+  }, [products, activeCategory, searchQuery, sortBy])
 
   if (productsLoading) {
     return (
@@ -125,25 +146,41 @@ export function ProductGrid() {
           ))}
         </div>
 
-        {/* Products count */}
-        <div className="mb-6 flex items-center justify-between">
+        {/* Products count + sort */}
+        <div className="mb-6 flex items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">
             {searchQuery
               ? textf("productGrid.resultsWithQuery", { count: filteredProducts.length, query: searchQuery })
               : textf("productGrid.results", { count: filteredProducts.length })}
           </p>
-          {(searchQuery || activeCategory !== "Alle") && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setSearchQuery("")
-                setActiveCategory("Alle")
-              }}
-            >
-              {text("productGrid.reset")}
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {(searchQuery || activeCategory !== "Alle") && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSearchQuery("")
+                  setActiveCategory("Alle")
+                }}
+              >
+                {text("productGrid.reset")}
+              </Button>
+            )}
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-[180px]">
+                <ArrowUpDown className="h-3.5 w-3.5 mr-2" />
+                <SelectValue placeholder="Sortieren" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="default">Standard</SelectItem>
+                <SelectItem value="name-asc">Name A–Z</SelectItem>
+                <SelectItem value="name-desc">Name Z–A</SelectItem>
+                <SelectItem value="price-asc">Preis aufsteigend</SelectItem>
+                <SelectItem value="price-desc">Preis absteigend</SelectItem>
+                <SelectItem value="newest">Neueste zuerst</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* Product grid or empty state */}

@@ -334,6 +334,7 @@ enum OrderStatus {
   PROCESSING
   SHIPPED
   DELIVERED
+  CANCELLED
 }
 
 // Favoriten / Merkliste (Legacy)

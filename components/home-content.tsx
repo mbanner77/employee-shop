@@ -8,6 +8,7 @@ import { HeroSection } from "@/components/hero-section"
 import { ProductGrid } from "@/components/product-grid"
 import { EmployeeLogin } from "@/components/employee-login"
 import { Package, Truck, Award, LogOut, ClipboardList, Star } from "lucide-react"
+import { Footer } from "@/components/footer"
 import { TopRatedProducts } from "@/components/top-rated-products"
 import { Button } from "@/components/ui/button"
 
@@ -139,23 +140,7 @@ export function HomeContent() {
         <ProductGrid />
       </main>
 
-      <footer className="border-t border-border bg-muted/30 py-12">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col items-center gap-4 text-center">
-            <p className="text-sm text-muted-foreground">{text("home.footer.copyright")}</p>
-            <p className="text-xs text-muted-foreground/60">{text("home.footer.help")}</p>
-            <div className="flex items-center gap-4 text-xs text-muted-foreground/40">
-              <Link href="/admin" className="hover:text-muted-foreground transition-colors">
-                {text("home.footer.admin")}
-              </Link>
-              <span>•</span>
-              <Link href="/supplier" className="hover:text-muted-foreground transition-colors">
-                {text("home.footer.supplier")}
-              </Link>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   )
 }

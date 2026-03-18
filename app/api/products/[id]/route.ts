@@ -71,6 +71,7 @@ export async function PUT(
         multipleOrdersAllowed: body.multipleOrdersAllowed ?? true,
         maxQuantityPerOrder: body.maxQuantityPerOrder ?? 2,
         sizeChart: body.sizeChart ?? null,
+        supplierId: body.supplierId || null,
       },
     })
     return NextResponse.json(product)

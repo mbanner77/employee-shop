@@ -21,6 +21,7 @@ export interface Product {
   stock?: Record<string, number> | null
   minStock?: number | null
   sizeChart?: string | null
+  supplierId?: string | null
 }
 
 export interface CartItem {
@@ -49,7 +50,11 @@ export interface Order {
   zip: string
   department: string
   createdAt: string
-  status: "PENDING" | "PROCESSING" | "SHIPPED" | "DELIVERED"
+  status: "PENDING" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED"
+  trackingNumber?: string | null
+  trackingUrl?: string | null
+  adminNotes?: string | null
+  orderNumber?: string
 }
 
 interface ShopState {

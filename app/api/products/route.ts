@@ -59,6 +59,7 @@ export async function POST(request: Request) {
         multipleOrdersAllowed: body.multipleOrdersAllowed ?? true,
         maxQuantityPerOrder: body.maxQuantityPerOrder ?? 2,
         sizeChart: body.sizeChart ?? null,
+        supplierId: body.supplierId || null,
       },
     })
     return NextResponse.json(product, { status: 201 })

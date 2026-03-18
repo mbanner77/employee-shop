@@ -12,9 +12,10 @@ import { AdminCRM } from "@/components/admin/admin-crm"
 import { AdminReports } from "@/components/admin/admin-reports"
 import { AdminUsers } from "@/components/admin/admin-users"
 import { AdminSuppliers } from "@/components/admin/admin-suppliers"
+import { AdminEmailPreview } from "@/components/admin/admin-email-preview"
 import { toast } from "sonner"
 
-type AdminView = "stats" | "orders" | "products" | "employees" | "users" | "suppliers" | "reports" | "settings"
+type AdminView = "stats" | "orders" | "products" | "employees" | "users" | "suppliers" | "reports" | "settings" | "emails"
 type AuthenticatedAdmin = {
   id: string
   username: string
@@ -112,7 +113,7 @@ export default function AdminPage() {
       <div className="flex pt-20">
         <AdminSidebar
           activeView={activeView}
-          onViewChange={setActiveView}
+          onViewChange={(v) => setActiveView(v as AdminView)}
           adminUsername={currentAdmin?.username ?? null}
           onLogout={handleLogout}
           loggingOut={loggingOut}
@@ -126,6 +127,7 @@ export default function AdminPage() {
           {activeView === "suppliers" && <AdminSuppliers />}
           {activeView === "reports" && <AdminReports />}
           {activeView === "settings" && <AdminCms />}
+          {activeView === "emails" && <AdminEmailPreview />}
         </main>
       </div>
     </div>

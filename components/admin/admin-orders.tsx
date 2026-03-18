@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { ChevronDown, ChevronUp, Search, Loader2, User, Download, CheckSquare, Printer, Calendar } from "lucide-react"
+import { ChevronDown, ChevronUp, Search, Loader2, User, Download, CheckSquare, Printer, Calendar, Truck } from "lucide-react"
+import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 
@@ -19,20 +20,25 @@ interface OrderWithEmployee extends Order {
     lastName: string
     employeeId: string
   } | null
+  trackingNumber?: string | null
+  trackingUrl?: string | null
+  adminNotes?: string | null
 }
 
-const statusLabels: Record<Order["status"], string> = {
+const statusLabels: Record<string, string> = {
   PENDING: "Ausstehend",
   PROCESSING: "In Bearbeitung",
   SHIPPED: "Versendet",
   DELIVERED: "Zugestellt",
+  CANCELLED: "Storniert",
 }
 
-const statusColors: Record<Order["status"], string> = {
+const statusColors: Record<string, string> = {
   PENDING: "bg-yellow-100 text-yellow-800",
   PROCESSING: "bg-blue-100 text-blue-800",
   SHIPPED: "bg-purple-100 text-purple-800",
   DELIVERED: "bg-green-100 text-green-800",
+  CANCELLED: "bg-red-100 text-red-800",
 }
 
 export function AdminOrders() {
@@ -45,6 +51,8 @@ export function AdminOrders() {
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null)
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set())
   const [bulkUpdating, setBulkUpdating] = useState(false)
+  const [trackingInputs, setTrackingInputs] = useState<Record<string, string>>({})
+  const [savingTracking, setSavingTracking] = useState<string | null>(null)
 
   const fetchOrders = async () => {
     try {
@@ -466,8 +474,74 @@ export function AdminOrders() {
                           <SelectItem value="PROCESSING">In Bearbeitung</SelectItem>
                           <SelectItem value="SHIPPED">Versendet</SelectItem>
                           <SelectItem value="DELIVERED">Zugestellt</SelectItem>
+                          <SelectItem value="CANCELLED">Storniert</SelectItem>
                         </SelectContent>
                       </Select>
+
+                      <h4 className="mb-3 mt-4 font-semibold">Interne Notizen</h4>
+                      <div className="flex gap-2">
+                        <textarea
+                          className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          placeholder="Interne Notizen zur Bestellung..."
+                          defaultValue={order.adminNotes || ""}
+                          onBlur={async (e) => {
+                            const val = e.target.value
+                            if (val === (order.adminNotes || "")) return
+                            try {
+                              const res = await fetch(`/api/orders/${order.id}`, {
+                                method: "PATCH",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ adminNotes: val }),
+                              })
+                              if (res.ok) {
+                                setOrders(orders.map((o) =>
+                                  o.id === order.id ? { ...o, adminNotes: val } : o
+                                ))
+                                toast.success("Notiz gespeichert")
+                              }
+                            } catch {
+                              toast.error("Fehler beim Speichern")
+                            }
+                          }}
+                        />
+                      </div>
+
+                      <h4 className="mb-3 mt-4 font-semibold">Tracking-Nummer</h4>
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Tracking-Nummer eingeben"
+                          value={trackingInputs[order.id] ?? order.trackingNumber ?? ""}
+                          onChange={(e) => setTrackingInputs({ ...trackingInputs, [order.id]: e.target.value })}
+                        />
+                        <Button
+                          size="sm"
+                          disabled={savingTracking === order.id}
+                          onClick={async () => {
+                            setSavingTracking(order.id)
+                            try {
+                              const res = await fetch(`/api/orders/${order.id}`, {
+                                method: "PATCH",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ trackingNumber: trackingInputs[order.id] ?? order.trackingNumber ?? "" }),
+                              })
+                              if (res.ok) {
+                                setOrders(orders.map((o) =>
+                                  o.id === order.id ? { ...o, trackingNumber: trackingInputs[order.id] ?? order.trackingNumber ?? "" } : o
+                                ))
+                                toast.success("Tracking-Nummer gespeichert")
+                              } else {
+                                toast.error("Fehler beim Speichern")
+                              }
+                            } catch {
+                              toast.error("Fehler beim Speichern")
+                            } finally {
+                              setSavingTracking(null)
+                            }
+                          }}
+                        >
+                          {savingTracking === order.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Truck className="h-4 w-4" />}
+                        </Button>
+                      </div>
 
                       <Button 
                         variant="outline" 

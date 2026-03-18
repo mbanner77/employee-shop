@@ -13,7 +13,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useShopStore } from "@/lib/store"
 import { toast } from "sonner"
-import { Loader2, Send, AlertTriangle, CheckCircle, Info } from "lucide-react"
+import { Loader2, Send, AlertTriangle, CheckCircle, Info, Clock } from "lucide-react"
 
 interface CompanyArea {
   id: string
@@ -28,6 +28,17 @@ interface Employee {
   department: string
 }
 
+interface SavedAddress {
+  id: string
+  label?: string
+  type: string
+  street: string
+  city: string
+  zip: string
+  country: string
+  isDefault: boolean
+}
+
 export function CheckoutForm() {
   const router = useRouter()
   const { cart, removeFromCart, submitOrder } = useShopStore()
@@ -36,6 +47,7 @@ export function CheckoutForm() {
   const [yearlyOrderCount, setYearlyOrderCount] = useState<number>(0)
   const [maxItems, setMaxItems] = useState<number>(4)
   const [companyAreas, setCompanyAreas] = useState<CompanyArea[]>([])
+  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([])
   const [disclaimerAccepted, setDisclaimerAccepted] = useState(false)
   const [formData, setFormData] = useState({
     customerName: "",
@@ -51,6 +63,7 @@ export function CheckoutForm() {
     fetchEmployeeData()
     fetchSettings()
     fetchCompanyAreas()
+    fetchSavedAddresses()
     validateCartProducts()
   }, [])
 
@@ -108,6 +121,28 @@ export function CheckoutForm() {
       }
     } catch (error) {
       console.error("Failed to fetch settings:", error)
+    }
+  }
+
+  const fetchSavedAddresses = async () => {
+    try {
+      const response = await fetch("/api/employees/me/addresses")
+      if (!response.ok) return
+      const data = await response.json()
+      if (Array.isArray(data) && data.length > 0) {
+        setSavedAddresses(data)
+        const defaultAddr = data.find((a: SavedAddress) => a.isDefault) || data[0]
+        if (defaultAddr) {
+          setFormData(prev => ({
+            ...prev,
+            street: prev.street || defaultAddr.street,
+            zip: prev.zip || defaultAddr.zip,
+            city: prev.city || defaultAddr.city,
+          }))
+        }
+      }
+    } catch (error) {
+      console.error("Failed to fetch saved addresses:", error)
     }
   }
 
@@ -291,6 +326,38 @@ export function CheckoutForm() {
         )}
       </div>
 
+      {savedAddresses.length > 0 && (
+        <div className="space-y-2">
+          <Label>Gespeicherte Adresse</Label>
+          <Select
+            value=""
+            onValueChange={(addressId) => {
+              const addr = savedAddresses.find((a) => a.id === addressId)
+              if (addr) {
+                setFormData((prev) => ({
+                  ...prev,
+                  street: addr.street,
+                  zip: addr.zip,
+                  city: addr.city,
+                }))
+              }
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Adresse auswählen..." />
+            </SelectTrigger>
+            <SelectContent>
+              {savedAddresses.map((addr) => (
+                <SelectItem key={addr.id} value={addr.id}>
+                  {addr.label ? `${addr.label} – ` : ""}{addr.street}, {addr.zip} {addr.city}
+                  {addr.isDefault ? " (Standard)" : ""}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       <div className="space-y-2">
         <Label htmlFor="street">{text("checkoutForm.streetLabel")}</Label>
         <Input
@@ -360,6 +427,12 @@ export function CheckoutForm() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Stornierungshinweis */}
+      <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+        <Clock className="h-4 w-4 mt-0.5 shrink-0" />
+        <p>Nach der Bestellung hast du <strong>30 Minuten</strong> Zeit, um die Bestellung zu stornieren. Danach ist eine Stornierung nicht mehr möglich.</p>
+      </div>
 
       <Button type="submit" className="w-full" size="lg" disabled={totalCartCount === 0 || isSubmitting || !canOrder || !disclaimerAccepted}>
         {isSubmitting ? (

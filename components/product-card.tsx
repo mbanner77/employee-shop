@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useShopStore, type Product, type Size } from "@/lib/store"
 import { SizeChartDialog } from "@/components/size-chart-dialog"
 import { ProductReviews } from "@/components/product-reviews"
+import Link from "next/link"
 
 interface ProductCardProps {
   product: Product
@@ -113,6 +114,12 @@ export function ProductCard({ product }: ProductCardProps) {
     : 0
   const isInCart = selectedVariantQuantity > 0
   const cartFull = mounted ? productQuantityInCart >= maxQuantityForProduct : false
+
+  // Calculate total stock across all sizes for a general low-stock badge
+  const totalStock = product.stock
+    ? Object.values(product.stock as Record<string, number>).reduce((sum, v) => sum + (v || 0), 0)
+    : null
+
   const parsedPrice = typeof product.price === "number"
     ? product.price
     : typeof product.price === "string"
@@ -168,6 +175,11 @@ export function ProductCard({ product }: ProductCardProps) {
             {selectedVariantQuantity}
           </div>
         )}
+        {!isInCart && totalStock !== null && totalStock > 0 && totalStock <= 3 && (
+          <div className="absolute right-3 top-3 rounded-full bg-orange-500 px-2 py-1 text-xs font-semibold text-white">
+            Nur noch {totalStock}!
+          </div>
+        )}
 
         {allImages.length > 1 && (
           <>
@@ -212,7 +224,9 @@ export function ProductCard({ product }: ProductCardProps) {
         <div className="mb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
           {product.category}
         </div>
-        <h3 className="mb-1 font-serif text-lg font-semibold leading-tight text-foreground">{product.name}</h3>
+        <Link href={`/products/${product.id}`} className="hover:underline">
+          <h3 className="mb-1 font-serif text-lg font-semibold leading-tight text-foreground">{product.name}</h3>
+        </Link>
         <div className="mb-2">
           <ProductReviews productId={product.id} productName={product.name} />
         </div>

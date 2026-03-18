@@ -24,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Loader2, User, MapPin, Bell, Plus, Pencil, Trash2, ArrowLeft, Check } from "lucide-react"
+import { Loader2, User, MapPin, Bell, Plus, Pencil, Trash2, ArrowLeft, Check, Lock } from "lucide-react"
 import { toast } from "sonner"
 import Link from "next/link"
 
@@ -60,6 +60,16 @@ export default function ProfilePage() {
   const [editingAddress, setEditingAddress] = useState<Address | null>(null)
   const [savingNotifications, setSavingNotifications] = useState(false)
   const [savingAddress, setSavingAddress] = useState(false)
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false)
+  const [savingPassword, setSavingPassword] = useState(false)
+  const [editingProfile, setEditingProfile] = useState(false)
+  const [savingProfile, setSavingProfile] = useState(false)
+  const [profileForm, setProfileForm] = useState({ firstName: "", lastName: "", department: "" })
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  })
 
   const [addressForm, setAddressForm] = useState({
     type: "PRIVATE",
@@ -210,6 +220,77 @@ export default function ProfilePage() {
     }
   }
 
+  const startEditingProfile = () => {
+    if (employee) {
+      setProfileForm({
+        firstName: employee.firstName,
+        lastName: employee.lastName,
+        department: employee.department,
+      })
+      setEditingProfile(true)
+    }
+  }
+
+  const handleProfileSave = async () => {
+    setSavingProfile(true)
+    try {
+      const res = await fetch("/api/employees/me/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(profileForm),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setEmployee(data.employee)
+        setEditingProfile(false)
+        toast.success("Profil gespeichert")
+      } else {
+        toast.error(data.error || "Fehler beim Speichern")
+      }
+    } catch (error) {
+      console.error("Failed to save profile:", error)
+      toast.error("Fehler beim Speichern")
+    } finally {
+      setSavingProfile(false)
+    }
+  }
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast.error("Die Passwörter stimmen nicht überein")
+      return
+    }
+    if (passwordForm.newPassword.length < 6) {
+      toast.error("Das neue Passwort muss mindestens 6 Zeichen lang sein")
+      return
+    }
+    setSavingPassword(true)
+    try {
+      const res = await fetch("/api/employees/me/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          currentPassword: passwordForm.currentPassword,
+          newPassword: passwordForm.newPassword,
+        }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        toast.success(data.message || "Passwort geändert")
+        setPasswordDialogOpen(false)
+        setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" })
+      } else {
+        toast.error(data.error || "Fehler beim Ändern des Passworts")
+      }
+    } catch (error) {
+      console.error("Failed to change password:", error)
+      toast.error("Fehler beim Ändern des Passworts")
+    } finally {
+      setSavingPassword(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-muted/30">
@@ -245,31 +326,147 @@ export default function ProfilePage() {
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Personal Info */}
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="flex items-center gap-2">
                 <User className="h-5 w-5" />
                 {text("profile.personal.title")}
               </CardTitle>
+              {!editingProfile && (
+                <Button variant="ghost" size="sm" onClick={startEditingProfile}>
+                  <Pencil className="h-4 w-4 mr-1" />
+                  Bearbeiten
+                </Button>
+              )}
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <Label className="text-muted-foreground text-xs">{text("profile.firstName")}</Label>
-                  <p className="font-medium">{employee?.firstName}</p>
+              {editingProfile ? (
+                <div className="space-y-4">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label>{text("profile.firstName")}</Label>
+                      <Input
+                        value={profileForm.firstName}
+                        onChange={(e) => setProfileForm({ ...profileForm, firstName: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{text("profile.lastName")}</Label>
+                      <Input
+                        value={profileForm.lastName}
+                        onChange={(e) => setProfileForm({ ...profileForm, lastName: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{text("profile.email")}</Label>
+                      <Input value={employee?.email} disabled className="bg-muted" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{text("profile.department")}</Label>
+                      <Input
+                        value={profileForm.department}
+                        onChange={(e) => setProfileForm({ ...profileForm, department: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-2 justify-end">
+                    <Button variant="outline" onClick={() => setEditingProfile(false)}>
+                      Abbrechen
+                    </Button>
+                    <Button onClick={handleProfileSave} disabled={savingProfile}>
+                      {savingProfile && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                      Speichern
+                    </Button>
+                  </div>
                 </div>
-                <div>
-                  <Label className="text-muted-foreground text-xs">{text("profile.lastName")}</Label>
-                  <p className="font-medium">{employee?.lastName}</p>
+              ) : (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <Label className="text-muted-foreground text-xs">{text("profile.firstName")}</Label>
+                    <p className="font-medium">{employee?.firstName}</p>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground text-xs">{text("profile.lastName")}</Label>
+                    <p className="font-medium">{employee?.lastName}</p>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground text-xs">{text("profile.email")}</Label>
+                    <p className="font-medium">{employee?.email}</p>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground text-xs">{text("profile.department")}</Label>
+                    <p className="font-medium">{employee?.department}</p>
+                  </div>
                 </div>
-                <div>
-                  <Label className="text-muted-foreground text-xs">{text("profile.email")}</Label>
-                  <p className="font-medium">{employee?.email}</p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground text-xs">{text("profile.department")}</Label>
-                  <p className="font-medium">{employee?.department}</p>
-                </div>
-              </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Password Change */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Lock className="h-5 w-5" />
+                Passwort
+              </CardTitle>
+              <CardDescription>Ändere dein Passwort für den Login</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Dialog open={passwordDialogOpen} onOpenChange={(open) => {
+                setPasswordDialogOpen(open)
+                if (!open) setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" })
+              }}>
+                <DialogTrigger asChild>
+                  <Button variant="outline">
+                    <Lock className="h-4 w-4 mr-2" />
+                    Passwort ändern
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Passwort ändern</DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handlePasswordChange} className="space-y-4 mt-4">
+                    <div className="space-y-2">
+                      <Label>Aktuelles Passwort</Label>
+                      <Input
+                        type="password"
+                        value={passwordForm.currentPassword}
+                        onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Neues Passwort</Label>
+                      <Input
+                        type="password"
+                        value={passwordForm.newPassword}
+                        onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                        minLength={6}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Neues Passwort bestätigen</Label>
+                      <Input
+                        type="password"
+                        value={passwordForm.confirmPassword}
+                        onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                        minLength={6}
+                        required
+                      />
+                    </div>
+                    <div className="flex justify-end gap-2 pt-4">
+                      <Button type="button" variant="outline" onClick={() => setPasswordDialogOpen(false)}>
+                        Abbrechen
+                      </Button>
+                      <Button type="submit" disabled={savingPassword}>
+                        {savingPassword && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                        Passwort ändern
+                      </Button>
+                    </div>
+                  </form>
+                </DialogContent>
+              </Dialog>
             </CardContent>
           </Card>
 

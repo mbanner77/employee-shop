@@ -12,13 +12,31 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
-import { Edit, Plus, Search, ChevronLeft, ChevronRight, ImageIcon, Loader2, Upload, X, Trash2 } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Edit, Plus, Search, ChevronLeft, ChevronRight, ImageIcon, Loader2, Upload, X, Trash2, Truck } from "lucide-react"
+
+interface SupplierOption {
+  id: string
+  companyName: string
+}
 
 export function AdminProducts() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [newDialogOpen, setNewDialogOpen] = useState(false)
+  const [suppliersMap, setSuppliersMap] = useState<Record<string, string>>({})
+
+  useEffect(() => {
+    fetch("/api/admin/suppliers")
+      .then((res) => res.ok ? res.json() : [])
+      .then((data: SupplierOption[]) => {
+        const map: Record<string, string> = {}
+        data.forEach((s) => { map[s.id] = s.companyName })
+        setSuppliersMap(map)
+      })
+      .catch(() => {})
+  }, [])
 
   const fetchProducts = async () => {
     try {
@@ -101,6 +119,7 @@ export function AdminProducts() {
             key={product.id} 
             product={product} 
             onRefresh={fetchProducts}
+            supplierName={product.supplierId ? suppliersMap[product.supplierId] : undefined}
           />
         ))}
       </div>
@@ -109,7 +128,7 @@ export function AdminProducts() {
 }
 
 // Single Product Card with Image Carousel
-function ProductCard({ product, onRefresh }: { product: Product; onRefresh: () => void }) {
+function ProductCard({ product, onRefresh, supplierName }: { product: Product; onRefresh: () => void; supplierName?: string }) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -213,6 +232,12 @@ function ProductCard({ product, onRefresh }: { product: Product; onRefresh: () =
             <Badge variant="outline" className="mb-2">
               {product.category}
             </Badge>
+            {supplierName && (
+              <Badge variant="secondary" className="mb-2 ml-1">
+                <Truck className="h-3 w-3 mr-1" />
+                {supplierName}
+              </Badge>
+            )}
             <CardTitle className="text-base">{product.name}</CardTitle>
           </div>
           <div className="flex gap-1">
@@ -258,6 +283,15 @@ function ProductCard({ product, onRefresh }: { product: Product; onRefresh: () =
 function ProductForm({ product, onSuccess, onCancel }: { product?: Product; onSuccess?: () => void; onCancel?: () => void }) {
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [suppliers, setSuppliers] = useState<SupplierOption[]>([])
+
+  useEffect(() => {
+    fetch("/api/admin/suppliers")
+      .then((res) => res.ok ? res.json() : [])
+      .then((data) => setSuppliers(data.map((s: SupplierOption) => ({ id: s.id, companyName: s.companyName }))))
+      .catch(() => {})
+  }, [])
+
   const [formData, setFormData] = useState({
     name: product?.name || "",
     category: product?.category || "",
@@ -274,6 +308,7 @@ function ProductForm({ product, onSuccess, onCancel }: { product?: Product; onSu
     minStock: String(product?.minStock ?? 5),
     sizeChart: product?.sizeChart || "",
     stock: (product?.stock || {}) as Record<string, number>,
+    supplierId: product?.supplierId || "",
   })
 
   const parsedSizes = formData.sizes
@@ -380,6 +415,7 @@ function ProductForm({ product, onSuccess, onCancel }: { product?: Product; onSu
       minStock: parseInt(formData.minStock, 10) || 5,
       sizeChart: formData.sizeChart?.trim() || null,
       stock: Object.keys(stockPayload).length > 0 ? stockPayload : null,
+      supplierId: formData.supplierId || null,
     }
 
     try {
@@ -522,6 +558,26 @@ function ProductForm({ product, onSuccess, onCancel }: { product?: Product; onSu
             placeholder="2"
           />
         </div>
+      </div>
+
+      {/* Lieferant */}
+      <div className="space-y-2">
+        <Label className="flex items-center gap-1.5"><Truck className="h-4 w-4" /> Lieferant</Label>
+        <Select
+          value={formData.supplierId}
+          onValueChange={(value) => setFormData(prev => ({ ...prev, supplierId: value === "_none" ? "" : value }))}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Kein Lieferant zugewiesen" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="_none">Kein Lieferant</SelectItem>
+            {suppliers.map((s) => (
+              <SelectItem key={s.id} value={s.id}>{s.companyName}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <p className="text-xs text-muted-foreground">Der zugewiesene Lieferant sieht nur Bestellungen mit seinen Artikeln im Lieferantenportal.</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Package, ShoppingCart, Users, TrendingUp, Loader2, Clock, AlertTriangle } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
@@ -57,23 +57,28 @@ const statusColors: Record<string, string> = {
 export function AdminStats() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [loading, setLoading] = useState(true)
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
+
+  const fetchStats = useCallback(async () => {
+    try {
+      const response = await fetch("/api/admin/stats")
+      if (response.ok) {
+        const data = await response.json()
+        setStats(data)
+        setLastRefresh(new Date())
+      }
+    } catch (error) {
+      console.error("Failed to fetch stats:", error)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const response = await fetch("/api/admin/stats")
-        if (response.ok) {
-          const data = await response.json()
-          setStats(data)
-        }
-      } catch (error) {
-        console.error("Failed to fetch stats:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
     fetchStats()
-  }, [])
+    const interval = setInterval(fetchStats, 30000)
+    return () => clearInterval(interval)
+  }, [fetchStats])
 
   if (loading) {
     return (

@@ -12,10 +12,12 @@ import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/s
 import { ThemeToggle } from "@/components/theme-toggle"
 import { LanguageSwitcher } from "@/components/language-switcher"
 import { cn } from "@/lib/utils"
+import { CartDrawer } from "@/components/cart-drawer"
 
 export function Header() {
   const [mounted, setMounted] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [cartDrawerOpen, setCartDrawerOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false)
   const { text } = useAppTexts()
@@ -154,21 +156,21 @@ export function Header() {
           <div className={cn(useDarkHeader && !isAdminPage ? "" : "text-white")}>
             <ThemeToggle />
           </div>
-          <Link href="/checkout">
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn("relative rounded-full", useDarkHeader && !isAdminPage ? "hover:bg-muted" : "text-white hover:bg-white/10")}
-            >
-              <ShoppingBag className="h-5 w-5" />
-              {mounted && cartItemCount > 0 && (
-                <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-xs font-bold text-accent-foreground shadow-lg">
-                  {cartItemCount}
-                </span>
-              )}
-              <span className="sr-only">{text("header.cart.srOnly")}</span>
-            </Button>
-          </Link>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setCartDrawerOpen(true)}
+            className={cn("relative rounded-full", useDarkHeader && !isAdminPage ? "hover:bg-muted" : "text-white hover:bg-white/10")}
+          >
+            <ShoppingBag className="h-5 w-5" />
+            {mounted && cartItemCount > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-xs font-bold text-accent-foreground shadow-lg">
+                {cartItemCount}
+              </span>
+            )}
+            <span className="sr-only">{text("header.cart.srOnly")}</span>
+          </Button>
+          <CartDrawer open={cartDrawerOpen} onOpenChange={setCartDrawerOpen} />
 
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild className="md:hidden">

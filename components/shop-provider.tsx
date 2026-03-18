@@ -2,6 +2,7 @@
 
 import { useEffect, type ReactNode } from "react"
 import { AppTextProvider } from "@/components/app-text-provider"
+import { Breadcrumbs } from "@/components/breadcrumbs"
 import { useShopStore } from "@/lib/store"
 
 export function ShopProvider({ children }: { children: ReactNode }) {
@@ -9,5 +10,10 @@ export function ShopProvider({ children }: { children: ReactNode }) {
     useShopStore.persist.rehydrate()
   }, [])
 
-  return <AppTextProvider>{children}</AppTextProvider>
+  return (
+    <AppTextProvider>
+      <Breadcrumbs />
+      {children}
+    </AppTextProvider>
+  )
 }
