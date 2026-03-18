@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { cookies } from "next/headers"
+import { hashPassword } from "@/lib/password"
 
 async function isAdmin() {
   const cookieStore = await cookies()
@@ -53,7 +54,7 @@ export async function POST(request: Request) {
     }
 
     const admin = await prisma.adminUser.create({
-      data: { username, password },
+      data: { username, password: await hashPassword(password) },
       select: { id: true, username: true, createdAt: true },
     })
 

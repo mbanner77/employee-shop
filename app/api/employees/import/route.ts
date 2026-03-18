@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { cookies } from "next/headers"
+import { hashPassword } from "@/lib/password"
 
 async function isAdmin() {
   const cookieStore = await cookies()
@@ -64,7 +65,7 @@ export async function POST(request: Request) {
               firstName: emp.firstName,
               lastName: emp.lastName,
               department: emp.department || "Allgemein",
-              password: emp.password || "welcome123",
+              password: await hashPassword(emp.password || "welcome123"),
               isActive: emp.isActive ?? true,
             },
           })

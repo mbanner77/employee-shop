@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { cookies } from "next/headers"
+import { verifyPassword, hashPassword } from "@/lib/password"
 
 export async function POST(request: Request) {
   try {
@@ -14,8 +15,16 @@ export async function POST(request: Request) {
       where: { email: email.toLowerCase() },
     })
 
-    if (!employee || employee.password !== password) {
+    if (!employee || !employee.password || !(await verifyPassword(password, employee.password))) {
       return NextResponse.json({ error: "Ungültige Anmeldedaten" }, { status: 401 })
+    }
+
+    // Auto-migrate plaintext password to bcrypt hash
+    if (!employee.password.startsWith("$2a$") && !employee.password.startsWith("$2b$")) {
+      await prisma.employee.update({
+        where: { id: employee.id },
+        data: { password: await hashPassword(password) },
+      })
     }
 
     if (!employee.isActive) {

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { cookies } from "next/headers"
+import { hashPassword } from "@/lib/password"
 
 async function getCurrentAdminId() {
   const cookieStore = await cookies()
@@ -55,7 +56,7 @@ export async function PATCH(
 
     const updateData: { username?: string; password?: string } = {}
     if (username) updateData.username = username
-    if (password) updateData.password = password
+    if (password) updateData.password = await hashPassword(password)
 
     if (Object.keys(updateData).length === 0) {
       return NextResponse.json({ error: "No data to update" }, { status: 400 })

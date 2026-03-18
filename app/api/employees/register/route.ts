@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { cookies } from "next/headers"
+import { hashPassword } from "@/lib/password"
 
 // Generiere eine eindeutige Mitarbeiter-ID
 async function generateEmployeeId(): Promise<string> {
@@ -37,7 +38,7 @@ export async function POST(request: Request) {
         firstName,
         lastName,
         department: companyArea, // Firmenbereich wird als department gespeichert
-        password, // In production, hash this!
+        password: await hashPassword(password),
       },
     })
 

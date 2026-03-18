@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import crypto from "crypto"
+import { hashPassword } from "@/lib/password"
 
 const defaultProducts = [
   {
@@ -172,7 +173,7 @@ export async function GET() {
     await prisma.adminUser.create({
       data: {
         username: "admin",
-        password: process.env.ADMIN_PASSWORD || "realcore2025",
+        password: await hashPassword(process.env.ADMIN_PASSWORD || "realcore2025"),
       },
     })
 
@@ -229,7 +230,7 @@ export async function POST(request: Request) {
       await prisma.adminUser.create({
         data: {
           username: "admin",
-          password: process.env.ADMIN_PASSWORD || "realcore2025",
+          password: await hashPassword(process.env.ADMIN_PASSWORD || "realcore2025"),
         },
       })
     }
