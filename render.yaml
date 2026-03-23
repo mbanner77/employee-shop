@@ -15,15 +15,17 @@ services:
     buildCommand: |
       pnpm install --no-frozen-lockfile --strict-peer-dependencies=false
       pnpm exec prisma generate
-      pnpm exec prisma db push --force-reset --accept-data-loss
-      pnpm exec prisma db seed
+      pnpm exec prisma migrate resolve --applied 0_init || true
+      pnpm exec prisma migrate deploy
       pnpm run build
-    startCommand: pnpm run start
+    startCommand: node .next/standalone/server.js
     envVars:
       - key: NODE_ENV
         value: production
       - key: NODE_VERSION
         value: 20
+      - key: NODE_OPTIONS
+        value: --max-old-space-size=384
       - key: DATABASE_URL
         fromDatabase:
           name: realcore-db

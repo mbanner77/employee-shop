@@ -32,7 +32,7 @@ function determineOrderType(items: Array<{ costBearer: CostBearer }>): OrderType
   return 'COMPANY'
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const cookieStore = await cookies()
     const adminSession = cookieStore.get("admin-session")
@@ -46,7 +46,13 @@ export async function GET() {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
     }
 
+    const { searchParams } = new URL(request.url)
+    const take = Math.min(parseInt(searchParams.get("limit") || "100"), 500)
+    const skip = parseInt(searchParams.get("offset") || "0")
+
     const orders = await prisma.order.findMany({
+      take,
+      skip,
       select: {
         id: true,
         customerName: true,
