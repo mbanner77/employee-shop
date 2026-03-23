@@ -10,7 +10,7 @@ services:
     name: realcore-employee-shop
     runtime: node
     region: frankfurt
-    plan: starter
+    plan: standard
     numInstances: 1
     buildCommand: |
       pnpm install --no-frozen-lockfile --strict-peer-dependencies=false
@@ -27,7 +27,7 @@ services:
       - key: NODE_VERSION
         value: 20
       - key: NODE_OPTIONS
-        value: --max-old-space-size=256
+        value: --max-old-space-size=1536
       - key: PORT
         value: "10000"
       - key: HOSTNAME
