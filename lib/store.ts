@@ -7,8 +7,12 @@ export type CostBearer = "COMPANY" | "EMPLOYEE"
 export interface Product {
   id: string
   name: string
+  nameDe?: string
+  nameEn?: string
   category: string
   description: string
+  descriptionDe?: string
+  descriptionEn?: string
   image: string
   images?: string[]
   sizes: string[]

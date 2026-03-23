@@ -91,6 +91,19 @@ export async function DELETE(
     }
 
     const { id } = await params
+
+    // Check if product has order items (can't hard-delete in that case)
+    const orderItemCount = await prisma.orderItem.count({ where: { productId: id } })
+
+    if (orderItemCount > 0) {
+      // Soft-delete: deactivate product instead of deleting
+      await prisma.product.update({
+        where: { id },
+        data: { isActive: false },
+      })
+      return NextResponse.json({ success: true, deactivated: true })
+    }
+
     await prisma.product.delete({
       where: { id },
     })

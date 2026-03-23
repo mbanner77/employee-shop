@@ -44,19 +44,31 @@ export async function GET(request: Request) {
 
     // Flatten orders to report format
     const reports = orders.flatMap((order) =>
-      order.items.map((item) => ({
-        orderId: order.id,
-        orderDate: order.createdAt.toISOString(),
-        employeeId: order.employee?.employeeId || "-",
-        employeeName: order.employee 
-          ? `${order.employee.firstName} ${order.employee.lastName}` 
-          : order.customerName,
-        employeeEmail: order.employee?.email || order.email,
-        department: order.department,
-        productName: item.product.name,
-        productSize: item.size,
-        status: order.status,
-      }))
+      order.items.map((item) => {
+        const costBearer = (item as any).costBearer === "EMPLOYEE" ? "Privat" : "Firma"
+        const unitPrice = (item as any).unitPrice
+        const quantity = (item as any).quantity || 1
+        const amount = (item as any).costBearer === "EMPLOYEE" && unitPrice
+          ? Number((Number(unitPrice) * quantity).toFixed(2))
+          : null
+        return {
+          orderId: order.id,
+          orderNumber: order.orderNumber || order.id,
+          orderDate: order.createdAt.toISOString(),
+          employeeId: order.employee?.employeeId || "-",
+          employeeName: order.employee 
+            ? `${order.employee.firstName} ${order.employee.lastName}` 
+            : order.customerName,
+          employeeEmail: order.employee?.email || order.email,
+          department: order.department,
+          productName: item.product.name,
+          productSize: item.size,
+          quantity,
+          costBearer,
+          amount,
+          status: order.status,
+        }
+      })
     )
 
     return NextResponse.json(reports)

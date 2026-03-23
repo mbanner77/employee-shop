@@ -10,6 +10,7 @@ import { Loader2, Download, Search, FileSpreadsheet, Calendar } from "lucide-rea
 
 interface OrderReport {
   orderId: string
+  orderNumber?: string
   orderDate: string
   employeeId: string
   employeeName: string
@@ -17,6 +18,9 @@ interface OrderReport {
   department: string
   productName: string
   productSize: string
+  quantity: number
+  costBearer: string
+  amount: number | null
   status: string
 }
 
@@ -220,13 +224,16 @@ export function AdminReports() {
                   <TableHead>Firmenbereich</TableHead>
                   <TableHead>Produkt</TableHead>
                   <TableHead>Größe</TableHead>
+                  <TableHead className="text-center">Menge</TableHead>
+                  <TableHead>Kostenträger</TableHead>
+                  <TableHead className="text-right">Betrag (€)</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredReports.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
                       Keine Bestellungen gefunden
                     </TableCell>
                   </TableRow>
@@ -234,11 +241,20 @@ export function AdminReports() {
                   filteredReports.map((report, index) => (
                     <TableRow key={`${report.orderId}-${index}`}>
                       <TableCell>{new Date(report.orderDate).toLocaleDateString("de-DE")}</TableCell>
-                      <TableCell className="font-mono text-xs">{report.orderId.slice(0, 8)}...</TableCell>
+                      <TableCell className="font-mono text-xs">{(report.orderNumber || report.orderId).slice(0, 12)}</TableCell>
                       <TableCell>{report.employeeName}</TableCell>
                       <TableCell>{report.department}</TableCell>
                       <TableCell>{report.productName}</TableCell>
                       <TableCell>{report.productSize}</TableCell>
+                      <TableCell className="text-center">{report.quantity}</TableCell>
+                      <TableCell>
+                        <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                          report.costBearer === "Privat" ? "bg-orange-100 text-orange-800" : "bg-blue-100 text-blue-800"
+                        }`}>
+                          {report.costBearer}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">{report.amount != null ? `${report.amount.toFixed(2).replace(".", ",")} €` : "-"}</TableCell>
                       <TableCell>
                         <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
                           report.status === "DELIVERED" ? "bg-green-100 text-green-800" :

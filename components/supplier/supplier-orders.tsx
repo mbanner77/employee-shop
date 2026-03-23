@@ -8,7 +8,8 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { ChevronDown, ChevronUp, Search, Loader2, User } from "lucide-react"
+import { ChevronDown, ChevronUp, Search, Loader2, User, Truck, Download } from "lucide-react"
+import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 
 type OrderStatus = Order["status"]
@@ -60,6 +61,8 @@ export function SupplierOrders() {
   const [searchTerm, setSearchTerm] = useState("")
   const [filterStatus, setFilterStatus] = useState<string>("all")
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null)
+  const [trackingInputs, setTrackingInputs] = useState<Record<string, string>>({})
+  const [savingTracking, setSavingTracking] = useState<string | null>(null)
   const { text, textf } = useAppTexts()
 
   const getStatusLabel = (status: OrderStatus) => {
@@ -104,13 +107,11 @@ export function SupplierOrders() {
         body: JSON.stringify({ action: "status", status }),
       })
       if (response.ok) {
-        const data = await response.json()
         setOrders((currentOrders) =>
           currentOrders.map((order) =>
             order.id === orderId
               ? {
                   ...order,
-                  status: data.status || status,
                   items: order.items.map((item) => ({ ...item, status })),
                 }
               : order,
@@ -122,6 +123,66 @@ export function SupplierOrders() {
     } finally {
       setUpdatingOrderId(null)
     }
+  }
+
+  const saveTracking = async (orderId: string) => {
+    const trackingNumber = trackingInputs[orderId]?.trim()
+    if (!trackingNumber) return
+    setSavingTracking(orderId)
+    try {
+      const response = await fetch(`/api/supplier/orders/${orderId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "tracking", trackingNumber }),
+      })
+      if (response.ok) {
+        setOrders((currentOrders) =>
+          currentOrders.map((order) =>
+            order.id === orderId
+              ? { ...order, items: order.items.map((item) => ({ ...item, status: "SHIPPED" as OrderStatus })) }
+              : order,
+          ),
+        )
+        setTrackingInputs((prev) => ({ ...prev, [orderId]: "" }))
+      }
+    } catch (error) {
+      console.error("Failed to save tracking:", error)
+    } finally {
+      setSavingTracking(null)
+    }
+  }
+
+  const handleCsvDownload = () => {
+    const exportOrders = filterStatus === "all" ? orders : orders.filter((o) => {
+      const itemStatus = o.items[0]?.status || o.status
+      return itemStatus === filterStatus
+    })
+    const headers = ["Bestellnummer", "Datum", "Kunde", "E-Mail", "Abteilung", "Artikel", "Größe", "Farbe", "Menge", "Status"]
+    const rows = exportOrders.flatMap((order) =>
+      order.items.map((item) => [
+        order.orderNumber || order.id,
+        new Date(order.createdAt).toLocaleDateString("de-DE"),
+        order.customerName,
+        order.email,
+        order.department,
+        item.productName,
+        item.size,
+        item.color || "-",
+        String(item.quantity),
+        item.status === "DELIVERED" ? "Zugestellt" : item.status === "SHIPPED" ? "Versendet" : item.status === "PROCESSING" ? "In Bearbeitung" : "Ausstehend",
+      ])
+    )
+    const BOM = "\uFEFF"
+    const csv = BOM + [headers.join(";"), ...rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(";"))].join("\n")
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `bestellungen-${filterStatus === "all" ? "alle" : filterStatus.toLowerCase()}-${new Date().toISOString().slice(0, 10)}.csv`
+    document.body.appendChild(a)
+    a.click()
+    URL.revokeObjectURL(url)
+    document.body.removeChild(a)
   }
 
   const logout = async () => {
@@ -188,6 +249,10 @@ export function SupplierOrders() {
             <SelectItem value="DELIVERED">{text("supplier.orders.status.delivered")}</SelectItem>
           </SelectContent>
         </Select>
+        <Button variant="outline" onClick={handleCsvDownload} disabled={orders.length === 0}>
+          <Download className="h-4 w-4 mr-2" />
+          CSV-Export
+        </Button>
       </div>
 
       {sortedOrders.length === 0 ? (
@@ -270,7 +335,7 @@ export function SupplierOrders() {
                       <h4 className="mb-3 mt-4 font-semibold">{text("supplier.orders.changeStatus")}</h4>
                       <div className="relative">
                         <Select
-                          value={order.status}
+                          value={order.items[0]?.status || order.status}
                           onValueChange={(value) => updateOrderStatus(order.id, value as OrderStatus)}
                           disabled={updatingOrderId === order.id}
                         >
@@ -292,6 +357,26 @@ export function SupplierOrders() {
                           </SelectContent>
                         </Select>
                       </div>
+
+                      <h4 className="mb-2 mt-4 font-semibold flex items-center gap-1.5">
+                        <Truck className="h-4 w-4" />
+                        Tracking-Nummer
+                      </h4>
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="z.B. 1Z999AA10123456784"
+                          value={trackingInputs[order.id] || ""}
+                          onChange={(e) => setTrackingInputs((prev) => ({ ...prev, [order.id]: e.target.value }))}
+                        />
+                        <Button
+                          size="sm"
+                          onClick={() => saveTracking(order.id)}
+                          disabled={!trackingInputs[order.id]?.trim() || savingTracking === order.id}
+                        >
+                          {savingTracking === order.id ? <Loader2 className="h-4 w-4 animate-spin" /> : "Speichern"}
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">Setzt den Status automatisch auf "Versendet".</p>
                     </div>
                   </div>
                 </CardContent>

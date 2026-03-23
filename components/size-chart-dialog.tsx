@@ -107,7 +107,7 @@ export function SizeChartDialog({
         {isUrl ? (
           <div className="flex justify-center">
             <img 
-              src={sizeChart!} 
+              src={chartUrl!} 
               alt={text("sizeChart.imageAlt")} 
               className="max-w-full h-auto rounded-lg"
             />

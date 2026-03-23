@@ -294,8 +294,10 @@ function ProductForm({ product, onSuccess, onCancel }: { product?: Product; onSu
 
   const [formData, setFormData] = useState({
     name: product?.name || "",
+    nameEn: product?.nameEn || "",
     category: product?.category || "",
     description: product?.description || "",
+    descriptionEn: product?.descriptionEn || "",
     color: product?.color || "",
     colorsInput: product?.colors?.join(", ") || product?.color || "",
     price: product?.price != null ? String(product.price) : "",
@@ -398,8 +400,12 @@ function ProductForm({ product, onSuccess, onCancel }: { product?: Product; onSu
 
     const payload = {
       name: formData.name,
+      nameDe: formData.name,
+      nameEn: formData.nameEn || formData.name,
       category: formData.category,
       description: formData.description,
+      descriptionDe: formData.description,
+      descriptionEn: formData.descriptionEn || formData.description,
       color: formData.color,
       colors: formData.colorsInput
         .split(",")
@@ -469,6 +475,17 @@ function ProductForm({ product, onSuccess, onCancel }: { product?: Product; onSu
           />
         </div>
         <div className="space-y-2">
+          <Label htmlFor="nameEn">Produktname (Englisch)</Label>
+          <Input 
+            id="nameEn" 
+            value={formData.nameEn} 
+            onChange={(e) => handleChange("nameEn", e.target.value)}
+            placeholder="z.B. RealCore Premium Hoodie" 
+          />
+        </div>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
           <Label htmlFor="category">Kategorie</Label>
           <Input 
             id="category" 
@@ -479,16 +496,28 @@ function ProductForm({ product, onSuccess, onCancel }: { product?: Product; onSu
           />
         </div>
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="description">Beschreibung</Label>
-        <Textarea 
-          id="description" 
-          value={formData.description}
-          onChange={(e) => handleChange("description", e.target.value)}
-          placeholder="Produktbeschreibung..." 
-          rows={3} 
-          required
-        />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="description">Beschreibung (Deutsch)</Label>
+          <Textarea 
+            id="description" 
+            value={formData.description}
+            onChange={(e) => handleChange("description", e.target.value)}
+            placeholder="Produktbeschreibung..." 
+            rows={3} 
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="descriptionEn">Beschreibung (Englisch)</Label>
+          <Textarea 
+            id="descriptionEn" 
+            value={formData.descriptionEn}
+            onChange={(e) => handleChange("descriptionEn", e.target.value)}
+            placeholder="Product description..." 
+            rows={3} 
+          />
+        </div>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">

@@ -52,25 +52,40 @@ export async function GET(request: Request) {
       "Firmenbereich",
       "Produkt",
       "Größe",
+      "Menge",
+      "Kostenträger",
+      "Betrag (€)",
       "Status",
     ]
 
     const rows = orders.flatMap((order) =>
-      order.items.map((item) => [
-        new Date(order.createdAt).toLocaleDateString("de-DE"),
-        order.id,
-        order.employee?.employeeId || "-",
-        order.employee 
-          ? `${order.employee.firstName} ${order.employee.lastName}` 
-          : order.customerName,
-        order.employee?.email || order.email,
-        order.department,
-        item.product.name,
-        item.size,
-        order.status === "DELIVERED" ? "Zugestellt" :
-        order.status === "SHIPPED" ? "Versendet" :
-        order.status === "PROCESSING" ? "In Bearbeitung" : "Ausstehend",
-      ])
+      order.items.map((item) => {
+        const costBearer = (item as any).costBearer === "EMPLOYEE" ? "Privat" : "Firma"
+        const unitPrice = (item as any).unitPrice
+        const quantity = (item as any).quantity || 1
+        const amount = (item as any).costBearer === "EMPLOYEE" && unitPrice
+          ? (Number(unitPrice) * quantity).toFixed(2).replace(".", ",")
+          : "-"
+        return [
+          new Date(order.createdAt).toLocaleDateString("de-DE"),
+          order.orderNumber || order.id,
+          order.employee?.employeeId || "-",
+          order.employee 
+            ? `${order.employee.firstName} ${order.employee.lastName}` 
+            : order.customerName,
+          order.employee?.email || order.email,
+          order.department,
+          item.product.name,
+          item.size,
+          String(quantity),
+          costBearer,
+          amount,
+          order.status === "DELIVERED" ? "Zugestellt" :
+          order.status === "SHIPPED" ? "Versendet" :
+          order.status === "PROCESSING" ? "In Bearbeitung" :
+          order.status === "CANCELLED" ? "Storniert" : "Ausstehend",
+        ]
+      })
     )
 
     // Build CSV with BOM for Excel UTF-8 compatibility
