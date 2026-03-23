@@ -1,4 +1,9 @@
 import { NextResponse } from "next/server"
+import { writeFile, mkdir } from "fs/promises"
+import path from "path"
+import crypto from "crypto"
+
+const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads")
 
 export async function POST(request: Request) {
   try {
@@ -15,19 +20,28 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid file type. Only JPEG, PNG, WebP, and GIF are allowed." }, { status: 400 })
     }
 
-    // Validate file size (max 2MB for database storage)
-    const maxSize = 2 * 1024 * 1024
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024
     if (file.size > maxSize) {
-      return NextResponse.json({ error: "File too large. Maximum size is 2MB." }, { status: 400 })
+      return NextResponse.json({ error: "File too large. Maximum size is 5MB." }, { status: 400 })
     }
 
-    // Convert to base64 data URL for database storage
-    const bytes = await file.arrayBuffer()
-    const buffer = Buffer.from(bytes)
-    const base64 = buffer.toString("base64")
-    const dataUrl = `data:${file.type};base64,${base64}`
+    // Ensure upload directory exists
+    await mkdir(UPLOAD_DIR, { recursive: true })
 
-    return NextResponse.json({ success: true, url: dataUrl })
+    // Generate unique filename
+    const ext = file.name.split(".").pop() || "jpg"
+    const uniqueName = `${crypto.randomUUID()}.${ext}`
+    const filePath = path.join(UPLOAD_DIR, uniqueName)
+
+    // Write file to disk
+    const bytes = await file.arrayBuffer()
+    await writeFile(filePath, new Uint8Array(bytes))
+
+    // Return URL path (served from public/)
+    const url = `/uploads/${uniqueName}`
+
+    return NextResponse.json({ success: true, url })
   } catch (error) {
     console.error("Upload error:", error)
     return NextResponse.json({ error: "Upload failed" }, { status: 500 })

@@ -15,39 +15,45 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const isAdminRequest = searchParams.get("admin") === "1"
 
-    // Admin gets all fields including sizeChart; public listing excludes heavy fields
+    // Lightweight select for both admin listing and public shop — excludes large base64 fields
+    const selectFields = {
+      id: true,
+      articleNumber: true,
+      name: true,
+      nameDe: true,
+      nameEn: true,
+      category: true,
+      description: true,
+      descriptionDe: true,
+      descriptionEn: true,
+      image: true,
+      images: true,
+      sizes: true,
+      color: true,
+      colors: true,
+      price: true,
+      yearlyLimit: true,
+      multipleOrdersAllowed: true,
+      maxQuantityPerOrder: true,
+      stock: true,
+      minStock: true,
+      nextDelivery: true,
+      supplierId: true,
+      isActive: true,
+      createdAt: true,
+      updatedAt: true,
+      // sizeChart excluded — loaded only on product detail page
+    } as const
+
     const products = isAdminRequest
-      ? await prisma.product.findMany({ orderBy: { createdAt: "asc" } })
+      ? await prisma.product.findMany({
+          select: selectFields,
+          orderBy: { createdAt: "asc" },
+        })
       : await prisma.product.findMany({
           where: { isActive: true },
           select: {
-            id: true,
-            articleNumber: true,
-            name: true,
-            nameDe: true,
-            nameEn: true,
-            category: true,
-            description: true,
-            descriptionDe: true,
-            descriptionEn: true,
-            image: true,
-            images: true,
-            sizes: true,
-            color: true,
-            colors: true,
-            price: true,
-            yearlyLimit: true,
-            multipleOrdersAllowed: true,
-            maxQuantityPerOrder: true,
-            stock: true,
-            minStock: true,
-            nextDelivery: true,
-            supplierId: true,
-            isActive: true,
-            createdAt: true,
-            updatedAt: true,
-            // sizeChart excluded — can contain large base64 image data
-            // Include review summary to avoid N+1 calls
+            ...selectFields,
             reviews: {
               where: { isPublic: true },
               select: { rating: true },
