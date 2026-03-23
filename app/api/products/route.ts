@@ -15,7 +15,8 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const isAdminRequest = searchParams.get("admin") === "1"
 
-    // Lightweight select for both admin listing and public shop — excludes large base64 fields
+    // Lightweight select — excludes large base64 image fields (image, images, sizeChart)
+    // Images are served via /api/products/[id]/image endpoint instead
     const selectFields = {
       id: true,
       articleNumber: true,
@@ -26,8 +27,6 @@ export async function GET(request: Request) {
       description: true,
       descriptionDe: true,
       descriptionEn: true,
-      image: true,
-      images: true,
       sizes: true,
       color: true,
       colors: true,
@@ -42,7 +41,6 @@ export async function GET(request: Request) {
       isActive: true,
       createdAt: true,
       updatedAt: true,
-      // sizeChart excluded — loaded only on product detail page
     } as const
 
     const products = isAdminRequest
@@ -62,19 +60,24 @@ export async function GET(request: Request) {
           orderBy: { createdAt: "asc" },
         })
 
-    // Compute review summary inline and strip raw reviews
-    const result = isAdminRequest
-      ? products
-      : (products as (typeof products[number] & { reviews: { rating: number }[] })[]).map(
-          ({ reviews: revs, ...product }) => {
-            const totalReviews = revs.length
-            const averageRating =
-              totalReviews > 0
-                ? Math.round((revs.reduce((s, r) => s + r.rating, 0) / totalReviews) * 10) / 10
-                : 0
-            return { ...product, reviewSummary: { averageRating, totalReviews } }
-          },
-        )
+    // Add image URL and review summary; strip raw review data
+    const result = products.map((p) => {
+      const { ...product } = p as typeof p & { reviews?: { rating: number }[] }
+      const imageUrl = `/api/products/${product.id}/image`
+
+      if (!isAdminRequest && product.reviews) {
+        const revs = product.reviews
+        const totalReviews = revs.length
+        const averageRating =
+          totalReviews > 0
+            ? Math.round((revs.reduce((s, r) => s + r.rating, 0) / totalReviews) * 10) / 10
+            : 0
+        const { reviews: _, ...rest } = product
+        return { ...rest, image: imageUrl, reviewSummary: { averageRating, totalReviews } }
+      }
+
+      return { ...product, image: imageUrl }
+    })
 
     return NextResponse.json(result)
   } catch (error) {

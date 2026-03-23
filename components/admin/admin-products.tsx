@@ -283,7 +283,11 @@ function ProductCard({ product, onRefresh, supplierName }: { product: Product; o
 function ProductForm({ product, onSuccess, onCancel }: { product?: Product; onSuccess?: () => void; onCancel?: () => void }) {
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [loadingFull, setLoadingFull] = useState(!!product)
   const [suppliers, setSuppliers] = useState<SupplierOption[]>([])
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [fullProduct, setFullProduct] = useState<any>(product)
 
   useEffect(() => {
     fetch("/api/admin/suppliers")
@@ -291,6 +295,41 @@ function ProductForm({ product, onSuccess, onCancel }: { product?: Product; onSu
       .then((data) => setSuppliers(data.map((s: SupplierOption) => ({ id: s.id, companyName: s.companyName }))))
       .catch(() => {})
   }, [])
+
+  // Fetch full product data (including image, images, sizeChart) when editing
+  useEffect(() => {
+    if (product?.id) {
+      fetch(`/api/products/${product.id}`)
+        .then((res) => res.ok ? res.json() : null)
+        .then((data) => {
+          if (data) {
+            setFullProduct(data)
+            setFormData({
+              name: data.name || "",
+              nameEn: data.nameEn || "",
+              category: data.category || "",
+              description: data.description || "",
+              descriptionEn: data.descriptionEn || "",
+              color: data.color || "",
+              colorsInput: data.colors?.join(", ") || data.color || "",
+              price: data.price != null ? String(data.price) : "",
+              image: data.image || "",
+              sizes: data.sizes?.join(", ") || "XS, S, M, L, XL, XXL",
+              additionalImages: data.images || [],
+              yearlyLimit: String(data.yearlyLimit ?? 4),
+              multipleOrdersAllowed: data.multipleOrdersAllowed ?? true,
+              maxQuantityPerOrder: String(data.maxQuantityPerOrder ?? 2),
+              minStock: String(data.minStock ?? 5),
+              sizeChart: data.sizeChart || "",
+              stock: (data.stock || {}) as Record<string, number>,
+              supplierId: data.supplierId || "",
+            })
+          }
+        })
+        .catch(() => {})
+        .finally(() => setLoadingFull(false))
+    }
+  }, [product?.id])
 
   const [formData, setFormData] = useState({
     name: product?.name || "",
