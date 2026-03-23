@@ -26,6 +26,7 @@ export interface Product {
   minStock?: number | null
   sizeChart?: string | null
   supplierId?: string | null
+  reviewSummary?: { averageRating: number; totalReviews: number }
 }
 
 export interface CartItem {

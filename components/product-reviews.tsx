@@ -27,12 +27,15 @@ interface Review {
 interface ProductReviewsProps {
   productId: string
   productName: string
+  initialSummary?: { averageRating: number; totalReviews: number }
 }
 
-export function ProductReviews({ productId, productName }: ProductReviewsProps) {
+export function ProductReviews({ productId, productName, initialSummary }: ProductReviewsProps) {
   const [reviews, setReviews] = useState<Review[]>([])
-  const [loading, setLoading] = useState(true)
-  const [averageRating, setAverageRating] = useState<number>(0)
+  const [loading, setLoading] = useState(!initialSummary)
+  const [reviewsLoaded, setReviewsLoaded] = useState(false)
+  const [averageRating, setAverageRating] = useState<number>(initialSummary?.averageRating || 0)
+  const [totalReviews, setTotalReviews] = useState<number>(initialSummary?.totalReviews || 0)
   const [showDialog, setShowDialog] = useState(false)
   const [newRating, setNewRating] = useState(0)
   const [hoveredRating, setHoveredRating] = useState(0)
@@ -41,18 +44,25 @@ export function ProductReviews({ productId, productName }: ProductReviewsProps) 
   const [hasReviewed, setHasReviewed] = useState(false)
   const { text, textf } = useAppTexts()
 
+  // Only fetch full reviews when no initialSummary (fallback) 
   useEffect(() => {
-    fetchReviews()
+    if (!initialSummary) fetchReviews()
   }, [productId])
+
+  // Lazy-load full reviews when dialog opens
+  useEffect(() => {
+    if (showDialog && !reviewsLoaded) fetchReviews()
+  }, [showDialog])
 
   const fetchReviews = async () => {
     try {
       const res = await fetch(`/api/reviews?productId=${productId}`)
       if (res.ok) {
         const data = await res.json()
-        // API returns { reviews, averageRating, totalReviews }
         setReviews(data.reviews || [])
         setAverageRating(data.averageRating || 0)
+        setTotalReviews(data.totalReviews || 0)
+        setReviewsLoaded(true)
       }
     } catch (error) {
       console.error("Error fetching reviews:", error)
@@ -137,10 +147,10 @@ export function ProductReviews({ productId, productName }: ProductReviewsProps) 
     <Dialog open={showDialog} onOpenChange={setShowDialog}>
       <DialogTrigger asChild>
         <button className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
-          {reviews.length > 0 ? (
+          {totalReviews > 0 ? (
             <>
               {renderStars(Math.round(averageRating))}
-              <span>({reviews.length})</span>
+              <span>({totalReviews})</span>
             </>
           ) : (
             <>

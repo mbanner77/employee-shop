@@ -228,7 +228,7 @@ export function ProductCard({ product }: ProductCardProps) {
           <h3 className="mb-1 font-serif text-lg font-semibold leading-tight text-foreground">{product.name}</h3>
         </Link>
         <div className="mb-2">
-          <ProductReviews productId={product.id} productName={product.name} />
+          <ProductReviews productId={product.id} productName={product.name} initialSummary={product.reviewSummary} />
         </div>
         <p className="mb-2 text-sm text-muted-foreground line-clamp-2">{product.description}</p>
         <button

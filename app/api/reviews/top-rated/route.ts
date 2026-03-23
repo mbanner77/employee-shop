@@ -3,9 +3,14 @@ import { prisma } from "@/lib/db"
 
 export async function GET() {
   try {
-    // Get all products with their reviews
+    // Get only needed fields with reviews
     const products = await prisma.product.findMany({
-      include: {
+      where: { isActive: true },
+      select: {
+        id: true,
+        name: true,
+        image: true,
+        category: true,
         reviews: {
           where: { isPublic: true },
           select: { rating: true },
