@@ -60,10 +60,20 @@ export async function GET(request: Request) {
           orderBy: { createdAt: "asc" },
         })
 
-    // Add image URL and review summary; strip raw review data
+    // Get image counts via raw SQL (avoids loading base64 data into memory)
+    const imageCounts = await prisma.$queryRaw<{ id: string; cnt: number }[]>`
+      SELECT id, COALESCE(array_length(images, 1), 0)::int AS cnt FROM "Product"
+    `
+    const countMap = new Map(imageCounts.map((r) => [r.id, r.cnt]))
+
+    // Build response with image URLs for carousel and review summaries
     const result = products.map((p) => {
       const { ...product } = p as typeof p & { reviews?: { rating: number }[] }
       const imageUrl = `/api/products/${product.id}/image`
+      const additionalCount = countMap.get(product.id) || 0
+      const images = Array.from({ length: additionalCount }, (_, i) =>
+        `/api/products/${product.id}/image?field=images&index=${i}`,
+      )
 
       if (!isAdminRequest && product.reviews) {
         const revs = product.reviews
@@ -73,10 +83,10 @@ export async function GET(request: Request) {
             ? Math.round((revs.reduce((s, r) => s + r.rating, 0) / totalReviews) * 10) / 10
             : 0
         const { reviews: _, ...rest } = product
-        return { ...rest, image: imageUrl, reviewSummary: { averageRating, totalReviews } }
+        return { ...rest, image: imageUrl, images, reviewSummary: { averageRating, totalReviews } }
       }
 
-      return { ...product, image: imageUrl }
+      return { ...product, image: imageUrl, images }
     })
 
     return NextResponse.json(result)
