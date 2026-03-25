@@ -61,7 +61,7 @@ export function Header() {
       <div className="container mx-auto flex items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-3">
           <Image
-            src="https://realcore.info/bilder/RealCore_Logo.png"
+            src="/realcore-logo.png"
             alt="RealCore Logo"
             width={160}
             height={45}

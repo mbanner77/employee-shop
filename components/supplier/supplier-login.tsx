@@ -52,7 +52,7 @@ export function SupplierLogin({ onLogin }: SupplierLoginProps) {
         <CardHeader className="space-y-4 text-center pb-2">
           <div className="flex justify-center">
             <Image
-              src="https://realcore.info/bilder/RealCore_Logo.png"
+              src="/realcore-logo.png"
               alt="RealCore Logo"
               width={180}
               height={50}
