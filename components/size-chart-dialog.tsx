@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { useAppTexts } from "@/components/app-text-provider"
 import { Ruler } from "lucide-react"
@@ -75,19 +75,34 @@ export function SizeChartDialog({
   onOpenChange: controlledOnOpenChange 
 }: SizeChartDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false)
+  const [imageLoadFailed, setImageLoadFailed] = useState(false)
   const { text, textf } = useAppTexts()
+  
+  const handleImageError = useCallback(() => setImageLoadFailed(true), [])
   
   // Use controlled or uncontrolled mode
   const isControlled = controlledOpen !== undefined
   const open = isControlled ? controlledOpen : internalOpen
   const setOpen = isControlled ? controlledOnOpenChange! : setInternalOpen
 
+  // Normalize category name to match size chart keys
+  const normalizeCategoryKey = (cat: string): string => {
+    const lower = cat.toLowerCase()
+    if (lower.includes("hoodie")) return "Hoodie"
+    if (lower.includes("t-shirt") || lower.includes("longsleeve") || lower.includes("langarm")) return "T-Shirt"
+    if (lower.includes("polo")) return "Polo-Shirt"
+    if (lower.includes("jack") || lower.includes("softshell")) return "Jacke"
+    if (lower.includes("pullover") || lower.includes("fleece") || lower.includes("sweater")) return "Hoodie"
+    return cat
+  }
+  
   // Use custom size chart if provided (URL or content), otherwise use default
-  const chartData = defaultSizeCharts[category || ""] || defaultSizeCharts.default
+  const chartKey = category ? normalizeCategoryKey(category) : ""
+  const chartData = defaultSizeCharts[chartKey] || defaultSizeCharts.default
 
-  // If sizeChart or sizeChartUrl is a URL, show an image
+  // If sizeChart or sizeChartUrl is a URL or API path, show an image
   const chartUrl = sizeChartUrl || sizeChart
-  const isUrl = chartUrl?.startsWith("http")
+  const isUrl = chartUrl && (chartUrl.startsWith("http") || chartUrl.startsWith("/api/") || chartUrl.startsWith("data:"))
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -104,12 +119,13 @@ export function SizeChartDialog({
           <DialogTitle>{textf("sizeChart.title", { category: category ? `- ${category}` : "" })}</DialogTitle>
         </DialogHeader>
         
-        {isUrl ? (
+        {isUrl && !imageLoadFailed ? (
           <div className="flex justify-center">
             <img 
               src={chartUrl!} 
               alt={text("sizeChart.imageAlt")} 
               className="max-w-full h-auto rounded-lg"
+              onError={handleImageError}
             />
           </div>
         ) : (

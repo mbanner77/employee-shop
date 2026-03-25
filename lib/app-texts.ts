@@ -348,6 +348,11 @@ export const appTextDefinitions = {
     label: "Produktkarte: Bild-Label",
     values: { de: "Bild {index} anzeigen", en: "Show image {index}" },
   },
+  "productCard.moreDetails": {
+    section: "products",
+    label: "Produktkarte: Mehr Details Link",
+    values: { de: "Mehr Details →", en: "More details →" },
+  },
   "productCard.sizeChart": {
     section: "products",
     label: "Produktkarte: Größentabelle",

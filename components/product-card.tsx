@@ -3,7 +3,7 @@
 import React from "react"
 import Image from "next/image"
 import { useState, useEffect } from "react"
-import { Plus, Check, ChevronLeft, ChevronRight, Heart, Ruler } from "lucide-react"
+import { ShoppingCart, Check, ChevronLeft, ChevronRight, Heart, Ruler } from "lucide-react"
 import { useAppTexts } from "@/components/app-text-provider"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -230,7 +230,10 @@ export function ProductCard({ product }: ProductCardProps) {
         <div className="mb-2">
           <ProductReviews productId={product.id} productName={product.name} initialSummary={product.reviewSummary} />
         </div>
-        <p className="mb-2 text-sm text-muted-foreground line-clamp-2">{product.description}</p>
+        <p className="mb-1 text-sm text-muted-foreground line-clamp-2">{product.description}</p>
+        <Link href={`/products/${product.id}`} className="mb-2 inline-block text-xs text-primary hover:underline">
+          {text("productCard.moreDetails")}
+        </Link>
         <button
           onClick={() => setShowSizeChart(true)}
           className="mb-3 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
@@ -302,7 +305,7 @@ export function ProductCard({ product }: ProductCardProps) {
             className={isInCart ? "bg-accent hover:bg-accent" : ""}
             aria-label={text("productCard.addToCart")}
           >
-            {isInCart ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+            {isInCart ? <Check className="h-4 w-4" /> : <ShoppingCart className="h-4 w-4" />}
           </Button>
         </div>
         <p className="mt-2 text-xs text-muted-foreground">
@@ -315,7 +318,7 @@ export function ProductCard({ product }: ProductCardProps) {
         onOpenChange={setShowSizeChart}
         productName={product.name}
         category={product.category}
-        sizeChartUrl={product.sizeChart || undefined}
+        sizeChartUrl={product.sizeChart || `/api/products/${product.id}/image?field=sizeChart`}
       />
     </Card>
   )
