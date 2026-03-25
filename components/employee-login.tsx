@@ -191,7 +191,7 @@ export function EmployeeLogin({ onLogin }: EmployeeLoginProps) {
         <CardHeader className="space-y-4 text-center pb-2">
           <div className="flex justify-center">
             <Image
-              src="/realcore-logo.png"
+              src="https://realcore.info/bilder/RealCore_Logo.png"
               alt="RealCore Logo"
               width={180}
               height={50}

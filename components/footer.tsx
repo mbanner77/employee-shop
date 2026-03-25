@@ -11,7 +11,7 @@ export function Footer() {
           {/* Logo & Company */}
           <div className="space-y-3">
             <Image
-              src="/realcore-logo.png"
+              src="https://realcore.info/bilder/RealCore_Logo.png"
               alt="RealCore Logo"
               width={120}
               height={34}
