@@ -726,6 +726,16 @@ export const appTextDefinitions = {
     label: "Größentabelle: Bild Alt",
     values: { de: "Größentabelle", en: "Size chart" },
   },
+  "sizeChart.externalLink": {
+    section: "products",
+    label: "Größentabelle: Externer Link Hinweis",
+    values: { de: "Für dieses Produkt ist ein eigenes Produktdatenblatt mit Größentabelle hinterlegt.", en: "A dedicated product data sheet with size chart is available for this product." },
+  },
+  "sizeChart.openProductSheet": {
+    section: "products",
+    label: "Größentabelle: Produktblatt öffnen",
+    values: { de: "Produktdatenblatt öffnen", en: "Open product data sheet" },
+  },
   "sizeChart.intro": {
     section: "products",
     label: "Größentabelle: Intro",

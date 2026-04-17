@@ -318,7 +318,7 @@ export function ProductCard({ product }: ProductCardProps) {
         onOpenChange={setShowSizeChart}
         productName={product.name}
         category={product.category}
-        sizeChartUrl={product.sizeChart || `/api/products/${product.id}/image?field=sizeChart`}
+        sizeChartUrl={product.sizeChart || undefined}
       />
     </Card>
   )

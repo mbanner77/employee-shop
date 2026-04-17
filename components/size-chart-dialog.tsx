@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { useAppTexts } from "@/components/app-text-provider"
-import { Ruler } from "lucide-react"
+import { Ruler, ExternalLink } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -100,9 +100,10 @@ export function SizeChartDialog({
   const chartKey = category ? normalizeCategoryKey(category) : ""
   const chartData = defaultSizeCharts[chartKey] || defaultSizeCharts.default
 
-  // If sizeChart or sizeChartUrl is a URL or API path, show an image
+  // Determine chart source: external URL, API path/data URL, or default table
   const chartUrl = sizeChartUrl || sizeChart
-  const isUrl = chartUrl && (chartUrl.startsWith("http") || chartUrl.startsWith("/api/") || chartUrl.startsWith("data:"))
+  const isExternalUrl = chartUrl && chartUrl.startsWith("http")
+  const isImageSource = chartUrl && !isExternalUrl && (chartUrl.startsWith("/api/") || chartUrl.startsWith("data:"))
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -119,7 +120,22 @@ export function SizeChartDialog({
           <DialogTitle>{textf("sizeChart.title", { category: category ? `- ${category}` : "" })}</DialogTitle>
         </DialogHeader>
         
-        {isUrl && !imageLoadFailed ? (
+        {isExternalUrl ? (
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              {text("sizeChart.externalLink")}
+            </p>
+            <a
+              href={chartUrl!}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-lg border bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+            >
+              <ExternalLink className="h-4 w-4" />
+              {text("sizeChart.openProductSheet")}
+            </a>
+          </div>
+        ) : isImageSource && !imageLoadFailed ? (
           <div className="flex justify-center">
             <img 
               src={chartUrl!} 

@@ -60,11 +60,15 @@ export async function GET(request: Request) {
           orderBy: { createdAt: "asc" },
         })
 
-    // Get image counts via raw SQL (avoids loading base64 data into memory)
-    const imageCounts = await prisma.$queryRaw<{ id: string; cnt: number }[]>`
-      SELECT id, COALESCE(array_length(images, 1), 0)::int AS cnt FROM "Product"
+    // Get image counts + sizeChart URLs via raw SQL (avoids loading base64 data into memory)
+    const productMeta = await prisma.$queryRaw<{ id: string; cnt: number; sizeChartUrl: string | null }[]>`
+      SELECT id,
+        COALESCE(array_length(images, 1), 0)::int AS cnt,
+        CASE WHEN "sizeChart" IS NOT NULL AND "sizeChart" NOT LIKE 'data:%' THEN "sizeChart" ELSE NULL END AS "sizeChartUrl"
+      FROM "Product"
     `
-    const countMap = new Map(imageCounts.map((r) => [r.id, r.cnt]))
+    const countMap = new Map(productMeta.map((r) => [r.id, r.cnt]))
+    const sizeChartMap = new Map(productMeta.filter((r) => r.sizeChartUrl).map((r) => [r.id, r.sizeChartUrl!]))
 
     // Build response with image URLs for carousel and review summaries
     const result = products.map((p) => {
@@ -74,6 +78,7 @@ export async function GET(request: Request) {
       const images = Array.from({ length: additionalCount }, (_, i) =>
         `/api/products/${product.id}/image?field=images&index=${i}`,
       )
+      const sizeChart = sizeChartMap.get(product.id) || null
 
       if (!isAdminRequest && product.reviews) {
         const revs = product.reviews
@@ -83,10 +88,10 @@ export async function GET(request: Request) {
             ? Math.round((revs.reduce((s, r) => s + r.rating, 0) / totalReviews) * 10) / 10
             : 0
         const { reviews: _, ...rest } = product
-        return { ...rest, image: imageUrl, images, reviewSummary: { averageRating, totalReviews } }
+        return { ...rest, image: imageUrl, images, sizeChart, reviewSummary: { averageRating, totalReviews } }
       }
 
-      return { ...product, image: imageUrl, images }
+      return { ...product, image: imageUrl, images, sizeChart }
     })
 
     return NextResponse.json(result)
