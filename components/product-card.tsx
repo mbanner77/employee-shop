@@ -234,13 +234,15 @@ export function ProductCard({ product }: ProductCardProps) {
         <Link href={`/products/${product.id}`} className="mb-2 inline-block text-xs text-primary hover:underline">
           {text("productCard.moreDetails")}
         </Link>
-        <button
-          onClick={() => setShowSizeChart(true)}
-          className="mb-3 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <Ruler className="h-3 w-3" />
-          {text("productCard.sizeChart")}
-        </button>
+        {product.sizeChart && (
+          <button
+            onClick={() => setShowSizeChart(true)}
+            className="mb-3 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Ruler className="h-3 w-3" />
+            {text("productCard.sizeChart")}
+          </button>
+        )}
         {selectedSize && getStock(selectedSize) !== null && (
           <div className={`mb-2 text-xs ${getStock(selectedSize)! > 5 ? "text-green-600" : getStock(selectedSize)! > 0 ? "text-orange-500" : "text-red-500"}`}>
             {getStock(selectedSize)! > 5

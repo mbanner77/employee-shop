@@ -238,14 +238,16 @@ export default function ProductDetailPage() {
               <ProductReviews productId={product.id} productName={product.name} />
             </div>
 
-            {/* Size Chart */}
-            <button
-              onClick={() => setShowSizeChart(true)}
-              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <Ruler className="h-4 w-4" />
-              Größentabelle anzeigen
-            </button>
+            {/* Size Chart — only if link is stored */}
+            {product.sizeChart && (
+              <button
+                onClick={() => setShowSizeChart(true)}
+                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Ruler className="h-4 w-4" />
+                Größentabelle anzeigen
+              </button>
+            )}
 
             {/* Color selector */}
             {availableColors.length > 1 ? (
