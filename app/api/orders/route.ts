@@ -174,6 +174,7 @@ export async function POST(request: Request) {
     type ProductForOrder = {
       id: string
       name: string
+      articleNumber?: string | null
       sizes: string[]
       yearlyLimit: number
       stock: JsonValue | null
@@ -186,6 +187,7 @@ export async function POST(request: Request) {
       select: {
         id: true,
         name: true,
+        articleNumber: true,
         sizes: true,
         yearlyLimit: true,
         stock: true,
@@ -412,9 +414,20 @@ export async function POST(request: Request) {
           quantity: number
           product: { name: string; articleNumber?: string | null }
         }
+        
+        // DEBUG: Log order items for supplier email troubleshooting
+        console.log(`[SupplierEmail] Processing order ${order.id} with ${order.items.length} items`)
+        console.log(`[SupplierEmail] Order items:`, JSON.stringify(order.items.map((it: OrderItemWithProduct) => ({ 
+          productName: it.product?.name, 
+          supplierId: it.supplierId 
+        }))))
+        
         const itemsBySupplier = new Map<string, SupplierItem[]>()
         for (const it of order.items as OrderItemWithProduct[]) {
-          if (!it.supplierId) continue
+          if (!it.supplierId) {
+            console.log(`[SupplierEmail] Skipping item without supplierId: ${it.product?.name}`)
+            continue
+          }
           const arr = itemsBySupplier.get(it.supplierId) || []
           arr.push({
             name: it.product.name,
@@ -425,7 +438,11 @@ export async function POST(request: Request) {
           })
           itemsBySupplier.set(it.supplierId, arr)
         }
+        
+        console.log(`[SupplierEmail] Found ${itemsBySupplier.size} suppliers to notify`)
+        
         for (const [supplierId, supplierItems] of itemsBySupplier.entries()) {
+          console.log(`[SupplierEmail] Sending email to supplier ${supplierId} with ${supplierItems.length} items`)
           try {
             await sendOrderCreatedEmailToSupplier({
               supplierId,
@@ -439,8 +456,9 @@ export async function POST(request: Request) {
               country: order.country,
               items: supplierItems,
             })
+            console.log(`[SupplierEmail] Successfully sent email to supplier ${supplierId}`)
           } catch (err) {
-            console.error(`Failed to send supplier email (supplier=${supplierId}):`, err)
+            console.error(`[SupplierEmail] Failed to send supplier email (supplier=${supplierId}):`, err)
           }
         }
       }

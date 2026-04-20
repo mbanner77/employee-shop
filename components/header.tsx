@@ -74,8 +74,10 @@ export function Header() {
             href="/"
             className={cn(
               "rounded-full px-4 py-2 text-sm font-medium transition-colors",
-              useDarkHeader && !isAdminPage
-                ? "text-muted-foreground hover:bg-muted hover:text-foreground"
+              useDarkHeader
+                ? isAdminPage
+                  ? "text-slate-300 hover:bg-slate-800 hover:text-white"
+                  : "text-foreground hover:bg-accent hover:text-accent-foreground"
                 : "text-white/70 hover:bg-white/10 hover:text-white",
             )}
           >
@@ -85,8 +87,10 @@ export function Header() {
             href="/checkout"
             className={cn(
               "rounded-full px-4 py-2 text-sm font-medium transition-colors",
-              useDarkHeader && !isAdminPage
-                ? "text-muted-foreground hover:bg-muted hover:text-foreground"
+              useDarkHeader
+                ? isAdminPage
+                  ? "text-slate-300 hover:bg-slate-800 hover:text-white"
+                  : "text-foreground hover:bg-accent hover:text-accent-foreground"
                 : "text-white/70 hover:bg-white/10 hover:text-white",
             )}
           >
@@ -96,8 +100,10 @@ export function Header() {
             href="/favorites"
             className={cn(
               "rounded-full px-4 py-2 text-sm font-medium transition-colors",
-              useDarkHeader && !isAdminPage
-                ? "text-muted-foreground hover:bg-muted hover:text-foreground"
+              useDarkHeader
+                ? isAdminPage
+                  ? "text-slate-300 hover:bg-slate-800 hover:text-white"
+                  : "text-foreground hover:bg-accent hover:text-accent-foreground"
                 : "text-white/70 hover:bg-white/10 hover:text-white",
             )}
           >
@@ -107,8 +113,10 @@ export function Header() {
             href="/my-orders"
             className={cn(
               "rounded-full px-4 py-2 text-sm font-medium transition-colors",
-              useDarkHeader && !isAdminPage
-                ? "text-muted-foreground hover:bg-muted hover:text-foreground"
+              useDarkHeader
+                ? isAdminPage
+                  ? "text-slate-300 hover:bg-slate-800 hover:text-white"
+                  : "text-foreground hover:bg-accent hover:text-accent-foreground"
                 : "text-white/70 hover:bg-white/10 hover:text-white",
             )}
           >
@@ -118,8 +126,10 @@ export function Header() {
             href="/profile"
             className={cn(
               "rounded-full px-4 py-2 text-sm font-medium transition-colors",
-              useDarkHeader && !isAdminPage
-                ? "text-muted-foreground hover:bg-muted hover:text-foreground"
+              useDarkHeader
+                ? isAdminPage
+                  ? "text-slate-300 hover:bg-slate-800 hover:text-white"
+                  : "text-foreground hover:bg-accent hover:text-accent-foreground"
                 : "text-white/70 hover:bg-white/10 hover:text-white",
             )}
           >
@@ -129,8 +139,10 @@ export function Header() {
             href="/feedback"
             className={cn(
               "rounded-full px-4 py-2 text-sm font-medium transition-colors",
-              useDarkHeader && !isAdminPage
-                ? "text-muted-foreground hover:bg-muted hover:text-foreground"
+              useDarkHeader
+                ? isAdminPage
+                  ? "text-slate-300 hover:bg-slate-800 hover:text-white"
+                  : "text-foreground hover:bg-accent hover:text-accent-foreground"
                 : "text-white/70 hover:bg-white/10 hover:text-white",
             )}
           >
@@ -141,8 +153,10 @@ export function Header() {
               href="/admin"
               className={cn(
                 "rounded-full px-4 py-2 text-sm font-medium transition-colors",
-                useDarkHeader && !isAdminPage
-                  ? "text-muted-foreground hover:bg-muted hover:text-foreground"
+                useDarkHeader
+                  ? isAdminPage
+                    ? "text-slate-300 hover:bg-slate-800 hover:text-white"
+                    : "text-foreground hover:bg-accent hover:text-accent-foreground"
                   : "text-white/70 hover:bg-white/10 hover:text-white",
               )}
             >
@@ -152,7 +166,9 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <LanguageSwitcher />
+          <div className={cn(!useDarkHeader && "text-white")}>
+            <LanguageSwitcher />
+          </div>
           <div className={cn(useDarkHeader && !isAdminPage ? "" : "text-white")}>
             <ThemeToggle />
           </div>
