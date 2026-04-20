@@ -356,6 +356,106 @@ export async function sendOrderCreatedEmailToAdmin(args: {
   })
 }
 
+// E-Mail an Lieferant mit den für ihn relevanten Bestellpositionen
+export async function sendOrderCreatedEmailToSupplier(args: {
+  supplierId: string
+  orderId: string
+  orderNumber: string | null
+  customerName: string
+  department: string
+  street: string
+  zip: string
+  city: string
+  country: string
+  items: Array<{ name: string; articleNumber?: string | null; size: string; color?: string | null; quantity: number }>
+}) {
+  const supplier = await prisma.supplier.findUnique({ where: { id: args.supplierId } })
+  if (!supplier || !supplier.email || !supplier.isActive) return
+  if (args.items.length === 0) return
+
+  const itemsHtml = `
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 16px; border-collapse: collapse;">
+      <tr style="background-color: #e4e4e7;">
+        <th style="padding: 8px; text-align: left; font-size: 12px;">Artikel</th>
+        <th style="padding: 8px; text-align: left; font-size: 12px;">Art.-Nr.</th>
+        <th style="padding: 8px; text-align: center; font-size: 12px;">Größe</th>
+        <th style="padding: 8px; text-align: center; font-size: 12px;">Farbe</th>
+        <th style="padding: 8px; text-align: right; font-size: 12px;">Menge</th>
+      </tr>
+      ${args.items.map(item => `
+        <tr>
+          <td style="padding: 8px; border-bottom: 1px solid #e4e4e7;">${item.name}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #e4e4e7; font-family: monospace; font-size: 12px;">${item.articleNumber || "-"}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #e4e4e7; text-align: center;">${item.size}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #e4e4e7; text-align: center;">${item.color || "-"}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #e4e4e7; text-align: right; font-weight: 600;">${item.quantity}</td>
+        </tr>
+      `).join("")}
+    </table>
+  `
+
+  const totalQty = args.items.reduce((s, i) => s + i.quantity, 0)
+
+  const htmlContent = `
+    <h2 style="margin: 0 0 16px 0; color: #18181b; font-size: 20px;">Neue Bestellung – ${args.orderNumber || args.orderId}</h2>
+    <p style="margin: 0 0 24px 0; color: #3f3f46; font-size: 16px; line-height: 1.6;">
+      Guten Tag${supplier.contactPerson ? ` ${supplier.contactPerson}` : ""},<br/><br/>
+      es ist eine neue Bestellung eingegangen, die Artikel aus Ihrem Sortiment enthält.
+      Bitte bearbeiten Sie die Bestellung über Ihr Lieferantenportal.
+    </p>
+
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f5; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+      <tr>
+        <td>
+          <p style="margin: 0 0 8px 0; color: #71717a; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Bestellnummer</p>
+          <p style="margin: 0 0 16px 0; color: #18181b; font-size: 14px; font-family: monospace;">${args.orderNumber || args.orderId}</p>
+
+          <p style="margin: 0 0 8px 0; color: #71717a; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Besteller</p>
+          <p style="margin: 0 0 16px 0; color: #18181b; font-size: 14px;">${args.customerName}${args.department ? ` (${args.department})` : ""}</p>
+
+          <p style="margin: 0 0 8px 0; color: #71717a; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Lieferadresse</p>
+          <p style="margin: 0; color: #18181b; font-size: 14px; line-height: 1.5;">
+            ${args.customerName}<br/>
+            ${args.street}<br/>
+            ${args.zip} ${args.city}<br/>
+            ${args.country}
+          </p>
+        </td>
+      </tr>
+    </table>
+
+    <h3 style="margin: 0 0 12px 0; color: #18181b; font-size: 16px;">Ihre Artikel (${totalQty})</h3>
+    ${itemsHtml}
+
+    <p style="margin: 24px 0 0 0; color: #71717a; font-size: 14px;">
+      Freundliche Grüße<br/>
+      RealCore Mitarbeiter-Shop
+    </p>
+  `
+
+  await sendEmail({
+    to: supplier.email,
+    subject: `🛒 Neue Bestellung ${args.orderNumber || args.orderId} – ${totalQty} Artikel`,
+    text: [
+      `Neue Bestellung – ${args.orderNumber || args.orderId}`,
+      "",
+      `Besteller: ${args.customerName}${args.department ? ` (${args.department})` : ""}`,
+      "",
+      `Lieferadresse:`,
+      args.customerName,
+      args.street,
+      `${args.zip} ${args.city}`,
+      args.country,
+      "",
+      `Artikel (${totalQty}):`,
+      ...args.items.map(i => `- ${i.quantity}x ${i.name}${i.articleNumber ? ` (${i.articleNumber})` : ""} – Größe ${i.size}${i.color ? `, Farbe ${i.color}` : ""}`),
+      "",
+      "Bitte bearbeiten Sie die Bestellung über Ihr Lieferantenportal.",
+    ].join("\n"),
+    html: emailTemplate(htmlContent),
+  })
+}
+
 // Budget-Erinnerung E-Mail
 export async function sendBudgetReminderEmail(args: {
   employeeId: string

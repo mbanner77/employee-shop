@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
-import { sendOrderCreatedEmail, sendOrderCreatedEmailToAdmin, sendBudgetReminderEmail } from "@/lib/email"
+import { sendOrderCreatedEmail, sendOrderCreatedEmailToAdmin, sendOrderCreatedEmailToSupplier, sendBudgetReminderEmail } from "@/lib/email"
 import { cookies } from "next/headers"
 
 // Typen für neue Schema-Felder (bis Prisma-Client regeneriert wird)
@@ -400,6 +400,49 @@ export async function POST(request: Request) {
           department: order.department,
           items,
         })
+      }
+
+      // E-Mail an Lieferanten (eine Mail pro Supplier mit nur seinen Positionen)
+      if (settings?.notifyOnOrder) {
+        type SupplierItem = { name: string; articleNumber?: string | null; size: string; color?: string | null; quantity: number }
+        type OrderItemWithProduct = {
+          supplierId: string | null
+          size: string
+          color: string | null
+          quantity: number
+          product: { name: string; articleNumber?: string | null }
+        }
+        const itemsBySupplier = new Map<string, SupplierItem[]>()
+        for (const it of order.items as OrderItemWithProduct[]) {
+          if (!it.supplierId) continue
+          const arr = itemsBySupplier.get(it.supplierId) || []
+          arr.push({
+            name: it.product.name,
+            articleNumber: it.product.articleNumber ?? null,
+            size: it.size,
+            color: it.color,
+            quantity: it.quantity,
+          })
+          itemsBySupplier.set(it.supplierId, arr)
+        }
+        for (const [supplierId, supplierItems] of itemsBySupplier.entries()) {
+          try {
+            await sendOrderCreatedEmailToSupplier({
+              supplierId,
+              orderId: order.id,
+              orderNumber: order.orderNumber,
+              customerName: order.customerName,
+              department: order.department,
+              street: order.street,
+              zip: order.zip,
+              city: order.city,
+              country: order.country,
+              items: supplierItems,
+            })
+          } catch (err) {
+            console.error(`Failed to send supplier email (supplier=${supplierId}):`, err)
+          }
+        }
       }
       
       // Budget-Erinnerung senden wenn weniger als 2 Artikel übrig
