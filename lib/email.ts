@@ -27,10 +27,22 @@ export async function sendEmail(payload: MailPayload) {
     throw new Error("SMTP password is masked; re-save real password in settings")
   }
 
+  // Auto-detect TLS settings based on port
+  const port = settings.smtpPort || 587
+  const isSecurePort = port === 465 || port === 994
+  const useStartTLS = port === 587 || port === 25
+  
+  console.log(`[Email] Connecting to ${settings.smtpHost}:${port} (secure=${isSecurePort}, startTLS=${useStartTLS})`)
+  
   const transporter = nodemailer.createTransport({
     host: settings.smtpHost,
-    port: settings.smtpPort,
-    secure: settings.smtpSecure,
+    port: port,
+    secure: isSecurePort, // true for 465/994, false for 587/25
+    requireTLS: useStartTLS, // require TLS for STARTTLS ports
+    tls: {
+      rejectUnauthorized: false, // allow self-signed certs
+      minVersion: 'TLSv1.2',
+    },
     auth: {
       user: settings.smtpUser,
       pass: settings.smtpPassword,
@@ -40,13 +52,21 @@ export async function sendEmail(payload: MailPayload) {
   const fromName = settings.emailFromName || "RealCore Shop"
   const from = fromName ? `${fromName} <${settings.emailFrom}>` : settings.emailFrom
 
-  await transporter.sendMail({
-    from,
-    to: payload.to,
-    subject: payload.subject,
-    text: payload.text,
-    html: payload.html,
-  })
+  console.log(`[Email] Sending from ${from} to ${payload.to}`)
+  
+  try {
+    const result = await transporter.sendMail({
+      from,
+      to: payload.to,
+      subject: payload.subject,
+      text: payload.text,
+      html: payload.html,
+    })
+    console.log(`[Email] Sent successfully: ${result.messageId}`)
+  } catch (error) {
+    console.error(`[Email] Failed to send:`, error)
+    throw error
+  }
 }
 
 const statusLabels: Record<string, string> = {
