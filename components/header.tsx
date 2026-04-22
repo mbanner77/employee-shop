@@ -51,10 +51,10 @@ export function Header() {
     <header
       className={cn(
         "fixed top-0 z-50 w-full transition-all duration-300",
-        isAdminPage 
-          ? "border-b border-slate-700 bg-slate-900 py-3" 
-          : scrolled 
-            ? "border-b border-border bg-background/95 py-3 backdrop-blur-lg" 
+        isAdminPage
+          ? "border-b border-slate-700 bg-slate-900 py-3"
+          : scrolled
+            ? "border-b border-slate-700 bg-slate-900/95 py-3 backdrop-blur-lg"
             : "bg-transparent py-5",
       )}
     >
@@ -65,118 +65,48 @@ export function Header() {
             alt="RealCore Logo"
             width={160}
             height={45}
-            className={cn("h-10 w-auto transition-all duration-300", (!scrolled || isAdminPage) && "brightness-0 invert")}
+            className="h-10 w-auto transition-all duration-300 brightness-0 invert"
           />
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex">
-          <Link
-            href="/"
-            className={cn(
-              "rounded-full px-4 py-2 text-sm font-medium transition-colors",
-              useDarkHeader
-                ? isAdminPage
-                  ? "text-slate-300 hover:bg-slate-800 hover:text-white"
-                  : "text-foreground hover:bg-accent hover:text-accent-foreground"
-                : "text-white/70 hover:bg-white/10 hover:text-white",
-            )}
-          >
+          <NavLink href="/" pathname={pathname} useDarkHeader={useDarkHeader} isAdminPage={isAdminPage}>
             {text("header.nav.collection")}
-          </Link>
-          <Link
-            href="/checkout"
-            className={cn(
-              "rounded-full px-4 py-2 text-sm font-medium transition-colors",
-              useDarkHeader
-                ? isAdminPage
-                  ? "text-slate-300 hover:bg-slate-800 hover:text-white"
-                  : "text-foreground hover:bg-accent hover:text-accent-foreground"
-                : "text-white/70 hover:bg-white/10 hover:text-white",
-            )}
-          >
+          </NavLink>
+          <NavLink href="/checkout" pathname={pathname} useDarkHeader={useDarkHeader} isAdminPage={isAdminPage}>
             {text("header.nav.order")}
-          </Link>
-          <Link
-            href="/favorites"
-            className={cn(
-              "rounded-full px-4 py-2 text-sm font-medium transition-colors",
-              useDarkHeader
-                ? isAdminPage
-                  ? "text-slate-300 hover:bg-slate-800 hover:text-white"
-                  : "text-foreground hover:bg-accent hover:text-accent-foreground"
-                : "text-white/70 hover:bg-white/10 hover:text-white",
-            )}
-          >
+          </NavLink>
+          <NavLink href="/favorites" pathname={pathname} useDarkHeader={useDarkHeader} isAdminPage={isAdminPage}>
             {text("header.nav.favorites")}
-          </Link>
-          <Link
-            href="/my-orders"
-            className={cn(
-              "rounded-full px-4 py-2 text-sm font-medium transition-colors",
-              useDarkHeader
-                ? isAdminPage
-                  ? "text-slate-300 hover:bg-slate-800 hover:text-white"
-                  : "text-foreground hover:bg-accent hover:text-accent-foreground"
-                : "text-white/70 hover:bg-white/10 hover:text-white",
-            )}
-          >
+          </NavLink>
+          <NavLink href="/my-orders" pathname={pathname} useDarkHeader={useDarkHeader} isAdminPage={isAdminPage}>
             {text("header.nav.orders")}
-          </Link>
-          <Link
-            href="/profile"
-            className={cn(
-              "rounded-full px-4 py-2 text-sm font-medium transition-colors",
-              useDarkHeader
-                ? isAdminPage
-                  ? "text-slate-300 hover:bg-slate-800 hover:text-white"
-                  : "text-foreground hover:bg-accent hover:text-accent-foreground"
-                : "text-white/70 hover:bg-white/10 hover:text-white",
-            )}
-          >
+          </NavLink>
+          <NavLink href="/profile" pathname={pathname} useDarkHeader={useDarkHeader} isAdminPage={isAdminPage}>
             <User className="h-4 w-4" />
-          </Link>
-          <Link
-            href="/feedback"
-            className={cn(
-              "rounded-full px-4 py-2 text-sm font-medium transition-colors",
-              useDarkHeader
-                ? isAdminPage
-                  ? "text-slate-300 hover:bg-slate-800 hover:text-white"
-                  : "text-foreground hover:bg-accent hover:text-accent-foreground"
-                : "text-white/70 hover:bg-white/10 hover:text-white",
-            )}
-          >
+          </NavLink>
+          <NavLink href="/feedback" pathname={pathname} useDarkHeader={useDarkHeader} isAdminPage={isAdminPage}>
             {text("header.nav.feedback")}
-          </Link>
+          </NavLink>
           {isAdminAuthenticated && (
-            <Link
-              href="/admin"
-              className={cn(
-                "rounded-full px-4 py-2 text-sm font-medium transition-colors",
-                useDarkHeader
-                  ? isAdminPage
-                    ? "text-slate-300 hover:bg-slate-800 hover:text-white"
-                    : "text-foreground hover:bg-accent hover:text-accent-foreground"
-                  : "text-white/70 hover:bg-white/10 hover:text-white",
-              )}
-            >
+            <NavLink href="/admin" pathname={pathname} useDarkHeader={useDarkHeader} isAdminPage={isAdminPage}>
               <Settings className="h-4 w-4" />
-            </Link>
+            </NavLink>
           )}
         </nav>
 
         <div className="flex items-center gap-2">
-          <div className={cn(!useDarkHeader && "text-white")}>
+          <div className="text-white">
             <LanguageSwitcher />
           </div>
-          <div className={cn(useDarkHeader && !isAdminPage ? "" : "text-white")}>
+          <div className="text-white">
             <ThemeToggle />
           </div>
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setCartDrawerOpen(true)}
-            className={cn("relative rounded-full", useDarkHeader && !isAdminPage ? "hover:bg-muted" : "text-white hover:bg-white/10")}
+            className="relative rounded-full text-white hover:bg-white/10"
           >
             <ShoppingBag className="h-5 w-5" />
             {mounted && cartItemCount > 0 && (
@@ -193,7 +123,7 @@ export function Header() {
               <Button
                 variant="ghost"
                 size="icon"
-                className={cn("rounded-full", useDarkHeader && !isAdminPage ? "hover:bg-muted" : "text-white hover:bg-white/10")}
+                className="rounded-full text-white hover:bg-white/10"
               >
                 <Menu className="h-5 w-5" />
                 <span className="sr-only">{text("header.menu.open")}</span>
@@ -268,5 +198,42 @@ export function Header() {
         </div>
       </div>
     </header>
+  )
+}
+
+function NavLink({
+  href,
+  pathname,
+  useDarkHeader,
+  isAdminPage,
+  children,
+}: {
+  href: string
+  pathname: string | null
+  useDarkHeader: boolean
+  isAdminPage: boolean
+  children: React.ReactNode
+}) {
+  const isActive = href === "/" ? pathname === "/" : pathname?.startsWith(href)
+
+  // Active state: RealCore accent color (emerald)
+  // Non-active: white/translucent on dark header
+  const activeClasses = "bg-white text-[#1F4E78] font-semibold shadow-sm"
+  const inactiveClasses = useDarkHeader
+    ? isAdminPage
+      ? "text-slate-300 hover:bg-slate-800 hover:text-white"
+      : "text-white/80 hover:bg-white/10 hover:text-white"
+    : "text-white/80 hover:bg-white/10 hover:text-white"
+
+  return (
+    <Link
+      href={href}
+      className={cn(
+        "rounded-full px-4 py-2 text-sm font-medium transition-colors",
+        isActive ? activeClasses : inactiveClasses,
+      )}
+    >
+      {children}
+    </Link>
   )
 }

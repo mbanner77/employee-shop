@@ -13,7 +13,7 @@ export function HeroSection() {
   }
 
   return (
-    <section className="relative min-h-[85vh] overflow-hidden bg-primary">
+    <section className="relative min-h-[85vh] overflow-hidden bg-slate-900">
       {/* Decorative elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -left-40 -top-40 h-96 w-96 rounded-full bg-accent/20 blur-3xl" />
@@ -63,7 +63,7 @@ export function HeroSection() {
         <Button
           onClick={scrollToProducts}
           size="lg"
-          className="group gap-2 rounded-full bg-white px-8 py-6 text-base font-semibold text-primary hover:bg-white/90"
+          className="group gap-2 rounded-full bg-white px-8 py-6 text-base font-semibold text-slate-900 hover:bg-white/90"
         >
           {text("hero.cta")}
           <ChevronDown className="h-4 w-4 transition-transform group-hover:translate-y-0.5" />
