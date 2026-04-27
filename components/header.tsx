@@ -44,8 +44,10 @@ export function Header() {
       .catch(() => setIsAdminAuthenticated(false))
   }, [])
 
-  // On admin pages, always use dark header style
-  const useDarkHeader = isAdminPage || scrolled
+  // Dark context: Admin pages OR Homepage at top (with transparent dark hero behind)
+  // Light context: All other pages, or Homepage when scrolled past hero
+  const isHomePage = pathname === "/"
+  const useDarkContext = isAdminPage || (isHomePage && !scrolled)
 
   return (
     <header
@@ -53,9 +55,9 @@ export function Header() {
         "fixed top-0 z-50 w-full transition-all duration-300",
         isAdminPage
           ? "border-b border-slate-700 bg-slate-900 py-3"
-          : scrolled
-            ? "border-b border-slate-700 bg-slate-900/95 py-3 backdrop-blur-lg"
-            : "bg-transparent py-5",
+          : isHomePage && !scrolled
+            ? "bg-transparent py-5"
+            : "border-b border-border bg-white/95 py-3 backdrop-blur-lg dark:bg-slate-900/95 dark:border-slate-700",
       )}
     >
       <div className="container mx-auto flex items-center justify-between px-4">
@@ -65,48 +67,56 @@ export function Header() {
             alt="RealCore Logo"
             width={160}
             height={45}
-            className="h-10 w-auto transition-all duration-300 brightness-0 invert"
+            className={cn(
+              "h-10 w-auto transition-all duration-300",
+              useDarkContext && "brightness-0 invert",
+            )}
           />
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex">
-          <NavLink href="/" pathname={pathname} useDarkHeader={useDarkHeader} isAdminPage={isAdminPage}>
+          <NavLink href="/" pathname={pathname} useDarkContext={useDarkContext} isAdminPage={isAdminPage}>
             {text("header.nav.collection")}
           </NavLink>
-          <NavLink href="/checkout" pathname={pathname} useDarkHeader={useDarkHeader} isAdminPage={isAdminPage}>
+          <NavLink href="/checkout" pathname={pathname} useDarkContext={useDarkContext} isAdminPage={isAdminPage}>
             {text("header.nav.order")}
           </NavLink>
-          <NavLink href="/favorites" pathname={pathname} useDarkHeader={useDarkHeader} isAdminPage={isAdminPage}>
+          <NavLink href="/favorites" pathname={pathname} useDarkContext={useDarkContext} isAdminPage={isAdminPage}>
             {text("header.nav.favorites")}
           </NavLink>
-          <NavLink href="/my-orders" pathname={pathname} useDarkHeader={useDarkHeader} isAdminPage={isAdminPage}>
+          <NavLink href="/my-orders" pathname={pathname} useDarkContext={useDarkContext} isAdminPage={isAdminPage}>
             {text("header.nav.orders")}
           </NavLink>
-          <NavLink href="/profile" pathname={pathname} useDarkHeader={useDarkHeader} isAdminPage={isAdminPage}>
+          <NavLink href="/profile" pathname={pathname} useDarkContext={useDarkContext} isAdminPage={isAdminPage}>
             <User className="h-4 w-4" />
           </NavLink>
-          <NavLink href="/feedback" pathname={pathname} useDarkHeader={useDarkHeader} isAdminPage={isAdminPage}>
+          <NavLink href="/feedback" pathname={pathname} useDarkContext={useDarkContext} isAdminPage={isAdminPage}>
             {text("header.nav.feedback")}
           </NavLink>
           {isAdminAuthenticated && (
-            <NavLink href="/admin" pathname={pathname} useDarkHeader={useDarkHeader} isAdminPage={isAdminPage}>
+            <NavLink href="/admin" pathname={pathname} useDarkContext={useDarkContext} isAdminPage={isAdminPage}>
               <Settings className="h-4 w-4" />
             </NavLink>
           )}
         </nav>
 
         <div className="flex items-center gap-2">
-          <div className="text-white">
+          <div className={cn(useDarkContext ? "text-white" : "text-slate-900 dark:text-white")}>
             <LanguageSwitcher />
           </div>
-          <div className="text-white">
+          <div className={cn(useDarkContext ? "text-white" : "text-slate-900 dark:text-white")}>
             <ThemeToggle />
           </div>
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setCartDrawerOpen(true)}
-            className="relative rounded-full text-white hover:bg-white/10"
+            className={cn(
+              "relative rounded-full",
+              useDarkContext
+                ? "text-white hover:bg-white/10"
+                : "text-slate-900 hover:bg-slate-100 dark:text-white dark:hover:bg-white/10",
+            )}
           >
             <ShoppingBag className="h-5 w-5" />
             {mounted && cartItemCount > 0 && (
@@ -123,7 +133,12 @@ export function Header() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="rounded-full text-white hover:bg-white/10"
+                className={cn(
+                  "rounded-full",
+                  useDarkContext
+                    ? "text-white hover:bg-white/10"
+                    : "text-slate-900 hover:bg-slate-100 dark:text-white dark:hover:bg-white/10",
+                )}
               >
                 <Menu className="h-5 w-5" />
                 <span className="sr-only">{text("header.menu.open")}</span>
@@ -204,26 +219,29 @@ export function Header() {
 function NavLink({
   href,
   pathname,
-  useDarkHeader,
+  useDarkContext,
   isAdminPage,
   children,
 }: {
   href: string
   pathname: string | null
-  useDarkHeader: boolean
+  useDarkContext: boolean
   isAdminPage: boolean
   children: React.ReactNode
 }) {
   const isActive = href === "/" ? pathname === "/" : pathname?.startsWith(href)
 
-  // Active state: RealCore accent color (emerald)
-  // Non-active: white/translucent on dark header
-  const activeClasses = "bg-white text-[#1F4E78] font-semibold shadow-sm"
-  const inactiveClasses = useDarkHeader
+  // Active state: RealCore blue background pill
+  const activeClasses = useDarkContext
+    ? "bg-white text-[#1F4E78] font-semibold shadow-sm"
+    : "bg-[#1F4E78] text-white font-semibold shadow-sm"
+
+  // Inactive state: white text on dark, dark text on light
+  const inactiveClasses = useDarkContext
     ? isAdminPage
       ? "text-slate-300 hover:bg-slate-800 hover:text-white"
       : "text-white/80 hover:bg-white/10 hover:text-white"
-    : "text-white/80 hover:bg-white/10 hover:text-white"
+    : "text-slate-900 hover:bg-slate-100 dark:text-white dark:hover:bg-white/10"
 
   return (
     <Link
