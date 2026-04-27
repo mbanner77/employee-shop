@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation"
 import { MessageSquare, Star, Send, Loader2, CheckCircle } from "lucide-react"
 import { useAppTexts } from "@/components/app-text-provider"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
+import { PageHero } from "@/components/page-hero"
 
 export default function FeedbackPage() {
   const [message, setMessage] = useState("")
@@ -56,16 +57,17 @@ export default function FeedbackPage() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-background pt-24">
-        <div className="container mx-auto max-w-lg px-4 py-16">
+      <div className="min-h-screen bg-background">
+        <PageHero
+          title={text("feedback.successTitle")}
+          description={text("feedback.successDescription")}
+          icon={CheckCircle}
+        />
+        <div className="container mx-auto max-w-lg px-4 py-12">
           <Card>
             <CardContent className="flex flex-col items-center py-12 text-center">
-              <CheckCircle className="mb-4 h-16 w-16 text-green-500" />
-              <h2 className="mb-2 text-2xl font-bold">{text("feedback.successTitle")}</h2>
-              <p className="mb-6 text-muted-foreground">
-                {text("feedback.successDescription")}
-              </p>
-              <Button onClick={() => router.push("/")}>{text("feedback.backToCollection")}</Button>
+              <CheckCircle className="mb-6 h-16 w-16 text-green-500" />
+              <Button onClick={() => router.push("/")} size="lg">{text("feedback.backToCollection")}</Button>
             </CardContent>
           </Card>
         </div>
@@ -74,21 +76,15 @@ export default function FeedbackPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background pt-24">
-      <div className="container mx-auto max-w-lg px-4 py-8">
+    <div className="min-h-screen bg-background">
+      <PageHero
+        title={text("feedback.title")}
+        description={text("feedback.description")}
+        icon={MessageSquare}
+      />
+      <div className="container mx-auto max-w-lg px-4 py-12">
         <Card>
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <MessageSquare className="h-8 w-8 text-primary" />
-              <div>
-                <CardTitle>{text("feedback.title")}</CardTitle>
-                <CardDescription>
-                  {text("feedback.description")}
-                </CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Rating */}
               <div className="space-y-2">

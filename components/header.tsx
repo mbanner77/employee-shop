@@ -44,10 +44,11 @@ export function Header() {
       .catch(() => setIsAdminAuthenticated(false))
   }, [])
 
-  // Dark context: Admin pages OR Homepage at top (with transparent dark hero behind)
-  // Light context: All other pages, or Homepage when scrolled past hero
-  const isHomePage = pathname === "/"
-  const useDarkContext = isAdminPage || (isHomePage && !scrolled)
+  // Dark context: Admin pages OR pages with dark hero at top (when not scrolled)
+  // Light context: All other pages, or pages with dark hero when scrolled past hero
+  const pagesWithDarkHero = ["/", "/feedback", "/favorites"]
+  const hasDarkHero = pagesWithDarkHero.includes(pathname || "")
+  const useDarkContext = isAdminPage || (hasDarkHero && !scrolled)
 
   return (
     <header
@@ -55,7 +56,7 @@ export function Header() {
         "fixed top-0 z-50 w-full transition-all duration-300",
         isAdminPage
           ? "border-b border-slate-700 bg-slate-900 py-3"
-          : isHomePage && !scrolled
+          : hasDarkHero && !scrolled
             ? "bg-transparent py-5"
             : "border-b border-border bg-white/95 py-3 backdrop-blur-lg dark:bg-slate-900/95 dark:border-slate-700",
       )}
