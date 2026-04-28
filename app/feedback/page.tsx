@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
+import { Header } from "@/components/header"
 
 export default function FeedbackPage() {
   const [message, setMessage] = useState("")
@@ -57,6 +58,7 @@ export default function FeedbackPage() {
   if (submitted) {
     return (
       <div className="min-h-screen bg-background">
+        <Header />
         <main className="container mx-auto max-w-lg px-4 pt-32 pb-12">
           <div className="mb-8 text-center">
             <h1 className="mb-2 font-serif text-3xl font-bold text-foreground sm:text-4xl">{text("feedback.successTitle")}</h1>
@@ -75,6 +77,7 @@ export default function FeedbackPage() {
 
   return (
     <div className="min-h-screen bg-background">
+      <Header />
       <main className="container mx-auto max-w-lg px-4 pt-32 pb-12">
         <div className="mb-8 text-center">
           <h1 className="mb-2 font-serif text-3xl font-bold text-foreground sm:text-4xl">{text("feedback.title")}</h1>

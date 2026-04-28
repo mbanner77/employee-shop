@@ -8,6 +8,7 @@ import { useAppTexts } from "@/components/app-text-provider"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { useShopStore } from "@/lib/store"
+import { Header } from "@/components/header"
 
 interface FavoriteProduct {
   id: string
@@ -79,14 +80,18 @@ export default function FavoritesPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center pt-20">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="flex items-center justify-center pt-32">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
       </div>
     )
   }
 
   return (
     <div className="min-h-screen bg-background">
+      <Header />
       <main className="container mx-auto px-4 pt-32 pb-12">
         <div className="mb-8 flex items-center justify-center gap-3">
           <Heart className="h-8 w-8 text-red-500" />
