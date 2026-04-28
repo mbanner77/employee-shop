@@ -44,10 +44,10 @@ export function Header() {
       .catch(() => setIsAdminAuthenticated(false))
   }, [])
 
-  // Dark context: Admin pages OR pages with dark hero at top (when not scrolled)
-  // Light context: All other pages, or pages with dark hero when scrolled past hero
-  const pagesWithDarkHero = ["/", "/feedback", "/favorites"]
-  const hasDarkHero = pagesWithDarkHero.includes(pathname || "")
+  // Dark context: Admin pages OR Homepage at top (with transparent dark hero behind)
+  // Light context: All other pages, or Homepage when scrolled past hero
+  const isHomePage = pathname === "/"
+  const hasDarkHero = isHomePage
   const useDarkContext = isAdminPage || (hasDarkHero && !scrolled)
 
   return (

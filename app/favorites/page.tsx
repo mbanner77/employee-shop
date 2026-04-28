@@ -8,7 +8,6 @@ import { useAppTexts } from "@/components/app-text-provider"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { useShopStore } from "@/lib/store"
-import { PageHero } from "@/components/page-hero"
 
 interface FavoriteProduct {
   id: string
@@ -88,12 +87,12 @@ export default function FavoritesPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <PageHero
-        title={text("favorites.title")}
-        description={text("favorites.emptyDescription")}
-        icon={Heart}
-      />
-      <div className="container mx-auto px-4 py-12">
+      <main className="container mx-auto px-4 pt-32 pb-12">
+        <div className="mb-8 flex items-center justify-center gap-3">
+          <Heart className="h-8 w-8 text-red-500" />
+          <h1 className="font-serif text-3xl font-bold text-foreground sm:text-4xl">{text("favorites.title")}</h1>
+        </div>
+
         {favorites.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <Heart className="mb-4 h-16 w-16 text-muted-foreground/30" />
@@ -148,7 +147,7 @@ export default function FavoritesPage() {
             ))}
           </div>
         )}
-      </div>
+      </main>
     </div>
   )
 }

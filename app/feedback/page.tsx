@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { PageHero } from "@/components/page-hero"
 
 export default function FeedbackPage() {
   const [message, setMessage] = useState("")
@@ -58,31 +57,29 @@ export default function FeedbackPage() {
   if (submitted) {
     return (
       <div className="min-h-screen bg-background">
-        <PageHero
-          title={text("feedback.successTitle")}
-          description={text("feedback.successDescription")}
-          icon={CheckCircle}
-        />
-        <div className="container mx-auto max-w-lg px-4 py-12">
+        <main className="container mx-auto max-w-lg px-4 pt-32 pb-12">
+          <div className="mb-8 text-center">
+            <h1 className="mb-2 font-serif text-3xl font-bold text-foreground sm:text-4xl">{text("feedback.successTitle")}</h1>
+            <p className="text-muted-foreground">{text("feedback.successDescription")}</p>
+          </div>
           <Card>
             <CardContent className="flex flex-col items-center py-12 text-center">
               <CheckCircle className="mb-6 h-16 w-16 text-green-500" />
               <Button onClick={() => router.push("/")} size="lg">{text("feedback.backToCollection")}</Button>
             </CardContent>
           </Card>
-        </div>
+        </main>
       </div>
     )
   }
 
   return (
     <div className="min-h-screen bg-background">
-      <PageHero
-        title={text("feedback.title")}
-        description={text("feedback.description")}
-        icon={MessageSquare}
-      />
-      <div className="container mx-auto max-w-lg px-4 py-12">
+      <main className="container mx-auto max-w-lg px-4 pt-32 pb-12">
+        <div className="mb-8 text-center">
+          <h1 className="mb-2 font-serif text-3xl font-bold text-foreground sm:text-4xl">{text("feedback.title")}</h1>
+          <p className="text-muted-foreground">{text("feedback.description")}</p>
+        </div>
         <Card>
           <CardContent className="pt-6">
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -155,7 +152,7 @@ export default function FeedbackPage() {
             </form>
           </CardContent>
         </Card>
-      </div>
+      </main>
     </div>
   )
 }
