@@ -376,6 +376,102 @@ export async function sendOrderCreatedEmailToAdmin(args: {
   })
 }
 
+// E-Mail an Admin bei neuem Feedback
+export async function sendFeedbackEmail(args: {
+  feedbackId: string
+  message: string
+  rating: number | null
+  customerName: string
+  customerEmail: string
+  department?: string | null
+  orderId?: string | null
+}) {
+  const settings = await prisma.settings.findUnique({ where: { id: "settings" } })
+  if (!settings?.adminEmail) return
+
+  const ratingStars = args.rating
+    ? "★".repeat(args.rating) + "☆".repeat(5 - args.rating)
+    : "Keine Bewertung"
+
+  const ratingLabels: Record<number, string> = {
+    1: "Sehr unzufrieden",
+    2: "Unzufrieden",
+    3: "Neutral",
+    4: "Zufrieden",
+    5: "Sehr zufrieden",
+  }
+
+  const ratingText = args.rating ? `${ratingStars} (${ratingLabels[args.rating]})` : ratingStars
+
+  const orderInfoHtml = args.orderId
+    ? `
+        <p style="margin: 0 0 8px 0; color: #71717a; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Bezug zu Bestellung</p>
+        <p style="margin: 0 0 16px 0; color: #18181b; font-size: 14px; font-family: monospace;">${args.orderId}</p>
+      `
+    : ""
+
+  const departmentHtml = args.department
+    ? `
+        <p style="margin: 0 0 8px 0; color: #71717a; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Firmenbereich</p>
+        <p style="margin: 0 0 16px 0; color: #18181b; font-size: 14px;">${args.department}</p>
+      `
+    : ""
+
+  const escapedMessage = args.message
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\n/g, "<br>")
+
+  const htmlContent = `
+    <h2 style="margin: 0 0 16px 0; color: #18181b; font-size: 20px;">Neues Feedback eingegangen</h2>
+    <p style="margin: 0 0 24px 0; color: #3f3f46; font-size: 16px; line-height: 1.6;">
+      Ein Mitarbeiter hat Feedback zum Mitarbeiter-Shop hinterlassen.
+    </p>
+
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f5; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+      <tr>
+        <td>
+          <p style="margin: 0 0 8px 0; color: #71717a; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Von</p>
+          <p style="margin: 0 0 16px 0; color: #18181b; font-size: 14px;">${args.customerName}</p>
+
+          <p style="margin: 0 0 8px 0; color: #71717a; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">E-Mail</p>
+          <p style="margin: 0 0 16px 0; color: #18181b; font-size: 14px;">${args.customerEmail}</p>
+
+          ${departmentHtml}
+          ${orderInfoHtml}
+
+          <p style="margin: 0 0 8px 0; color: #71717a; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Bewertung</p>
+          <p style="margin: 0; color: #f59e0b; font-size: 18px;">${ratingText}</p>
+        </td>
+      </tr>
+    </table>
+
+    <h3 style="margin: 0 0 12px 0; color: #18181b; font-size: 16px;">Nachricht</h3>
+    <div style="background-color: #ffffff; border: 1px solid #e4e4e7; border-radius: 8px; padding: 16px; color: #18181b; font-size: 14px; line-height: 1.6;">
+      ${escapedMessage}
+    </div>
+  `
+
+  await sendEmail({
+    to: settings.adminEmail,
+    subject: `💬 Neues Feedback von ${args.customerName}${args.rating ? ` (${args.rating}/5)` : ""}`,
+    text: [
+      `Neues Feedback eingegangen`,
+      "",
+      `Von: ${args.customerName}`,
+      `E-Mail: ${args.customerEmail}`,
+      args.department ? `Firmenbereich: ${args.department}` : "",
+      args.orderId ? `Bezug zu Bestellung: ${args.orderId}` : "",
+      `Bewertung: ${ratingText}`,
+      "",
+      `Nachricht:`,
+      args.message,
+    ].filter(Boolean).join("\n"),
+    html: emailTemplate(htmlContent),
+  })
+}
+
 // E-Mail an Lieferant mit den für ihn relevanten Bestellpositionen
 export async function sendOrderCreatedEmailToSupplier(args: {
   supplierId: string

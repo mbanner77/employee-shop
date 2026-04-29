@@ -311,6 +311,7 @@ model Settings {
   // Notification Settings
   notifyOnOrder     Boolean @default(true)
   notifyOnShipment  Boolean @default(true)
+  notifyOnFeedback  Boolean @default(true)
   adminEmail        String  @default("")
   
   // Shop Settings

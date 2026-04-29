@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { cookies } from "next/headers"
+import { sendFeedbackEmail } from "@/lib/email"
 
 async function getEmployeeId(): Promise<string | null> {
   const cookieStore = await cookies()
@@ -67,6 +68,32 @@ export async function POST(request: Request) {
         orderId: orderId || null,
       },
     })
+
+    // E-Mail an Admin senden
+    try {
+      const settings = await prisma.settings.findUnique({ where: { id: "settings" } })
+      if (settings?.notifyOnFeedback && settings?.adminEmail) {
+        const employee = await prisma.employee.findUnique({
+          where: { id: employeeId },
+          select: { firstName: true, lastName: true, email: true, department: true },
+        })
+
+        if (employee) {
+          await sendFeedbackEmail({
+            feedbackId: feedback.id,
+            message: feedback.message,
+            rating: feedback.rating,
+            customerName: `${employee.firstName} ${employee.lastName}`.trim(),
+            customerEmail: employee.email,
+            department: employee.department,
+            orderId: feedback.orderId,
+          })
+        }
+      }
+    } catch (emailError) {
+      console.error("Failed to send feedback email:", emailError)
+      // Feedback wurde gespeichert, E-Mail-Fehler nicht an User durchreichen
+    }
 
     return NextResponse.json(feedback, { status: 201 })
   } catch (error) {

@@ -22,6 +22,7 @@ interface Settings extends Microsoft365SettingsValue {
   emailFromName: string
   notifyOnOrder: boolean
   notifyOnShipment: boolean
+  notifyOnFeedback: boolean
   adminEmail: string
   shopName: string
   maxItemsPerOrder: number
@@ -450,6 +451,14 @@ export function AdminSettings() {
                   onCheckedChange={(checked: boolean) => updateSetting("notifyOnShipment", checked)}
                 />
                 <Label htmlFor="notifyOnShipment">Bei Versand Kunden benachrichtigen</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="notifyOnFeedback"
+                  checked={settings.notifyOnFeedback}
+                  onCheckedChange={(checked: boolean) => updateSetting("notifyOnFeedback", checked)}
+                />
+                <Label htmlFor="notifyOnFeedback">Bei neuem Feedback benachrichtigen</Label>
               </div>
             </div>
           </CardContent>
